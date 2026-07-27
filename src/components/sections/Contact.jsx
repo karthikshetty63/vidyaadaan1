@@ -1,90 +1,191 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import Container from "../layout/Container";
-import Input from "../ui/Input";
-import Textarea from "../ui/Textarea";
-import Button from "../ui/Button";
-import { FaEnvelope, FaPhone, FaMapMarkerAlt } from "react-icons/fa";
-
-const contactInfo = [
-  { icon: FaEnvelope, label: "Email", value: "support@vidyadaan.org" },
-  { icon: FaPhone, label: "Phone", value: "+91 98765 43210" },
-  { icon: FaMapMarkerAlt, label: "Address", value: "Bengaluru, Karnataka, India" },
-];
+import SectionTitle from "../ui/SectionTitle";
 
 const Contact = () => {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    subject: "donate",
+    message: "",
+  });
+  const [submitted, setSubmitted] = useState(false);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Message sent! We'll get back to you soon.");
-    setForm({ name: "", email: "", message: "" });
+    setSubmitted(true);
   };
 
   return (
-    <section className="py-20 bg-white">
+    <section id="contact" className="py-24 bg-white">
       <Container>
-        <div className="text-center mb-12">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-sm font-semibold mb-4">
-            Contact Us
-          </span>
-          <h2 className="text-4xl font-bold text-slate-900">Get In Touch</h2>
-          <p className="mt-4 text-slate-500 max-w-xl mx-auto">
-            Have questions? We'd love to hear from you.
-          </p>
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-start">
+          {/* Left */}
+          <div>
+            <SectionTitle
+              align="left"
+              pill="Contact Us"
+              title="Let's Build a"
+              highlight="School Together"
+              subtitle="Whether you want to donate, volunteer, partner, or simply learn more — we'd love to hear from you."
+            />
 
-        <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
-
-          {/* Info */}
-          <div className="flex flex-col gap-6 justify-center">
-            {contactInfo.map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-gray-100">
-                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
-                  <Icon className="text-blue-600 text-lg" />
+            <div className="mt-10 flex flex-col gap-5">
+              {[
+                {
+                  icon: "📧",
+                  label: "Email",
+                  value: "hello@vidyadaan.org",
+                  href: "mailto:hello@vidyadaan.org",
+                },
+                {
+                  icon: "📞",
+                  label: "Phone",
+                  value: "+91 98765 43210",
+                  href: "tel:+919876543210",
+                },
+                {
+                  icon: "🏢",
+                  label: "Office",
+                  value: "12, 3rd Main, Indiranagar, Bengaluru - 560038",
+                  href: "#",
+                },
+                {
+                  icon: "🕘",
+                  label: "Working Hours",
+                  value: "Mon–Sat, 9:00 AM – 6:00 PM IST",
+                  href: null,
+                },
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-xl shrink-0">
+                    {item.icon}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                      {item.label}
+                    </p>
+                    {item.href && item.href !== "#" ? (
+                      <a
+                        href={item.href}
+                        className="text-sm font-medium text-slate-800 hover:text-sky-600 transition-colors"
+                      >
+                        {item.value}
+                      </a>
+                    ) : (
+                      <p className="text-sm font-medium text-slate-800">{item.value}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">{label}</p>
-                  <p className="text-slate-700 font-semibold">{value}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <Input
-              label="Your Name"
-              id="name"
-              name="name"
-              placeholder="Enter your name"
-              value={form.name}
-              onChange={handleChange}
-              required
-            />
-            <Input
-              label="Email Address"
-              id="email"
-              name="email"
-              type="email"
-              placeholder="Enter your email"
-              value={form.email}
-              onChange={handleChange}
-              required
-            />
-            <Textarea
-              label="Message"
-              id="message"
-              name="message"
-              placeholder="Write your message..."
-              value={form.message}
-              onChange={handleChange}
-              required
-            />
-            <Button type="submit" fullWidth>Send Message</Button>
-          </form>
+          {/* Right: Form */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-7 shadow-sm">
+            {submitted ? (
+              <div className="flex flex-col items-center text-center py-12 gap-4">
+                <span className="text-5xl">✅</span>
+                <h3 className="text-xl font-bold text-slate-900">Message Sent!</h3>
+                <p className="text-slate-500 text-sm max-w-xs">
+                  Thank you for reaching out. Our team will get back to you within 24 hours.
+                </p>
+                <button
+                  onClick={() => setSubmitted(false)}
+                  className="mt-2 text-sm text-sky-600 font-bold hover:underline"
+                >
+                  Send Another Message
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Send us a Message</h3>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600" htmlFor="contact-name">
+                      Full Name *
+                    </label>
+                    <input
+                      id="contact-name"
+                      name="name"
+                      type="text"
+                      required
+                      value={form.name}
+                      onChange={handleChange}
+                      placeholder="Rahul Sharma"
+                      className="px-4 py-2.5 border-2 border-slate-200 focus:border-sky-500 outline-none rounded-xl text-sm transition-colors"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600" htmlFor="contact-email">
+                      Email Address *
+                    </label>
+                    <input
+                      id="contact-email"
+                      name="email"
+                      type="email"
+                      required
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="rahul@email.com"
+                      className="px-4 py-2.5 border-2 border-slate-200 focus:border-sky-500 outline-none rounded-xl text-sm transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-600" htmlFor="contact-subject">
+                    I'm interested in
+                  </label>
+                  <select
+                    id="contact-subject"
+                    name="subject"
+                    value={form.subject}
+                    onChange={handleChange}
+                    className="px-4 py-2.5 border-2 border-slate-200 focus:border-sky-500 outline-none rounded-xl text-sm bg-white transition-colors"
+                  >
+                    <option value="donate">Making a Donation</option>
+                    <option value="sponsor">Sponsoring a Child</option>
+                    <option value="csr">Corporate CSR Partnership</option>
+                    <option value="volunteer">Volunteering / Mentoring</option>
+                    <option value="media">Media Inquiry</option>
+                    <option value="other">Something Else</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-600" htmlFor="contact-message">
+                    Your Message *
+                  </label>
+                  <textarea
+                    id="contact-message"
+                    name="message"
+                    rows={4}
+                    required
+                    value={form.message}
+                    onChange={handleChange}
+                    placeholder="Tell us how you'd like to help..."
+                    className="px-4 py-2.5 border-2 border-slate-200 focus:border-sky-500 outline-none rounded-xl text-sm resize-none transition-colors"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white font-bold text-sm rounded-xl transition-all duration-200 active:scale-[0.98] shadow-md shadow-sky-500/20"
+                >
+                  Send Message →
+                </button>
+
+                <p className="text-center text-xs text-slate-400">
+                  We respond within 24 hours on weekdays.
+                </p>
+              </form>
+            )}
+          </div>
         </div>
       </Container>
     </section>

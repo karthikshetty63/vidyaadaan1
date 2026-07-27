@@ -1,10 +1,34 @@
-import { FaSchool, FaDonate, FaHandsHelping, FaUserGraduate } from "react-icons/fa";
-
-const statsData = [
-  { id: 1, value: "500+", label: "Government Schools", color: "text-blue-600", bg: "bg-blue-50" },
-  { id: 2, value: "₹50L+", label: "Donations Raised", color: "text-emerald-600", bg: "bg-emerald-50" },
-  { id: 3, value: "150+", label: "NGO Partners", color: "text-blue-500", bg: "bg-blue-50" },
-  { id: 4, value: "20,000+", label: "Students Benefited", color: "text-emerald-500", bg: "bg-emerald-50" },
+export const statsData = [
+  {
+    id: 1,
+    value: "50,000+",
+    label: "Children Educated",
+    description: "Provided with quality education resources & scholarships",
+    icon: "GraduationCap",
+    color: "from-blue-500 to-cyan-500"
+  },
+  {
+    id: 2,
+    value: "350+",
+    label: "Schools Upgraded",
+    description: "Equipped with smart boards, STEM labs & digital infrastructure",
+    icon: "Building2",
+    color: "from-amber-500 to-orange-500"
+  },
+  {
+    id: 3,
+    value: "₹12.5 Cr+",
+    label: "Funds Deployed",
+    description: "Directly invested in verified government school projects",
+    icon: "HeartHandshake",
+    color: "from-emerald-500 to-teal-500"
+  },
+  {
+    id: 4,
+    value: "1,200+",
+    label: "Active Mentors",
+    description: "Volunteers mentoring rural students weekly across 12 states",
+    icon: "Users",
+    color: "from-purple-500 to-indigo-500"
+  }
 ];
-
-export default statsData;
