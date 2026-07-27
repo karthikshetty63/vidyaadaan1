@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import VidyadaanLogo from "../ui/VidyadaanLogo";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -51,26 +52,14 @@ const Navbar = () => {
     <>
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white ${
-          scrolled ? "shadow-md" : "border-b border-slate-100"
+          scrolled ? "shadow-md py-1" : "border-b border-slate-100 py-2"
         }`}
       >
         <div className="w-full mx-auto px-6 sm:px-10 lg:px-12 max-w-[1400px]">
           <div className="flex items-center justify-between h-20">
             {/* Brand Logo */}
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 relative flex items-center justify-center shrink-0">
-                <svg className="w-10 h-10" viewBox="0 0 40 40" fill="none">
-                  <path d="M6 14C12 11 18 13 20 16C22 13 28 11 34 14V30C28 27 22 29 20 32C18 29 12 27 6 30V14Z" fill="#1E40AF" opacity="0.9" />
-                  <path d="M8 12C13 9.5 18 11.5 20 14C22 11.5 27 9.5 32 12V27C27 24.5 22 26.5 20 29C18 26.5 13 24.5 8 27V12Z" fill="#0284C7" />
-                  <path d="M10 10C14 8 18 10 20 12C22 10 26 8 30 10V24C26 22 22 24 20 26C18 24 14 22 10 24V10Z" fill="#10B981" />
-                  <path d="M20 4L30 9L20 14L10 9L20 4Z" fill="#F59E0B" />
-                  <path d="M28 10.5V16" stroke="#F59E0B" strokeWidth="1.5" />
-                </svg>
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className="font-black text-lg tracking-tight text-[#0F172A]">VIDYADAAN</span>
-                <span className="text-[10px] text-emerald-600 font-bold tracking-tight">Empowering Education Across India</span>
-              </div>
+            <Link to="/">
+              <VidyadaanLogo variant="dark" showTagline={true} />
             </Link>
 
             {/* Desktop Navigation Links */}

@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import VidyadaanLogo from "../../components/ui/VidyadaanLogo";
 
 const roles = [
   {
@@ -68,14 +69,8 @@ const RoleSelector = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex flex-col">
       {/* Mini Navbar */}
       <header className="w-full px-8 py-5 flex items-center justify-between border-b border-slate-100 bg-white/80 backdrop-blur-md">
-        <Link to="/" className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-            <span className="text-white font-black text-sm">V</span>
-          </div>
-          <div className="flex flex-col leading-none">
-            <span className="font-black text-sm text-slate-900">VIDYADAAN</span>
-            <span className="text-[9px] text-emerald-600 font-bold">Empowering Education Across India</span>
-          </div>
+        <Link to="/">
+          <VidyadaanLogo variant="dark" />
         </Link>
         <Link to="/" className="text-xs text-slate-500 hover:text-blue-600 font-semibold transition-colors flex items-center gap-1">
           ← Back to Home

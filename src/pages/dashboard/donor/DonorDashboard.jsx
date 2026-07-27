@@ -6,49 +6,150 @@ import DonationTable from "../../../components/dashboard/DonationTable";
 import TimelineWidget from "../../../components/dashboard/TimelineWidget";
 import EventCard from "../../../components/events/EventCard";
 import SponsorEventModal from "../../../components/events/SponsorEventModal";
-import { initialEvents, eventCategories } from "../../../data/eventsData";
+import SponsorNeedModal from "../../../components/dashboard/SponsorNeedModal";
+import { initialEvents } from "../../../data/eventsData";
 
 /* ─── MOCK DATA ─────────────────────────────────────────── */
 const stats = [
   { icon: "💙", label: "Total Donated", value: "₹45,000", change: 15, color: "amber" },
+  { icon: "📋", label: "School Needs Funded", value: "4", change: 33, color: "blue" },
   { icon: "🎉", label: "Events Sponsored", value: "2", change: 100, color: "emerald" },
-  { icon: "👦", label: "Children Helped", value: "182", change: 24, color: "blue" },
   { icon: "📜", label: "Tax Savings (80G)", value: "₹22,500", change: 15, color: "purple" },
 ];
 
+const directSchoolNeedsList = [
+  {
+    id: "need-1",
+    label: "Smart Classroom & Interactive Board",
+    category: "Classroom",
+    schoolName: "Honnali Govt. Primary School",
+    district: "Davangere, Karnataka",
+    amount: "₹1,20,000",
+    progress: 35,
+    priority: "Urgent",
+    icon: "💻",
+    img: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=400&auto=format&fit=crop",
+  },
+  {
+    id: "need-2",
+    label: "Girls Toilet Sanitation & Running Water",
+    category: "Water & Sanitation",
+    schoolName: "Govt. High School, Shikaripura",
+    district: "Shivamogga, Karnataka",
+    amount: "₹45,000",
+    progress: 72,
+    priority: "Urgent",
+    icon: "🚻",
+    img: "https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=400&auto=format&fit=crop",
+  },
+  {
+    id: "need-3",
+    label: "Library Books (400+ English & Kannada)",
+    category: "Library",
+    schoolName: "GPS Tumkur Model School",
+    district: "Tumkur, Karnataka",
+    amount: "₹22,000",
+    progress: 10,
+    priority: "High",
+    icon: "📚",
+    img: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=400&auto=format&fit=crop",
+  },
+  {
+    id: "need-4",
+    label: "RO Drinking Water Purifier Unit",
+    category: "Water & Sanitation",
+    schoolName: "GTHS Chitradurga School",
+    district: "Chitradurga, Karnataka",
+    amount: "₹18,000",
+    progress: 0,
+    priority: "Urgent",
+    icon: "💧",
+    img: "https://images.unsplash.com/photo-1576089172869-4f5f6f315620?q=80&w=400&auto=format&fit=crop",
+  },
+  {
+    id: "need-5",
+    label: "5kW Solar Roof Panels & Battery",
+    category: "Infrastructure",
+    schoolName: "Zilla Parishad School, Mandya",
+    district: "Mandya, Karnataka",
+    amount: "₹2,80,000",
+    progress: 20,
+    priority: "Medium",
+    icon: "☀️",
+    img: "https://images.unsplash.com/photo-1509391365360-2e959784a276?q=80&w=400&auto=format&fit=crop",
+  },
+  {
+    id: "need-6",
+    label: "Computer Lab Setup (10 Refurbished PCs)",
+    category: "Digital Labs",
+    schoolName: "Govt. HS Hosadurga",
+    district: "Chitradurga, Karnataka",
+    amount: "₹2,50,000",
+    progress: 60,
+    priority: "High",
+    icon: "🖥️",
+    img: "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=400&auto=format&fit=crop",
+  },
+];
+
+const priorityBadgeCls = {
+  Urgent: "bg-red-50 text-red-700 border-red-200",
+  High: "bg-orange-50 text-orange-700 border-orange-200",
+  Medium: "bg-amber-50 text-amber-700 border-amber-200",
+};
+
 const myDonations = [
-  { project: "Annual Sports Meet (Medals & Food)", school: "Honnali Govt. Primary School", amount: 16500, date: "27 Jul 2026", status: "Completed", cert: "80G Certificate" },
+  { project: "Smart Classroom & Interactive Board", school: "Honnali Govt. Primary School", amount: 15000, date: "27 Jul 2026", status: "Completed", cert: "80G Certificate" },
+  { project: "Annual Sports Meet (Medals & Food)", school: "Honnali Govt. Primary School", amount: 16500, date: "22 Jul 2026", status: "Completed", cert: "80G Certificate" },
   { project: "Science Fair (Experiment Kits)", school: "Govt. HS Shikaripura", amount: 9000, date: "28 Feb 2026", status: "Completed", cert: "80G Certificate" },
-  { project: "Smart Classroom Setup", school: "Honnali Govt. Primary School", amount: 15000, date: "22 Jul 2026", status: "Completed", cert: "80G Certificate" },
-  { project: "Drinking Water Purifier", school: "GTHS Chitradurga", amount: 4500, date: "02 Feb 2026", status: "Completed", cert: "80G Certificate" },
+  { project: "Drinking Water Purifier Unit", school: "GTHS Chitradurga", amount: 4500, date: "02 Feb 2026", status: "Completed", cert: "80G Certificate" },
 ];
 
 const impactGallery = [
-  { before: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=400&auto=format&fit=crop", after: "https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=400&auto=format&fit=crop", label: "Science Fair Project Award", school: "Shikaripura HS", date: "Feb 2026" },
-  { before: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=400&auto=format&fit=crop", after: "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=400&auto=format&fit=crop", label: "Sports Day Medals Distribution", school: "Honnali Primary", date: "Jul 2026" },
+  { before: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=400&auto=format&fit=crop", after: "https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=400&auto=format&fit=crop", label: "Smart Classroom Installed", school: "Honnali Primary", date: "Jul 2026" },
+  { before: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=400&auto=format&fit=crop", after: "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=400&auto=format&fit=crop", label: "Library Books Delivered", school: "GPS Tumkur", date: "May 2026" },
 ];
 
 const timeline = [
+  { icon: "💙", title: "Donated ₹5,000 to Smart Classroom", desc: "Fulfilling urgent infrastructure need at Honnali Primary", time: "10m ago", color: "bg-blue-100 text-blue-600" },
   { icon: "🎉", title: "You sponsored Sports Day Medals!", desc: "₹4,500 contribution to Honnali Primary School Sports Day", time: "2h ago", color: "bg-amber-100 text-amber-600" },
-  { icon: "📜", title: "80G Tax Certificate Generated", desc: "Download your certificate for Sports Day donation #VD-EVT-9921", time: "2h ago", color: "bg-emerald-100 text-emerald-600" },
-  { icon: "📸", title: "New Progress Photo Uploaded", desc: "Honnali Primary uploaded Sports Day prep photos", time: "1d ago", color: "bg-blue-100 text-blue-600" },
-  { icon: "💙", title: "Science Fair Report Completed", desc: "Thank you report & 320 student photos sent to your email", time: "Feb 2026", color: "bg-purple-100 text-purple-600" },
+  { icon: "📜", title: "80G Tax Certificate Generated", desc: "Download your certificate for donation #VD-EVT-9921", time: "2h ago", color: "bg-emerald-100 text-emerald-600" },
+  { icon: "📸", title: "New Progress Photo Uploaded", desc: "Honnali Primary uploaded classroom installation photos", time: "1d ago", color: "bg-purple-100 text-purple-600" },
 ];
 
 const quickActions = [
+  { icon: "📋", label: "Donate to School Need", bg: "bg-blue-50 text-blue-700 border-blue-200 hover:border-blue-400" },
   { icon: "🎉", label: "Sponsor School Event", bg: "bg-amber-50 text-amber-700 border-amber-200 hover:border-amber-400" },
   { icon: "📜", label: "Download 80G Certificates", bg: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-emerald-400" },
-  { icon: "💬", label: "Send Message to School", bg: "bg-blue-50 text-blue-700 border-blue-200 hover:border-blue-400" },
-  { icon: "📣", label: "Share Event Impact", bg: "bg-purple-50 text-purple-700 border-purple-200 hover:border-purple-400" },
+  { icon: "💬", label: "Send Message to School", bg: "bg-purple-50 text-purple-700 border-purple-200 hover:border-purple-400" },
 ];
 
 /* ─── DONOR DASHBOARD ─────────────────────────────────────── */
 const DonorDashboard = () => {
   const [eventsList, setEventsList] = useState(initialEvents);
+  const [schoolNeeds, setSchoolNeeds] = useState(directSchoolNeedsList);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedEventForSponsor, setSelectedEventForSponsor] = useState(null);
+  const [needCategory, setNeedCategory] = useState("All");
 
-  const handleSponsorSuccess = ({ eventId, donorName, totalAmt, sponsoredItemIds, sponsoredItemLabels }) => {
+  const [selectedEventForSponsor, setSelectedEventForSponsor] = useState(null);
+  const [selectedNeedForDonate, setSelectedNeedForDonate] = useState(null);
+
+  const handleNeedDonateSuccess = ({ needLabel, schoolName, amount }) => {
+    setSchoolNeeds((prev) =>
+      prev.map((n) => {
+        if (n.label === needLabel) {
+          const targetNum = typeof n.amount === "number" ? n.amount : parseInt(n.amount.replace(/[^0-9]/g, "")) || 45000;
+          const currentRaised = Math.round((targetNum * n.progress) / 100);
+          const newRaised = currentRaised + amount;
+          const newPct = Math.min(100, Math.round((newRaised / targetNum) * 100));
+          return { ...n, progress: newPct };
+        }
+        return n;
+      })
+    );
+  };
+
+  const handleEventSponsorSuccess = ({ eventId, donorName, totalAmt, sponsoredItemIds }) => {
     setEventsList((prev) =>
       prev.map((e) => {
         if (e.id === eventId) {
@@ -69,6 +170,10 @@ const DonorDashboard = () => {
       })
     );
   };
+
+  const filteredNeeds = schoolNeeds.filter(
+    (n) => needCategory === "All" || n.category === needCategory
+  );
 
   const filteredEvents = eventsList.filter(
     (e) => selectedCategory === "All" || e.category === selectedCategory
@@ -96,17 +201,17 @@ const DonorDashboard = () => {
                   <span>🏆</span> Champion Supporter Level 3
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-black mb-1">Welcome back, Ramesh Kumar!</h1>
-                <p className="text-amber-100 text-sm">💙 You've helped 182 children get better education facilities & event celebrations.</p>
+                <p className="text-amber-100 text-sm">💙 You can donate directly to Government School Needs & Events.</p>
               </div>
               <div className="flex gap-3">
                 <button
                   onClick={() => {
-                    const el = document.getElementById("events");
+                    const el = document.getElementById("needs");
                     if (el) el.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="h-12 px-6 bg-white text-amber-600 font-extrabold text-xs rounded-full shadow-lg hover:bg-amber-50 transition-all flex items-center gap-2"
+                  className="h-12 px-6 bg-white text-slate-900 font-extrabold text-xs rounded-full shadow-lg hover:bg-slate-50 transition-all flex items-center gap-2"
                 >
-                  <span>🎉</span> Sponsor a School Event
+                  <span>📋</span> Donate to School Needs
                 </button>
               </div>
             </div>
@@ -115,18 +220,106 @@ const DonorDashboard = () => {
           {/* Stats */}
           <StatsWidget stats={stats} />
 
+          {/* 📋 DIRECT SCHOOL NEEDS FUNDING SECTION */}
+          <section id="needs" className="scroll-mt-24 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 mb-1">
+                  <span>📋</span> Infrastructure & Facilities
+                </div>
+                <h2 className="text-xl font-extrabold text-slate-900">Direct School Infrastructure Needs</h2>
+                <p className="text-xs text-slate-500">Fund classrooms, toilets, drinking water, library books, computers, and solar panels directly.</p>
+              </div>
+
+              {/* Need Category Pills */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-full">
+                {["All", "Classroom", "Water & Sanitation", "Library", "Digital Labs"].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setNeedCategory(cat)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all shrink-0 ${
+                      needCategory === cat
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Need Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredNeeds.map((need) => (
+                <div
+                  key={need.id}
+                  className="bg-white rounded-[24px] border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between group"
+                >
+                  <div className="relative h-44 overflow-hidden bg-slate-900">
+                    <img
+                      src={need.img}
+                      alt={need.label}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase">
+                        {need.icon} {need.category}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black border ${priorityBadgeCls[need.priority]}`}>
+                        {need.priority}
+                      </span>
+                    </div>
+
+                    <div className="absolute bottom-3 left-4 right-4 text-white">
+                      <p className="text-xs font-extrabold text-blue-200">🏫 {need.schoolName}</p>
+                      <p className="text-[10px] text-slate-300">📍 {need.district}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-6 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-base mb-3 group-hover:text-blue-600 transition-colors">
+                        {need.label}
+                      </h3>
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
+                        <span>Target: {need.amount}</span>
+                        <span className="text-blue-600">{need.progress}% Funded</span>
+                      </div>
+                      <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-600 to-emerald-400 rounded-full transition-all duration-500"
+                          style={{ width: `${need.progress}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedNeedForDonate(need)}
+                      className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-full shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <span>💙</span> Donate to School Need
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* 🎉 SUPPORT SCHOOL EVENTS (DONOR SECTION) */}
           <section id="events" className="scroll-mt-24 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 mb-1">
-                  <span>🎉</span> School Celebrations & Program Sponsorship
+                  <span>🎉</span> Celebrations & Program Sponsorship
                 </div>
                 <h2 className="text-xl font-extrabold text-slate-900">Support School Events</h2>
                 <p className="text-xs text-slate-500">Sponsor food, medals, trophies, sports kits, or sound systems for government school children.</p>
               </div>
 
-              {/* Category Filter Pills */}
+              {/* Event Category Filter Pills */}
               <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-full">
                 {["All", "Sports Day", "Science Fair", "Children's Day"].map((cat) => (
                   <button
@@ -159,13 +352,13 @@ const DonorDashboard = () => {
             </div>
           </section>
 
-          {/* Timeline & Impact */}
+          {/* Impact & Timeline */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             {/* Impact Gallery */}
             <section id="impact" className="xl:col-span-2 bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 scroll-mt-24">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900">Before & After of Events & Projects You Supported</h3>
+                  <h3 className="text-base font-extrabold text-slate-900">Before & After of Needs & Events You Supported</h3>
                   <p className="text-xs text-slate-400 mt-0.5">Real transformation pictures from schools you donated to</p>
                 </div>
                 <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
@@ -203,7 +396,7 @@ const DonorDashboard = () => {
 
           {/* Donation History Table */}
           <section id="donations" className="scroll-mt-24">
-            <DonationTable rows={myDonations} title="My Event & Project Donation History" />
+            <DonationTable rows={myDonations} title="My Needs & Event Donation History" />
           </section>
 
           {/* Quick Actions */}
@@ -212,7 +405,10 @@ const DonorDashboard = () => {
               <button
                 key={label}
                 onClick={() => {
-                  if (label.includes("Sponsor")) {
+                  if (label.includes("Need")) {
+                    const el = document.getElementById("needs");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  } else if (label.includes("Event")) {
                     const el = document.getElementById("events");
                     if (el) el.scrollIntoView({ behavior: "smooth" });
                   }
@@ -228,12 +424,20 @@ const DonorDashboard = () => {
         </main>
       </div>
 
-      {/* Sponsor Modal */}
+      {/* Need Donation Modal */}
+      <SponsorNeedModal
+        isOpen={!!selectedNeedForDonate}
+        onClose={() => setSelectedNeedForDonate(null)}
+        need={selectedNeedForDonate}
+        onDonateSuccess={handleNeedDonateSuccess}
+      />
+
+      {/* Event Sponsor Modal */}
       <SponsorEventModal
         isOpen={!!selectedEventForSponsor}
         onClose={() => setSelectedEventForSponsor(null)}
         event={selectedEventForSponsor}
-        onSponsorSuccess={handleSponsorSuccess}
+        onSponsorSuccess={handleEventSponsorSuccess}
       />
     </div>
   );

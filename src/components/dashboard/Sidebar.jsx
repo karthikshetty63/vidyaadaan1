@@ -27,6 +27,7 @@ const Sidebar = ({ role = "school", userName = "Admin", userSub = "" }) => {
     ],
     donor: [
       { icon: "🏠", label: "Dashboard", href: "/dashboard/donor#overview" },
+      { icon: "📋", label: "Direct School Needs", href: "/dashboard/donor#needs" },
       { icon: "🎉", label: "Support School Events", href: "/dashboard/donor#events" },
       { icon: "📦", label: "Recommended Projects", href: "/dashboard/donor#projects" },
       { icon: "🌱", label: "My Impact", href: "/dashboard/donor#impact" },
