@@ -21,9 +21,11 @@ const EventCard = ({
     requestedItems = [],
     status,
     ngoPartner,
-  } = event;
+  } = event || {};
 
-  const pct = Math.min(100, Math.round((raisedAmount / requiredBudget) * 100));
+  const targetBudget = requiredBudget ?? event?.budget ?? event?.donationGoal ?? 45000;
+  const currentRaised = raisedAmount ?? event?.raisedAmount ?? 0;
+  const pct = targetBudget > 0 ? Math.min(100, Math.round((currentRaised / targetBudget) * 100)) : 0;
   const sponsoredCount = requestedItems.filter((i) => i.sponsored).length;
   const totalItemsCount = requestedItems.length;
 
@@ -103,10 +105,10 @@ const EventCard = ({
         <div>
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="font-extrabold text-slate-900">
-              ₹{raisedAmount.toLocaleString("en-IN")} <span className="text-[10px] font-medium text-slate-400">raised</span>
+              ₹{currentRaised.toLocaleString("en-IN")} <span className="text-[10px] font-medium text-slate-400">raised</span>
             </span>
             <span className="font-bold text-slate-500 text-[11px]">
-              Goal ₹{requiredBudget.toLocaleString("en-IN")} ({pct}%)
+              Goal ₹{targetBudget.toLocaleString("en-IN")} ({pct}%)
             </span>
           </div>
           <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">

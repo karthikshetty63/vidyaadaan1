@@ -111,8 +111,8 @@ const DonorRegister = () => {
         <div className="text-center max-w-md">
           <div className="w-24 h-24 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-6 text-5xl">💙</div>
           <h1 className="text-3xl font-extrabold text-slate-900 mb-3">Welcome, Donor!</h1>
-          <p className="text-slate-500 mb-8">Your account has been created. You can now explore schools, browse projects, and start making a difference.</p>
-          <Link to="/login/donor" className="h-14 px-8 inline-flex items-center gap-2 bg-amber-500 text-white font-bold rounded-full shadow-xl shadow-amber-500/25 hover:bg-amber-600 transition-all">Login to Dashboard →</Link>
+          <p className="text-slate-500 mb-8">Your account has been created. Proceed to login to access your donor dashboard and start making a difference.</p>
+          <Link to="/login/donor" className="h-14 px-8 inline-flex items-center gap-2 bg-amber-500 text-white font-bold rounded-full shadow-xl shadow-amber-500/25 hover:bg-amber-600 transition-all">Proceed to Donor Login →</Link>
         </div>
       </div>
     );

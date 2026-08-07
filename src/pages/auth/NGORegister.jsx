@@ -118,8 +118,8 @@ const NGORegister = () => {
         <div className="text-center max-w-md">
           <div className="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6 text-5xl">🎉</div>
           <h1 className="text-3xl font-extrabold text-slate-900 mb-3">NGO Registered!</h1>
-          <p className="text-slate-500 mb-8">Our compliance team will verify your NGO within 3-5 business days. You'll receive a confirmation email once verified.</p>
-          <Link to="/" className="h-14 px-8 inline-flex items-center gap-2 bg-emerald-600 text-white font-bold rounded-full shadow-xl shadow-emerald-600/25 hover:bg-emerald-700 transition-all">← Back to VIDYADAAN</Link>
+          <p className="text-slate-500 mb-8">Our compliance team will verify your NGO. You can now proceed to login to manage your account.</p>
+          <Link to="/login/ngo" className="h-14 px-8 inline-flex items-center gap-2 bg-emerald-600 text-white font-bold rounded-full shadow-xl shadow-emerald-600/25 hover:bg-emerald-700 transition-all">Proceed to NGO Login →</Link>
         </div>
       </div>
     );

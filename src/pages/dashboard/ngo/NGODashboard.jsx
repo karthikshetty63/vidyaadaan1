@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import Sidebar from "../../../components/dashboard/Sidebar";
 import DashboardNavbar from "../../../components/dashboard/DashboardNavbar";
 import StatsWidget from "../../../components/dashboard/StatsWidget";
@@ -6,6 +7,7 @@ import DonationTable from "../../../components/dashboard/DonationTable";
 import TimelineWidget from "../../../components/dashboard/TimelineWidget";
 import EventCard from "../../../components/events/EventCard";
 import SponsorEventModal from "../../../components/events/SponsorEventModal";
+import NGOProjectSupportModal from "../../../components/dashboard/NGOProjectSupportModal";
 import { initialEvents } from "../../../data/eventsData";
 
 /* ─── MOCK DATA ─────────────────────────────────────────── */
@@ -15,6 +17,87 @@ const stats = [
   { icon: "👥", label: "Volunteers Active", value: "67", change: 11, color: "purple" },
   { icon: "💰", label: "Funds & Items Managed", value: "₹8.4L", change: 18, color: "emerald" },
 ];
+
+const directSchoolNeedsList = [
+  {
+    id: "need-1",
+    label: "Smart Classroom & Interactive Board",
+    category: "Classroom",
+    schoolName: "Honnali Govt. Primary School",
+    district: "Davangere, Karnataka",
+    amount: "₹1,20,000",
+    progress: 35,
+    priority: "Urgent",
+    icon: "💻",
+    img: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=400&auto=format&fit=crop",
+  },
+  {
+    id: "need-2",
+    label: "Girls Toilet Sanitation & Running Water",
+    category: "Water & Sanitation",
+    schoolName: "Govt. High School, Shikaripura",
+    district: "Shivamogga, Karnataka",
+    amount: "₹45,000",
+    progress: 72,
+    priority: "Urgent",
+    icon: "🚻",
+    img: "https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=400&auto=format&fit=crop",
+  },
+  {
+    id: "need-3",
+    label: "Library Books (400+ English & Kannada)",
+    category: "Library",
+    schoolName: "GPS Tumkur Model School",
+    district: "Tumkur, Karnataka",
+    amount: "₹22,000",
+    progress: 10,
+    priority: "High",
+    icon: "📚",
+    img: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=400&auto=format&fit=crop",
+  },
+  {
+    id: "need-4",
+    label: "RO Drinking Water Purifier Unit",
+    category: "Water & Sanitation",
+    schoolName: "GTHS Chitradurga School",
+    district: "Chitradurga, Karnataka",
+    amount: "₹18,000",
+    progress: 0,
+    priority: "Urgent",
+    icon: "💧",
+    img: "https://images.unsplash.com/photo-1576089172869-4f5f6f315620?q=80&w=400&auto=format&fit=crop",
+  },
+  {
+    id: "need-5",
+    label: "5kW Solar Roof Panels & Battery",
+    category: "Infrastructure",
+    schoolName: "Zilla Parishad School, Mandya",
+    district: "Mandya, Karnataka",
+    amount: "₹2,80,000",
+    progress: 20,
+    priority: "Medium",
+    icon: "☀️",
+    img: "https://images.unsplash.com/photo-1509391365360-2e959784a276?q=80&w=400&auto=format&fit=crop",
+  },
+  {
+    id: "need-6",
+    label: "Computer Lab Setup (10 Refurbished PCs)",
+    category: "Digital Labs",
+    schoolName: "Govt. HS Hosadurga",
+    district: "Chitradurga, Karnataka",
+    amount: "₹2,50,000",
+    progress: 60,
+    priority: "High",
+    icon: "🖥️",
+    img: "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=400&auto=format&fit=crop",
+  },
+];
+
+const priorityBadgeCls = {
+  Urgent: "bg-red-50 text-red-700 border-red-200",
+  High: "bg-orange-50 text-orange-700 border-orange-200",
+  Medium: "bg-amber-50 text-amber-700 border-amber-200",
+};
 
 const queue = [
   { school: "Govt. HS Shikaripura", district: "Shivamogga", need: "Library Books", date: "25 Jul", urgency: "Urgent", students: 320 },
@@ -61,8 +144,26 @@ const quickActions = [
 /* ─── NGO DASHBOARD ─────────────────────────────────────── */
 const NGODashboard = () => {
   const [eventsList, setEventsList] = useState(initialEvents);
+  const [schoolNeeds, setSchoolNeeds] = useState(directSchoolNeedsList);
+  const [needCategory, setNeedCategory] = useState("All");
   const [selectedTab, setSelectedTab] = useState("Pending");
   const [selectedEventForSponsor, setSelectedEventForSponsor] = useState(null);
+  const [selectedNeedForDonate, setSelectedNeedForDonate] = useState(null);
+
+  const handleNeedDonateSuccess = ({ needLabel, schoolName, amount }) => {
+    setSchoolNeeds((prev) =>
+      prev.map((n) => {
+        if (n.label === needLabel) {
+          const targetNum = typeof n.amount === "number" ? n.amount : parseInt(n.amount.replace(/[^0-9]/g, "")) || 45000;
+          const currentRaised = Math.round((targetNum * n.progress) / 100);
+          const newRaised = currentRaised + amount;
+          const newPct = Math.min(100, Math.round((newRaised / targetNum) * 100));
+          return { ...n, progress: newPct };
+        }
+        return n;
+      })
+    );
+  };
 
   const handleSponsorSuccess = ({ eventId, donorName, totalAmt, sponsoredItemIds, sponsoredItemLabels }) => {
     setEventsList((prev) =>
@@ -127,6 +228,99 @@ const NGODashboard = () => {
 
           {/* Stats */}
           <StatsWidget stats={stats} />
+
+          {/* 📋 DIRECT SCHOOL NEEDS FUNDING SECTION */}
+          <section id="needs" className="scroll-mt-24 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 mb-1">
+                  <span>📋</span> Infrastructure & Facilities
+                </div>
+                <h2 className="text-xl font-extrabold text-slate-900">Direct School Infrastructure Needs</h2>
+                <p className="text-xs text-slate-500">Fund classrooms, toilets, drinking water, library books, computers, and solar panels directly.</p>
+              </div>
+
+              {/* Need Category Pills */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-full">
+                {["All", "Classroom", "Water & Sanitation", "Library", "Digital Labs"].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setNeedCategory(cat)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all shrink-0 ${
+                      needCategory === cat
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Need Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {schoolNeeds
+                .filter((n) => needCategory === "All" || n.category === needCategory)
+                .map((need) => (
+                  <div
+                    key={need.id}
+                    className="bg-white rounded-[24px] border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between group"
+                  >
+                    <div className="relative h-44 overflow-hidden bg-slate-900">
+                      <img
+                        src={need.img}
+                        alt={need.label}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                        <span className="px-3 py-1 rounded-full bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase">
+                          {need.icon} {need.category}
+                        </span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black border ${priorityBadgeCls[need.priority]}`}>
+                          {need.priority}
+                        </span>
+                      </div>
+
+                      <div className="absolute bottom-3 left-4 right-4 text-white">
+                        <p className="text-xs font-extrabold text-blue-200">🏫 {need.schoolName}</p>
+                        <p className="text-[10px] text-slate-300">📍 {need.district}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-6 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-base mb-3 group-hover:text-blue-600 transition-colors">
+                          {need.label}
+                        </h3>
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
+                          <span>Target: {need.amount}</span>
+                          <span className="text-blue-600">{need.progress}% Funded</span>
+                        </div>
+                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-600 to-emerald-400 rounded-full transition-all duration-500"
+                            style={{ width: `${need.progress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setSelectedNeedForDonate(need)}
+                        className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-full shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <span>🤝</span> NGO Project Support
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </section>
+
+
+
 
           {/* 🎉 SCHOOL EVENT REQUESTS (NGO SECTION) */}
           <section id="events" className="scroll-mt-24">
@@ -256,6 +450,14 @@ const NGODashboard = () => {
 
         </main>
       </div>
+
+      {/* NGO Project Support Modal */}
+      <NGOProjectSupportModal
+        isOpen={!!selectedNeedForDonate}
+        onClose={() => setSelectedNeedForDonate(null)}
+        need={selectedNeedForDonate}
+        onSupportSuccess={handleNeedDonateSuccess}
+      />
 
       {/* Sponsor / Assign Modal */}
       <SponsorEventModal

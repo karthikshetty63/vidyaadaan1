@@ -8,20 +8,12 @@ const navLinks = [
   { label: "Projects", href: "/#projects" },
   { label: "Schools", href: "/#projects" },
   { label: "NGOs", href: "/#how-it-works" },
-  { label: "Success Stories", href: "/#stories" },
   { label: "Contact", href: "/#contact" },
-];
-
-const dashboardLinks = [
-  { label: "🏫 School Dashboard", href: "/dashboard/school", sub: "For Govt. Schools" },
-  { label: "🤝 NGO Dashboard", href: "/dashboard/ngo", sub: "For NGO Partners" },
-  { label: "💙 Donor Dashboard", href: "/dashboard/donor", sub: "For Donors" },
 ];
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dashMenuOpen, setDashMenuOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -30,14 +22,18 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const handleNavClick = (e, href) => {
-    if (href.startsWith("/#")) {
+  const handleNavClick = (e, link) => {
+    if (link.isRoute) {
+      setMobileOpen(false);
+      return;
+    }
+    if (link.href.startsWith("/#")) {
       e.preventDefault();
       setMobileOpen(false);
       if (location.pathname !== "/") {
-        window.location.href = href;
+        window.location.href = link.href;
       } else {
-        const id = href.replace("/#", "#");
+        const id = link.href.replace("/#", "#");
         const el = document.querySelector(id);
         if (el) el.scrollIntoView({ behavior: "smooth" });
       }
@@ -63,62 +59,46 @@ const Navbar = () => {
             </Link>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden xl:flex items-center gap-6">
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  onClick={(e) => handleNavClick(e, link.href)}
-                  className={`relative py-1 text-xs font-bold transition-colors duration-150 ${
-                    isHome && link.href === "/"
-                      ? "text-blue-600"
-                      : "text-slate-700 hover:text-blue-600"
-                  }`}
-                >
-                  {link.label}
-                  {isHome && link.href === "/" && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
-                  )}
-                </a>
-              ))}
+            <nav className="hidden xl:flex items-center gap-5">
+              {navLinks.map((link) =>
+                link.isRoute ? (
+                  <Link
+                    key={link.label}
+                    to={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`relative py-1 text-xs font-bold transition-colors duration-150 ${
+                      location.pathname === link.href
+                        ? "text-blue-600 font-extrabold"
+                        : "text-slate-700 hover:text-blue-600"
+                    }`}
+                  >
+                    {link.label}
+                    {location.pathname === link.href && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                    )}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    onClick={(e) => handleNavClick(e, link)}
+                    className={`relative py-1 text-xs font-bold transition-colors duration-150 ${
+                      isHome && link.href === "/"
+                        ? "text-blue-600"
+                        : "text-slate-700 hover:text-blue-600"
+                    }`}
+                  >
+                    {link.label}
+                    {isHome && link.href === "/" && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                    )}
+                  </a>
+                )
+              )}
             </nav>
 
             {/* Right Action Controls */}
             <div className="hidden sm:flex items-center gap-3">
-              {/* Dashboards Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setDashMenuOpen(!dashMenuOpen)}
-                  className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-blue-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full transition-colors flex items-center gap-1.5"
-                >
-                  <span>📊 Dashboards</span>
-                  <svg className={`w-3.5 h-3.5 transition-transform ${dashMenuOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {dashMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setDashMenuOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-20 overflow-hidden">
-                      <div className="px-4 py-2 border-b border-slate-100">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Select Portal</p>
-                      </div>
-                      {dashboardLinks.map((d) => (
-                        <Link
-                          key={d.href}
-                          to={d.href}
-                          onClick={() => setDashMenuOpen(false)}
-                          className="px-4 py-2.5 hover:bg-blue-50 transition-colors flex flex-col group"
-                        >
-                          <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600">{d.label}</span>
-                          <span className="text-[10px] text-slate-400">{d.sub}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
               <Link
                 to="/login"
                 className="px-5 py-2 text-xs font-bold text-blue-600 border-2 border-blue-600 rounded-full hover:bg-blue-50 transition-colors"
@@ -154,31 +134,27 @@ const Navbar = () => {
         <div className="fixed inset-0 z-40 xl:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
           <div className="absolute top-20 left-0 right-0 bg-white border-b border-slate-200 shadow-2xl px-6 py-6 flex flex-col gap-2">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={(e) => handleNavClick(e, link.href)}
-                className="px-4 py-2.5 text-sm font-bold text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-              >
-                {link.label}
-              </a>
-            ))}
-
-            <div className="pt-3 mt-2 border-t border-slate-100">
-              <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Dashboards</p>
-              {dashboardLinks.map((d) => (
+            {navLinks.map((link) =>
+              link.isRoute ? (
                 <Link
-                  key={d.href}
-                  to={d.href}
+                  key={link.label}
+                  to={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-blue-600 flex items-center justify-between"
+                  className="px-4 py-2.5 text-sm font-bold text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
                 >
-                  <span>{d.label}</span>
-                  <span className="text-[10px] text-slate-400">→</span>
+                  {link.label}
                 </Link>
-              ))}
-            </div>
+              ) : (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  onClick={(e) => handleNavClick(e, link)}
+                  className="px-4 py-2.5 text-sm font-bold text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                >
+                  {link.label}
+                </a>
+              )
+            )}
 
             <div className="pt-4 mt-2 border-t border-slate-100 flex gap-3">
               <Link to="/login" onClick={() => setMobileOpen(false)}

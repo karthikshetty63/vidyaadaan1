@@ -4,33 +4,32 @@ import VidyadaanLogo from "../ui/VidyadaanLogo";
 
 const footerLinks = {
   "Quick Links": [
-    { label: "Home", href: "#" },
-    { label: "About Us", href: "#why" },
-    { label: "Projects", href: "#projects" },
-    { label: "School Events", href: "#events" },
-    { label: "Success Stories", href: "#stories" },
-    { label: "Contact Us", href: "#contact" },
+    { label: "Home", href: "/" },
+    { label: "My Impact Portal", href: "/impact" },
+    { label: "About Us", href: "/#why" },
+    { label: "Projects", href: "/#projects" },
+    { label: "Contact Us", href: "/#contact" },
   ],
   "For Donors": [
     { label: "Browse Schools", href: "/login/donor" },
     { label: "Sponsor Event Packages", href: "/login/donor" },
     { label: "80G Tax Exemption", href: "/login/donor" },
-    { label: "Corporate CSR Partnerships", href: "#contact" },
-    { label: "Donor Dashboard", href: "/dashboard/donor" },
+    { label: "Corporate CSR Partnerships", href: "/#contact" },
+    { label: "Donor Login", href: "/login/donor" },
   ],
   "For Schools": [
     { label: "School Registration", href: "/join/school" },
     { label: "Submit Infrastructure Need", href: "/login/school" },
     { label: "Request Event Support", href: "/login/school" },
     { label: "Upload Before/After Photos", href: "/login/school" },
-    { label: "School Portal", href: "/dashboard/school" },
+    { label: "School Admin Login", href: "/login/school" },
   ],
   "For NGOs": [
     { label: "NGO Registration", href: "/join/ngo" },
     { label: "Review School Requests", href: "/login/ngo" },
     { label: "Verify Completed Projects", href: "/login/ngo" },
     { label: "Volunteer Management", href: "/login/ngo" },
-    { label: "NGO Partner Portal", href: "/dashboard/ngo" },
+    { label: "NGO Partner Login", href: "/login/ngo" },
   ],
 };
 

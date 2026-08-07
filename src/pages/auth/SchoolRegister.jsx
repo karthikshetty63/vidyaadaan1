@@ -132,8 +132,8 @@ const SchoolRegister = () => {
         <div className="text-center max-w-md">
           <div className="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6 text-5xl">✅</div>
           <h1 className="text-3xl font-extrabold text-slate-900 mb-3">Registration Submitted!</h1>
-          <p className="text-slate-500 mb-8">Your school has been registered. Our team will verify your details and activate your account within 2-3 business days.</p>
-          <Link to="/" className="h-14 px-8 inline-flex items-center gap-2 bg-blue-600 text-white font-bold rounded-full shadow-xl shadow-blue-600/25 hover:bg-blue-700 transition-all">← Back to VIDYADAAN</Link>
+          <p className="text-slate-500 mb-8">Your school has been registered. Our team will verify your details and activate your account. Proceed to login to view status.</p>
+          <Link to="/login/school" className="h-14 px-8 inline-flex items-center gap-2 bg-blue-600 text-white font-bold rounded-full shadow-xl shadow-blue-600/25 hover:bg-blue-700 transition-all">Proceed to School Login →</Link>
         </div>
       </div>
     );

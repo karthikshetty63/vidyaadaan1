@@ -38,19 +38,19 @@ const Contact = () => {
                 {
                   icon: "📧",
                   label: "Email",
-                  value: "hello@vidyadaan.org",
-                  href: "mailto:hello@vidyadaan.org",
+                  value: "vidyadaan001@gmail.com",
+                  href: "mailto:vidyadaan001@gmail.com",
                 },
                 {
                   icon: "📞",
                   label: "Phone",
-                  value: "+91 98765 43210",
-                  href: "tel:+919876543210",
+                  value: "+91 6364480125",
+                  href: "tel:+916364480125",
                 },
                 {
                   icon: "🏢",
                   label: "Office",
-                  value: "12, 3rd Main, Indiranagar, Bengaluru - 560038",
+                  value: "k v g college of engineering, Sullia, Karnataka, India",
                   href: "#",
                 },
                 {

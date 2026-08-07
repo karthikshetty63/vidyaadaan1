@@ -7,17 +7,21 @@ const Sidebar = ({ role = "school", userName = "Admin", userSub = "" }) => {
 
   const navs = {
     school: [
-      { icon: "🏠", label: "Dashboard", href: "/dashboard/school#overview" },
-      { icon: "🎉", label: "School Events", href: "/dashboard/school#events" },
-      { icon: "🏫", label: "School Profile", href: "/dashboard/school#profile" },
-      { icon: "📋", label: "School Needs", href: "/dashboard/school#needs" },
-      { icon: "📦", label: "Projects", href: "/dashboard/school#projects" },
-      { icon: "🖼️", label: "Gallery", href: "/dashboard/school#gallery" },
-      { icon: "📊", label: "Reports", href: "/dashboard/school#reports" },
-      { icon: "⚙️", label: "Settings", href: "/dashboard/school#settings" },
+      { icon: "🏠", label: "Dashboard", href: "/dashboard/school" },
+      { icon: "👤", label: "School Profile", href: "/dashboard/school/profile" },
+      { icon: "🏗️", label: "Infrastructure Needs", href: "/dashboard/school/infrastructure" },
+      { icon: "🎉", label: "School Events", href: "/dashboard/school/events" },
+      { icon: "📂", label: "Manage Projects", href: "/dashboard/school/projects" },
+      { icon: "📈", label: "Project Progress", href: "/dashboard/school/progress" },
+      { icon: "🖼️", label: "Gallery", href: "/dashboard/school/gallery" },
+      { icon: "💰", label: "Donation History", href: "/dashboard/school/donations" },
+      { icon: "📄", label: "Reports", href: "/dashboard/school/reports" },
+      { icon: "🔔", label: "Notifications", href: "/dashboard/school/notifications" },
+      { icon: "⚙️", label: "Settings", href: "/dashboard/school/settings" },
     ],
     ngo: [
       { icon: "🏠", label: "Dashboard", href: "/dashboard/ngo#overview" },
+      { icon: "📋", label: "Direct School Needs", href: "/dashboard/ngo#needs" },
       { icon: "🎉", label: "School Event Requests", href: "/dashboard/ngo#events" },
       { icon: "🏫", label: "Schools Queue", href: "/dashboard/ngo#schools" },
       { icon: "👥", label: "Volunteers", href: "/dashboard/ngo#volunteers" },
@@ -49,11 +53,19 @@ const Sidebar = ({ role = "school", userName = "Admin", userSub = "" }) => {
   const handleNavClick = (href) => {
     if (href.includes("#")) {
       const id = href.split("#")[1];
-      const el = document.getElementById(id);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      }
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     }
+  };
+
+  const isActive = (href) => {
+    if (href.includes("#")) {
+      return location.pathname + location.hash === href;
+    }
+    // Exact match for school portal page routes
+    return location.pathname === href;
   };
 
   return (
@@ -94,7 +106,7 @@ const Sidebar = ({ role = "school", userName = "Admin", userSub = "" }) => {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
         {links.map(({ icon, label, href }) => {
-          const active = location.pathname + location.hash === href || (location.pathname === href && !location.hash);
+          const active = isActive(href);
           return (
             <Link
               key={href}

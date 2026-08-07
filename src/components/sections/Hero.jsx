@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import Container from "../layout/Container";
 
 const Hero = () => {
@@ -42,22 +43,22 @@ const Hero = () => {
             {/* CTA Buttons (56px height, rounded-full) */}
             <div className="flex flex-wrap items-center gap-4 pt-2">
               {/* Primary Blue Gradient Button */}
-              <button
-                onClick={() => scrollTo("#projects")}
+              <Link
+                to="/join"
                 className="flex items-center gap-2.5 h-14 px-8 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold text-sm rounded-full transition-all duration-200 shadow-xl shadow-blue-600/25 active:scale-[0.98]"
               >
                 <span className="text-sm">💙</span>
                 Support a School
-              </button>
+              </Link>
 
               {/* Secondary White Button with Green Border */}
-              <button
-                onClick={() => scrollTo("#contact")}
+              <Link
+                to="/join/school"
                 className="flex items-center gap-2.5 h-14 px-8 bg-white border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-bold text-sm rounded-full transition-all duration-200 active:scale-[0.98] shadow-2xs"
               >
                 <span className="text-sm">🌱</span>
                 Register Your School
-              </button>
+              </Link>
             </div>
 
             {/* Avatar Row */}
