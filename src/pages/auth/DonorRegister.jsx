@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { registerAccount } from "../../api/auth.js";
 
 const STEPS = ["Personal", "Address", "Password", "Preferences", "Review", "Success"];
 const inputCls = "w-full h-12 px-4 border-2 border-slate-200 rounded-xl text-sm focus:border-amber-500 focus:outline-none transition-colors font-medium";
@@ -7,6 +8,8 @@ const labelCls = "block text-xs font-bold text-slate-700 mb-1.5";
 
 const DonorRegister = () => {
   const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "", email: "", phone: "", dob: "",
     address: "", city: "", state: "", pin: "",
@@ -17,6 +20,18 @@ const DonorRegister = () => {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep(s => Math.max(s - 1, 0));
+  const submitRegistration = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await registerAccount({ role: "donor", ...form });
+      setStep(5);
+    } catch (registrationError) {
+      setError(registrationError.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const causes = ["Libraries", "Toilets", "Classrooms", "Digital Labs", "Mid-day Meal", "School Uniforms", "Sports Equipment", "Water & Sanitation"];
   const frequencies = ["One-time", "Monthly", "Quarterly", "Annually"];
@@ -39,7 +54,7 @@ const DonorRegister = () => {
         <div><label className={labelCls}>City *</label><input value={form.city} onChange={e => set("city", e.target.value)} placeholder="Bengaluru" className={inputCls} /></div>
         <div><label className={labelCls}>State *</label><select value={form.state} onChange={e => set("state", e.target.value)} className={inputCls}>
           <option value="">State</option>
-          {["Karnataka","Tamil Nadu","Andhra Pradesh","Telangana","Kerala","Maharashtra","Gujarat","Rajasthan"].map(s => <option key={s}>{s}</option>)}
+          {["Karnataka", "Tamil Nadu", "Andhra Pradesh", "Telangana", "Kerala", "Maharashtra", "Gujarat", "Rajasthan"].map(s => <option key={s}>{s}</option>)}
         </select></div>
         <div><label className={labelCls}>PIN Code *</label><input value={form.pin} onChange={e => set("pin", e.target.value)} placeholder="560001" className={inputCls} /></div>
       </div>
@@ -94,7 +109,7 @@ const DonorRegister = () => {
     <div key="s4" className="flex flex-col gap-4">
       <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-2 text-sm">
         <div className="font-bold text-slate-900 mb-3">Registration Summary</div>
-        {[["Name", form.name || "—"],["Email", form.email || "—"],["Phone", form.phone || "—"],["City", form.city || "—"],["State", form.state || "—"],["Causes", form.causes.join(", ") || "—"],["Frequency", form.frequency || "—"],["Anonymous", form.anonymous ? "Yes" : "No"]].map(([k, v]) => (
+        {[["Name", form.name || "—"], ["Email", form.email || "—"], ["Phone", form.phone || "—"], ["City", form.city || "—"], ["State", form.state || "—"], ["Causes", form.causes.join(", ") || "—"], ["Frequency", form.frequency || "—"], ["Anonymous", form.anonymous ? "Yes" : "No"]].map(([k, v]) => (
           <div key={k} className="flex items-center gap-2 text-xs"><span className="text-slate-500 w-24 shrink-0">{k}:</span><span className="font-semibold text-slate-800">{v}</span></div>
         ))}
       </div>
@@ -102,6 +117,7 @@ const DonorRegister = () => {
         <input type="checkbox" checked={form.agree} onChange={e => set("agree", e.target.checked)} className="w-4 h-4 accent-amber-500 mt-0.5" />
         <span className="text-xs text-slate-600 leading-relaxed">I agree to VIDYADAAN's <span className="text-amber-600 font-bold">Terms of Service</span> and <span className="text-amber-600 font-bold">Privacy Policy</span>.</span>
       </label>
+      {error && <p role="alert" className="text-xs text-red-600 font-bold">{error}</p>}
     </div>,
   ];
 
@@ -148,9 +164,9 @@ const DonorRegister = () => {
             {steps[step]}
             <div className="flex items-center gap-3 mt-8 pt-6 border-t border-slate-100">
               {step > 0 && <button onClick={prev} className="h-12 px-6 border-2 border-slate-200 text-slate-700 font-bold text-sm rounded-full hover:border-amber-400 hover:text-amber-600 transition-all">← Previous</button>}
-              <button onClick={next} disabled={step === 4 && !form.agree}
+              <button onClick={step === 4 ? submitRegistration : next} disabled={loading || (step === 4 && !form.agree)}
                 className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm rounded-full shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-orange-400 transition-all disabled:opacity-50">
-                {step === 4 ? "Create Account" : "Continue →"}
+                {step === 4 ? (loading ? "Creating Account..." : "Create Account") : "Continue →"}
               </button>
             </div>
           </div>

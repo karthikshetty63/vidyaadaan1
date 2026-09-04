@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { registerAccount } from "../../api/auth.js";
 
 const STEPS = [
   "School Info",
@@ -7,25 +8,40 @@ const STEPS = [
   "Infrastructure",
   "Documents",
   "Bank Details",
+  "Password",
   "Review",
   "Success",
 ];
 
 const SchoolRegister = () => {
-  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     schoolName: "", udise: "", address: "", district: "", state: "",
     principalName: "", email: "", phone: "", students: "", teachers: "",
     hasToilets: false, hasLibrary: false, hasComputers: false, hasDrinkingWater: false,
     bankAccount: "", ifsc: "", upi: "",
+    password: "", confirm: "",
     agree: false,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep((s) => Math.max(s - 1, 0));
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const submitRegistration = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await registerAccount({ role: "school", ...form });
+      setStep(7);
+    } catch (registrationError) {
+      setError(registrationError.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const inputCls = "w-full h-12 px-4 border-2 border-slate-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors font-medium";
   const labelCls = "block text-xs font-bold text-slate-700 mb-1.5";
@@ -42,7 +58,7 @@ const SchoolRegister = () => {
         <div><label className={labelCls}>District *</label><input value={form.district} onChange={(e) => set("district", e.target.value)} placeholder="Mandya" className={inputCls} /></div>
         <div><label className={labelCls}>State *</label><select value={form.state} onChange={(e) => set("state", e.target.value)} className={inputCls}>
           <option value="">Select State</option>
-          {["Karnataka","Tamil Nadu","Andhra Pradesh","Telangana","Kerala","Maharashtra","Gujarat","Rajasthan","Uttar Pradesh","Bihar"].map(s => <option key={s}>{s}</option>)}
+          {["Karnataka", "Tamil Nadu", "Andhra Pradesh", "Telangana", "Kerala", "Maharashtra", "Gujarat", "Rajasthan", "Uttar Pradesh", "Bihar"].map(s => <option key={s}>{s}</option>)}
         </select></div>
       </div>
     </div>,
@@ -111,11 +127,18 @@ const SchoolRegister = () => {
       </div>
     </div>,
 
-    /* Step 5: Review */
+    /* Step 5: Password */
     <div key="s5" className="flex flex-col gap-4">
+      <div><label className={labelCls}>Password *</label><input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Minimum 6 characters" className={inputCls} /></div>
+      <div><label className={labelCls}>Confirm Password *</label><input type="password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} placeholder="Repeat password" className={inputCls} /></div>
+      {form.password && form.confirm && form.password !== form.confirm && <p className="text-xs text-red-600 font-bold">Passwords do not match</p>}
+    </div>,
+
+    /* Step 6: Review */
+    <div key="s6" className="flex flex-col gap-4">
       <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-2 text-sm">
         <div className="font-bold text-slate-900 mb-3">Registration Summary</div>
-        {[["School", form.schoolName || "—"],["UDISE", form.udise || "—"],["District", form.district || "—"],["State", form.state || "—"],["Principal", form.principalName || "—"],["Email", form.email || "—"],["Students", form.students || "—"],["Teachers", form.teachers || "—"],].map(([k, v]) => (
+        {[["School", form.schoolName || "—"], ["UDISE", form.udise || "—"], ["District", form.district || "—"], ["State", form.state || "—"], ["Principal", form.principalName || "—"], ["Email", form.email || "—"], ["Students", form.students || "—"], ["Teachers", form.teachers || "—"],].map(([k, v]) => (
           <div key={k} className="flex items-center gap-2 text-xs"><span className="text-slate-500 w-20 shrink-0">{k}:</span><span className="font-semibold text-slate-800">{v}</span></div>
         ))}
       </div>
@@ -123,10 +146,11 @@ const SchoolRegister = () => {
         <input type="checkbox" checked={form.agree} onChange={(e) => set("agree", e.target.checked)} className="w-4 h-4 accent-blue-600 mt-0.5" />
         <span className="text-xs text-slate-600 leading-relaxed">I declare that all information provided is accurate and I agree to VIDYADAAN's <span className="text-blue-600 font-bold">Terms of Service</span> and <span className="text-blue-600 font-bold">Privacy Policy</span>.</span>
       </label>
+      {error && <p role="alert" className="text-xs text-red-600 font-bold">{error}</p>}
     </div>,
   ];
 
-  if (step === 6) {
+  if (step === 7) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center px-6">
         <div className="text-center max-w-md">
@@ -153,7 +177,7 @@ const SchoolRegister = () => {
         <div className="w-full max-w-2xl">
           {/* Progress Steps */}
           <div className="flex items-center gap-1 mb-10 overflow-x-auto pb-2">
-            {STEPS.slice(0, 6).map((label, i) => (
+            {STEPS.slice(0, 7).map((label, i) => (
               <React.Fragment key={i}>
                 <div className={`flex flex-col items-center gap-1 shrink-0 ${i <= step ? "opacity-100" : "opacity-40"}`}>
                   <div className={`w-8 h-8 rounded-full font-black text-xs flex items-center justify-center ${i < step ? "bg-emerald-500 text-white" : i === step ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-600"}`}>
@@ -161,7 +185,7 @@ const SchoolRegister = () => {
                   </div>
                   <span className="text-[10px] font-semibold text-slate-600 text-center max-w-[60px] leading-tight">{label}</span>
                 </div>
-                {i < 5 && <div className={`flex-1 h-0.5 rounded-full min-w-[16px] ${i < step ? "bg-emerald-400" : "bg-slate-200"}`} />}
+                {i < 6 && <div className={`flex-1 h-0.5 rounded-full min-w-[16px] ${i < step ? "bg-emerald-400" : "bg-slate-200"}`} />}
               </React.Fragment>
             ))}
           </div>
@@ -175,10 +199,10 @@ const SchoolRegister = () => {
               {step > 0 && (
                 <button onClick={prev} className="h-12 px-6 border-2 border-slate-200 text-slate-700 font-bold text-sm rounded-full hover:border-blue-400 hover:text-blue-600 transition-all">← Previous</button>
               )}
-              <button onClick={() => { if (step === 5) next(); else next(); }}
-                disabled={step === 5 && !form.agree}
+              <button onClick={step === 6 ? submitRegistration : next}
+                disabled={loading || (step === 6 && (!form.agree || !form.password || form.password !== form.confirm))}
                 className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-sm rounded-full shadow-lg shadow-blue-600/20 hover:from-blue-500 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                {step === 5 ? "Submit Registration" : `Continue →`}
+                {step === 6 ? (loading ? "Submitting Registration..." : "Submit Registration") : `Continue →`}
               </button>
             </div>
           </div>
