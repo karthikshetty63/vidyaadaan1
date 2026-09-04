@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getAmountRemaining } from "../../utils/funding";
 
 const SponsorEventModal = ({ isOpen, onClose, event, onSponsorSuccess }) => {
   const [activeTab, setActiveTab] = useState("items"); // "items", "entire", "custom"
@@ -10,7 +11,7 @@ const SponsorEventModal = ({ isOpen, onClose, event, onSponsorSuccess }) => {
   if (!isOpen || !event) return null;
 
   const { title, schoolName, requiredBudget, raisedAmount, requestedItems = [] } = event;
-  const remainingBudget = Math.max(0, requiredBudget - raisedAmount);
+  const remainingBudget = getAmountRemaining(requiredBudget, raisedAmount);
 
   const toggleItem = (id) => {
     setSelectedItemIds((prev) =>
@@ -117,11 +118,10 @@ const SponsorEventModal = ({ isOpen, onClose, event, onSponsorSuccess }) => {
                   key={t.id}
                   type="button"
                   onClick={() => setActiveTab(t.id)}
-                  className={`py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === t.id
+                  className={`py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === t.id
                       ? "bg-white text-slate-900 shadow-sm"
                       : "text-slate-600 hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   {t.label}
                 </button>
@@ -149,20 +149,19 @@ const SponsorEventModal = ({ isOpen, onClose, event, onSponsorSuccess }) => {
                     <div
                       key={item.id}
                       onClick={() => !item.sponsored && toggleItem(item.id)}
-                      className={`p-3.5 rounded-2xl border-2 flex items-center justify-between transition-all ${
-                        item.sponsored
+                      className={`p-3.5 rounded-2xl border-2 flex items-center justify-between transition-all ${item.sponsored
                           ? "bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed"
                           : selectedItemIds.includes(item.id)
-                          ? "bg-amber-50/80 border-amber-500 cursor-pointer shadow-sm"
-                          : "bg-white border-slate-200 hover:border-slate-300 cursor-pointer"
-                      }`}
+                            ? "bg-amber-50/80 border-amber-500 cursor-pointer shadow-sm"
+                            : "bg-white border-slate-200 hover:border-slate-300 cursor-pointer"
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
                           disabled={item.sponsored}
                           checked={selectedItemIds.includes(item.id) || item.sponsored}
-                          onChange={() => {}}
+                          onChange={() => { }}
                           className="w-4 h-4 accent-amber-500 rounded"
                         />
                         <div>
@@ -234,8 +233,8 @@ const SponsorEventModal = ({ isOpen, onClose, event, onSponsorSuccess }) => {
                   {activeTab === "entire"
                     ? remainingBudget.toLocaleString("en-IN")
                     : activeTab === "items"
-                    ? calculateItemsTotal().toLocaleString("en-IN")
-                    : Number(customAmount || 0).toLocaleString("en-IN")}
+                      ? calculateItemsTotal().toLocaleString("en-IN")
+                      : Number(customAmount || 0).toLocaleString("en-IN")}
                 </span>
               </div>
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { registerAccount } from "../../api/auth.js";
+import { registerAccount } from "../../api/auth";
 
 const STEPS = ["Personal", "Address", "Password", "Preferences", "Review", "Success"];
 const inputCls = "w-full h-12 px-4 border-2 border-slate-200 rounded-xl text-sm focus:border-amber-500 focus:outline-none transition-colors font-medium";
@@ -20,14 +20,20 @@ const DonorRegister = () => {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep(s => Math.max(s - 1, 0));
-  const submitRegistration = async () => {
-    setLoading(true);
+
+  const handleSubmit = async () => {
+    if (loading) return;
+    if (form.password !== form.confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
     setError("");
+    setLoading(true);
     try {
-      await registerAccount({ role: "donor", ...form });
-      setStep(5);
-    } catch (registrationError) {
-      setError(registrationError.message);
+      await registerAccount({ ...form, role: "donor" });
+      next();
+    } catch (err) {
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -117,7 +123,6 @@ const DonorRegister = () => {
         <input type="checkbox" checked={form.agree} onChange={e => set("agree", e.target.checked)} className="w-4 h-4 accent-amber-500 mt-0.5" />
         <span className="text-xs text-slate-600 leading-relaxed">I agree to VIDYADAAN's <span className="text-amber-600 font-bold">Terms of Service</span> and <span className="text-amber-600 font-bold">Privacy Policy</span>.</span>
       </label>
-      {error && <p role="alert" className="text-xs text-red-600 font-bold">{error}</p>}
     </div>,
   ];
 
@@ -162,11 +167,12 @@ const DonorRegister = () => {
             <h2 className="text-2xl font-extrabold text-slate-900 mb-1">Step {step + 1}: {STEPS[step]}</h2>
             <p className="text-sm text-slate-500 mb-8">Fill in the details below to continue.</p>
             {steps[step]}
+            {error && <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
             <div className="flex items-center gap-3 mt-8 pt-6 border-t border-slate-100">
               {step > 0 && <button onClick={prev} className="h-12 px-6 border-2 border-slate-200 text-slate-700 font-bold text-sm rounded-full hover:border-amber-400 hover:text-amber-600 transition-all">← Previous</button>}
-              <button onClick={step === 4 ? submitRegistration : next} disabled={loading || (step === 4 && !form.agree)}
+              <button onClick={step === 4 ? handleSubmit : next} disabled={step === 4 && (!form.agree || loading)}
                 className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm rounded-full shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-orange-400 transition-all disabled:opacity-50">
-                {step === 4 ? (loading ? "Creating Account..." : "Create Account") : "Continue →"}
+                {loading ? "Creating Account..." : step === 4 ? "Create Account" : "Continue →"}
               </button>
             </div>
           </div>

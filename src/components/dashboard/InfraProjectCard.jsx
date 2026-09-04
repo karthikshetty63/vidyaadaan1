@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getFundingPercentage } from "../../utils/funding";
 import ProjectTimeline from "../transparency/ProjectTimeline";
 import UploadPhotoModal from "../transparency/UploadPhotoModal";
 import NGOVerifyModal from "../transparency/NGOVerifyModal";
@@ -12,17 +13,17 @@ const priorityBadgeCls = {
 };
 
 const verificationBadge = {
-  verified:  { cls: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "🟢 NGO Verified" },
-  approved:  { cls: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "✅ Milestone Approved" },
-  pending:   { cls: "bg-amber-50  text-amber-700  border-amber-200",  label: "🟡 Awaiting NGO Verification" },
-  rejected:  { cls: "bg-red-50    text-red-700    border-red-200",    label: "🔴 Returned for Correction" },
+  verified: { cls: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "🟢 NGO Verified" },
+  approved: { cls: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "✅ Milestone Approved" },
+  pending: { cls: "bg-amber-50  text-amber-700  border-amber-200", label: "🟡 Awaiting NGO Verification" },
+  rejected: { cls: "bg-red-50    text-red-700    border-red-200", label: "🔴 Returned for Correction" },
 };
 
 const statusLabel = (photos) => {
   if (!photos || photos.length === 0) return null;
-  const pending  = photos.filter((p) => p.verificationStatus === "pending").length;
+  const pending = photos.filter((p) => p.verificationStatus === "pending").length;
   const rejected = photos.filter((p) => p.verificationStatus === "rejected").length;
-  if (pending > 0)  return `🟡 ${pending} Photo${pending > 1 ? "s" : ""} Awaiting Verification`;
+  if (pending > 0) return `🟡 ${pending} Photo${pending > 1 ? "s" : ""} Awaiting Verification`;
   if (rejected > 0) return `🔴 ${rejected} Photo${rejected > 1 ? "s" : ""} Returned`;
   return null;
 };
@@ -51,9 +52,8 @@ const PhotoGrid = ({ photos, role, onNGOVerify, label }) => {
       </span>
       {/* Verification badge */}
       <span
-        className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-black border backdrop-blur-sm ${
-          verificationBadge[photo.verificationStatus]?.cls || verificationBadge.pending.cls
-        }`}
+        className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-black border backdrop-blur-sm ${verificationBadge[photo.verificationStatus]?.cls || verificationBadge.pending.cls
+          }`}
       >
         {photo.verificationStatus === "verified" ? "✓ Verified" : photo.verificationStatus === "rejected" ? "✗ Returned" : "⏳ Pending"}
       </span>
@@ -130,7 +130,7 @@ const InfraProjectCard = ({ project, role = "donor" }) => {
 
   // School upload modal
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [localBefore, setLocalBefore]  = useState(project.beforePhotos || []);
+  const [localBefore, setLocalBefore] = useState(project.beforePhotos || []);
   const [localWorking, setLocalWorking] = useState(project.workingPhotos || []);
   const [localCompletion, setLocalCompletion] = useState(project.completionPhotos || []);
 
@@ -142,7 +142,7 @@ const InfraProjectCard = ({ project, role = "donor" }) => {
 
   const handleUpload = (newPhoto) => {
     const tab = newPhoto.tab;
-    if (tab === "before")    setLocalBefore((p)  => [newPhoto, ...p]);
+    if (tab === "before") setLocalBefore((p) => [newPhoto, ...p]);
     else if (tab === "completed") setLocalCompletion((p) => [newPhoto, ...p]);
     else setLocalWorking((p) => [newPhoto, ...p]);
   };
@@ -172,7 +172,7 @@ const InfraProjectCard = ({ project, role = "donor" }) => {
   };
 
   const pendingAlert = statusLabel([...localBefore, ...localWorking, ...localCompletion]);
-  const pct = (project.raised / project.budget) * 100;
+  const pct = getFundingPercentage(project.budget, project.raised);
 
   return (
     <>
@@ -248,11 +248,10 @@ const InfraProjectCard = ({ project, role = "donor" }) => {
           {/* ── Expand / Collapse Button ── */}
           <button
             onClick={() => setExpanded((e) => !e)}
-            className={`w-full h-10 rounded-full text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 ${
-              expanded
+            className={`w-full h-10 rounded-full text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 ${expanded
                 ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 : "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-600/20"
-            }`}
+              }`}
           >
             {expanded ? "▲ Hide Details" : "👁 View Full Project Details"}
           </button>
@@ -264,21 +263,20 @@ const InfraProjectCard = ({ project, role = "donor" }) => {
             {/* Detail Tabs */}
             <div className="flex gap-1 px-5 pt-4 pb-1 overflow-x-auto">
               {[
-                { key: "photos",   label: "📸 Photos" },
+                { key: "photos", label: "📸 Photos" },
                 { key: "timeline", label: "📋 Timeline" },
                 ...(role !== "school" ? [{ key: "payments", label: "💳 Payments" }] : []),
-                { key: "impact",   label: "🌱 Impact" },
+                { key: "impact", label: "🌱 Impact" },
                 ...(role === "donor" ? [{ key: "thankyou", label: "💌 Thank You" }] : []),
-                ...(role === "ngo"   ? [{ key: "inspect",  label: "🔍 Inspection" }] : []),
+                ...(role === "ngo" ? [{ key: "inspect", label: "🔍 Inspection" }] : []),
               ].map(({ key, label }) => (
                 <button
                   key={key}
                   onClick={() => setDetailTab(key)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                    detailTab === key
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${detailTab === key
                       ? "bg-blue-600 text-white border-blue-600"
                       : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
-                  }`}
+                    }`}
                 >
                   {label}
                 </button>
@@ -293,18 +291,17 @@ const InfraProjectCard = ({ project, role = "donor" }) => {
                   {/* Photo type tabs */}
                   <div className="flex gap-2">
                     {[
-                      { key: "before",    label: `📷 Before (${localBefore.length})` },
-                      { key: "working",   label: `🏗️ Working (${localWorking.length})` },
+                      { key: "before", label: `📷 Before (${localBefore.length})` },
+                      { key: "working", label: `🏗️ Working (${localWorking.length})` },
                       { key: "completed", label: `✅ Completion (${localCompletion.length})` },
                     ].map(({ key, label }) => (
                       <button
                         key={key}
                         onClick={() => setPhotoTab(key)}
-                        className={`px-3 py-1.5 rounded-full text-[10px] font-black border transition-all ${
-                          photoTab === key
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-black border transition-all ${photoTab === key
                             ? "bg-slate-800 text-white border-slate-800"
                             : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
-                        }`}
+                          }`}
                       >
                         {label}
                       </button>

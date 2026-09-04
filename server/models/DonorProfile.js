@@ -3,14 +3,14 @@ import mongoose from "mongoose";
 const donorProfileSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
-        phone: { type: String, required: true, trim: true },
-        dob: { type: Date },
-        address: { type: String, required: true, trim: true },
-        city: { type: String, required: true, trim: true },
-        state: { type: String, required: true, trim: true },
-        pin: { type: String, required: true, trim: true },
-        causes: [{ type: String, trim: true }],
-        frequency: { type: String, trim: true },
+        phone: String,
+        dob: Date,
+        address: String,
+        city: String,
+        state: String,
+        pin: String,
+        causes: [String],
+        frequency: String,
         anonymous: { type: Boolean, default: false },
     },
     { timestamps: true }

@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import Sidebar from "../../../components/dashboard/Sidebar";
-import DashboardNavbar from "../../../components/dashboard/DashboardNavbar";
+import DashboardLayout from "../../../components/dashboard/DashboardLayout";
+import { useAuth } from "../../../context/AuthContext";
 import StatsWidget from "../../../components/dashboard/StatsWidget";
 import DonationTable from "../../../components/dashboard/DonationTable";
 import TimelineWidget from "../../../components/dashboard/TimelineWidget";
 import EventCard from "../../../components/events/EventCard";
 import SponsorEventModal from "../../../components/events/SponsorEventModal";
 import SponsorNeedModal from "../../../components/dashboard/SponsorNeedModal";
-import { initialEvents } from "../../../data/eventsData";
+import { initialEvents } from "../../../data/events";
+import { getFundingPercentage } from "../../../utils/funding";
 
 /* ─── MOCK DATA ─────────────────────────────────────────── */
 const stats = [
@@ -127,6 +128,7 @@ const quickActions = [
 
 /* ─── DONOR DASHBOARD ─────────────────────────────────────── */
 const DonorDashboard = () => {
+  const { user } = useAuth();
   const [eventsList, setEventsList] = useState(initialEvents);
   const [schoolNeeds, setSchoolNeeds] = useState(directSchoolNeedsList);
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -142,7 +144,7 @@ const DonorDashboard = () => {
           const targetNum = typeof n.amount === "number" ? n.amount : parseInt(n.amount.replace(/[^0-9]/g, "")) || 45000;
           const currentRaised = Math.round((targetNum * n.progress) / 100);
           const newRaised = currentRaised + amount;
-          const newPct = Math.min(100, Math.round((newRaised / targetNum) * 100));
+          const newPct = getFundingPercentage(targetNum, newRaised);
           return { ...n, progress: newPct };
         }
         return n;
@@ -181,250 +183,250 @@ const DonorDashboard = () => {
   );
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
-      <Sidebar role="donor" userName="Ramesh Kumar" userSub="Individual Donor · Bengaluru" />
+    <DashboardLayout
+      role="donor"
+      userName={user?.name || "Donor"}
+      userSub={user?.email || "Individual Donor"}
+      title="Donor Dashboard"
+      subtitle={`Welcome back, ${user?.name || "there"}!`}
+      notifications={[1]}
+    >
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardNavbar role="donor" title="Donor Dashboard" subtitle="Welcome back, Ramesh!" notifications={[1]} />
+      <main className="flex-1 overflow-y-auto px-6 py-8 space-y-8">
 
-        <main className="flex-1 overflow-y-auto px-6 py-8 space-y-8">
-
-          {/* Hero Banner */}
-          <section id="overview" className="relative rounded-[24px] overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-8 text-white shadow-2xl shadow-amber-500/20">
-            <div className="absolute inset-0 opacity-10">
-              <svg className="w-full h-full" viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice">
-                {[...Array(20)].map((_, i) => <circle key={i} cx={i * 35} cy={(i % 3) * 60 + 20} r="40" fill="white" />)}
-              </svg>
-            </div>
-            <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold mb-3">
-                  <span>🏆</span> Champion Supporter Level 3
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-black mb-1">Welcome back, Ramesh Kumar!</h1>
-                <p className="text-amber-100 text-sm">💙 You can donate directly to Government School Needs & Events.</p>
+        {/* Hero Banner */}
+        <section id="overview" className="relative rounded-[24px] overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-8 text-white shadow-2xl shadow-amber-500/20">
+          <div className="absolute inset-0 opacity-10">
+            <svg className="w-full h-full" viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice">
+              {[...Array(20)].map((_, i) => <circle key={i} cx={i * 35} cy={(i % 3) * 60 + 20} r="40" fill="white" />)}
+            </svg>
+          </div>
+          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold mb-3">
+                <span>🏆</span> Champion Supporter Level 3
               </div>
-              <div className="flex gap-3">
+              <h1 className="text-2xl sm:text-3xl font-black mb-1">Welcome back, Ramesh Kumar!</h1>
+              <p className="text-amber-100 text-sm">💙 You can donate directly to Government School Needs & Events.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const el = document.getElementById("needs");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="h-12 px-6 bg-white text-slate-900 font-extrabold text-xs rounded-full shadow-lg hover:bg-slate-50 transition-all flex items-center gap-2"
+              >
+                <span>📋</span> Donate to School Needs
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Stats */}
+        <StatsWidget stats={stats} />
+
+
+        {/* 📋 DIRECT SCHOOL NEEDS FUNDING SECTION */}
+        <section id="needs" className="scroll-mt-24 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 mb-1">
+                <span>📋</span> Infrastructure & Facilities
+              </div>
+              <h2 className="text-xl font-extrabold text-slate-900">Direct School Infrastructure Needs</h2>
+              <p className="text-xs text-slate-500">Fund classrooms, toilets, drinking water, library books, computers, and solar panels directly.</p>
+            </div>
+
+            {/* Need Category Pills */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-full">
+              {["All", "Classroom", "Water & Sanitation", "Library", "Digital Labs"].map((cat) => (
                 <button
-                  onClick={() => {
-                    const el = document.getElementById("needs");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="h-12 px-6 bg-white text-slate-900 font-extrabold text-xs rounded-full shadow-lg hover:bg-slate-50 transition-all flex items-center gap-2"
+                  key={cat}
+                  onClick={() => setNeedCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all shrink-0 ${needCategory === cat
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
+                    }`}
                 >
-                  <span>📋</span> Donate to School Needs
+                  {cat}
                 </button>
-              </div>
-            </div>
-          </section>
-
-          {/* Stats */}
-          <StatsWidget stats={stats} />
-
-
-          {/* 📋 DIRECT SCHOOL NEEDS FUNDING SECTION */}
-          <section id="needs" className="scroll-mt-24 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 mb-1">
-                  <span>📋</span> Infrastructure & Facilities
-                </div>
-                <h2 className="text-xl font-extrabold text-slate-900">Direct School Infrastructure Needs</h2>
-                <p className="text-xs text-slate-500">Fund classrooms, toilets, drinking water, library books, computers, and solar panels directly.</p>
-              </div>
-
-              {/* Need Category Pills */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-full">
-                {["All", "Classroom", "Water & Sanitation", "Library", "Digital Labs"].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setNeedCategory(cat)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all shrink-0 ${
-                      needCategory === cat
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Need Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredNeeds.map((need) => (
-                <div
-                  key={need.id}
-                  className="bg-white rounded-[24px] border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between group"
-                >
-                  <div className="relative h-44 overflow-hidden bg-slate-900">
-                    <img
-                      src={need.img}
-                      alt={need.label}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-
-                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                      <span className="px-3 py-1 rounded-full bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase">
-                        {need.icon} {need.category}
-                      </span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black border ${priorityBadgeCls[need.priority]}`}>
-                        {need.priority}
-                      </span>
-                    </div>
-
-                    <div className="absolute bottom-3 left-4 right-4 text-white">
-                      <p className="text-xs font-extrabold text-blue-200">🏫 {need.schoolName}</p>
-                      <p className="text-[10px] text-slate-300">📍 {need.district}</p>
-                    </div>
-                  </div>
-
-                  <div className="p-6 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-base mb-3 group-hover:text-blue-600 transition-colors">
-                        {need.label}
-                      </h3>
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
-                        <span>Target: {need.amount}</span>
-                        <span className="text-blue-600">{need.progress}% Funded</span>
-                      </div>
-                      <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-600 to-emerald-400 rounded-full transition-all duration-500"
-                          style={{ width: `${need.progress}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setSelectedNeedForDonate(need)}
-                      className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-full shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <span>💙</span> Donate to School Need
-                    </button>
-                  </div>
-                </div>
               ))}
             </div>
-          </section>
-
-          {/* 🎉 SUPPORT SCHOOL EVENTS (DONOR SECTION) */}
-          <section id="events" className="scroll-mt-24 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 mb-1">
-                  <span>🎉</span> Celebrations & Program Sponsorship
-                </div>
-                <h2 className="text-xl font-extrabold text-slate-900">Support School Events</h2>
-                <p className="text-xs text-slate-500">Sponsor food, medals, trophies, sports kits, or sound systems for government school children.</p>
-              </div>
-
-              {/* Event Category Filter Pills */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-full">
-                {["All", "Sports Day", "Science Fair", "Children's Day"].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all shrink-0 ${
-                      selectedCategory === cat
-                        ? "bg-amber-500 text-white border-amber-500"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-amber-300"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Event Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  userRole="donor"
-                  onSponsorItems={(evt) => setSelectedEventForSponsor(evt)}
-                  onDonateAmount={(evt) => setSelectedEventForSponsor(evt)}
-                  onViewDetails={(evt) => setSelectedEventForSponsor(evt)}
-                />
-              ))}
-            </div>
-          </section>
-
-          {/* Impact & Timeline */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* Impact Gallery */}
-            <section id="impact" className="xl:col-span-2 bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 scroll-mt-24">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900">Before & After of Needs & Events You Supported</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Real transformation pictures from schools you donated to</p>
-                </div>
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                  100% Verified Impact
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {impactGallery.map((g) => (
-                  <div key={g.label}>
-                    <div className="grid grid-cols-2 gap-3 rounded-[16px] overflow-hidden mb-2">
-                      <div className="relative">
-                        <img src={g.before} alt="Before" className="w-full h-32 object-cover rounded-xl" />
-                        <span className="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">BEFORE</span>
-                      </div>
-                      <div className="relative">
-                        <img src={g.after} alt="After" className="w-full h-32 object-cover rounded-xl" />
-                        <span className="absolute top-2 left-2 bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">AFTER</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between px-1">
-                      <div>
-                        <span className="text-xs font-bold text-slate-800">{g.label}</span>
-                        <p className="text-[10px] text-slate-400">🏫 {g.school}</p>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-medium">{g.date}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Timeline */}
-            <TimelineWidget events={timeline} title="Your Impact Activity" />
           </div>
 
-          {/* Donation History Table */}
-          <section id="donations" className="scroll-mt-24">
-            <DonationTable rows={myDonations} title="My Needs & Event Donation History" />
-          </section>
-
-          {/* Quick Actions */}
-          <section id="settings" className="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-4 scroll-mt-24">
-            {quickActions.map(({ icon, label, bg }) => (
-              <button
-                key={label}
-                onClick={() => {
-                  if (label.includes("Need")) {
-                    const el = document.getElementById("needs");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
-                  } else if (label.includes("Event")) {
-                    const el = document.getElementById("events");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
-                  }
-                }}
-                className={`flex flex-col items-center gap-2 p-5 rounded-[20px] border-2 ${bg} shadow-sm transition-all`}
+          {/* Need Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredNeeds.map((need) => (
+              <div
+                key={need.id}
+                className="bg-white rounded-[24px] border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between group"
               >
-                <span className="text-2xl">{icon}</span>
-                <span className="text-xs font-bold text-center leading-tight">{label}</span>
-              </button>
+                <div className="relative h-44 overflow-hidden bg-slate-900">
+                  <img
+                    src={need.img}
+                    alt={need.label}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+
+                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                    <span className="px-3 py-1 rounded-full bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase">
+                      {need.icon} {need.category}
+                    </span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black border ${priorityBadgeCls[need.priority]}`}>
+                      {need.priority}
+                    </span>
+                  </div>
+
+                  <div className="absolute bottom-3 left-4 right-4 text-white">
+                    <p className="text-xs font-extrabold text-blue-200">🏫 {need.schoolName}</p>
+                    <p className="text-[10px] text-slate-300">📍 {need.district}</p>
+                  </div>
+                </div>
+
+                <div className="p-6 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-extrabold text-slate-900 text-base mb-3 group-hover:text-blue-600 transition-colors">
+                      {need.label}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
+                      <span>Target: {need.amount}</span>
+                      <span className="text-blue-600">{need.progress}% Funded</span>
+                    </div>
+                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-600 to-emerald-400 rounded-full transition-all duration-500"
+                        style={{ width: `${need.progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedNeedForDonate(need)}
+                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-full shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <span>💙</span> Donate to School Need
+                  </button>
+                </div>
+              </div>
             ))}
+          </div>
+        </section>
+
+        {/* 🎉 SUPPORT SCHOOL EVENTS (DONOR SECTION) */}
+        <section id="events" className="scroll-mt-24 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 mb-1">
+                <span>🎉</span> Celebrations & Program Sponsorship
+              </div>
+              <h2 className="text-xl font-extrabold text-slate-900">Support School Events</h2>
+              <p className="text-xs text-slate-500">Sponsor food, medals, trophies, sports kits, or sound systems for government school children.</p>
+            </div>
+
+            {/* Event Category Filter Pills */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-full">
+              {["All", "Sports Day", "Science Fair", "Children's Day"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all shrink-0 ${selectedCategory === cat
+                    ? "bg-amber-500 text-white border-amber-500"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-amber-300"
+                    }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Event Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                userRole="donor"
+                onSponsorItems={(evt) => setSelectedEventForSponsor(evt)}
+                onDonateAmount={(evt) => setSelectedEventForSponsor(evt)}
+                onViewDetails={(evt) => setSelectedEventForSponsor(evt)}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Impact & Timeline */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Impact Gallery */}
+          <section id="impact" className="xl:col-span-2 bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 scroll-mt-24">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">Before & After of Needs & Events You Supported</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Real transformation pictures from schools you donated to</p>
+              </div>
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                100% Verified Impact
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {impactGallery.map((g) => (
+                <div key={g.label}>
+                  <div className="grid grid-cols-2 gap-3 rounded-[16px] overflow-hidden mb-2">
+                    <div className="relative">
+                      <img src={g.before} alt="Before" className="w-full h-32 object-cover rounded-xl" />
+                      <span className="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">BEFORE</span>
+                    </div>
+                    <div className="relative">
+                      <img src={g.after} alt="After" className="w-full h-32 object-cover rounded-xl" />
+                      <span className="absolute top-2 left-2 bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">AFTER</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between px-1">
+                    <div>
+                      <span className="text-xs font-bold text-slate-800">{g.label}</span>
+                      <p className="text-[10px] text-slate-400">🏫 {g.school}</p>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium">{g.date}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
 
-        </main>
-      </div>
+          {/* Timeline */}
+          <TimelineWidget events={timeline} title="Your Impact Activity" />
+        </div>
+
+        {/* Donation History Table */}
+        <section id="donations" className="scroll-mt-24">
+          <DonationTable rows={myDonations} title="My Needs & Event Donation History" />
+        </section>
+
+        {/* Quick Actions */}
+        <section id="settings" className="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-4 scroll-mt-24">
+          {quickActions.map(({ icon, label, bg }) => (
+            <button
+              key={label}
+              onClick={() => {
+                if (label.includes("Need")) {
+                  const el = document.getElementById("needs");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                } else if (label.includes("Event")) {
+                  const el = document.getElementById("events");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              className={`flex flex-col items-center gap-2 p-5 rounded-[20px] border-2 ${bg} shadow-sm transition-all`}
+            >
+              <span className="text-2xl">{icon}</span>
+              <span className="text-xs font-bold text-center leading-tight">{label}</span>
+            </button>
+          ))}
+        </section>
+
+      </main>
 
       {/* Need Donation Modal */}
       <SponsorNeedModal
@@ -441,7 +443,7 @@ const DonorDashboard = () => {
         event={selectedEventForSponsor}
         onSponsorSuccess={handleEventSponsorSuccess}
       />
-    </div>
+    </DashboardLayout >
   );
 };
 

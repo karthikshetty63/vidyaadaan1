@@ -1,28 +1,39 @@
 import bcrypt from "bcryptjs";
-import User from "../models/User.js";
+import { parseCookie, stringifySetCookie } from "cookie";
+import jwt from "jsonwebtoken";
+import process from "node:process";
 import DonorProfile from "../models/DonorProfile.js";
 import NGOProfile from "../models/NGOProfile.js";
 import SchoolProfile from "../models/SchoolProfile.js";
+import User from "../models/User.js";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const publicRoles = ["donor", "school", "ngo"];
+const authCookie = "vidyaadaan_auth";
+const isProduction = process.env.NODE_ENV === "production";
 
-const registrationFields = {
-    donor: ["name", "email", "phone", "address", "city", "state", "pin", "password", "confirm"],
-    school: ["schoolName", "udise", "address", "district", "state", "principalName", "email", "phone", "password", "confirm", "bankAccount", "ifsc"],
-    ngo: ["ngoName", "mission", "regNumber", "regDate", "pan", "address", "district", "state", "contactName", "email", "phone", "password", "confirm"],
+const getJwtSecret = () => {
+    if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is missing from the environment");
+    return process.env.JWT_SECRET;
 };
 
-const validateRegistration = (body, role) => {
-    const missing = registrationFields[role].find((field) => {
-        const value = body[field];
-        return typeof value === "string" ? !value.trim() : value === undefined || value === null;
+const cookieOptions = (remember = false) => ({
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    maxAge: remember ? 30 * 24 * 60 * 60 : undefined,
+    path: "/",
+});
+
+const setAuthCookie = (res, user, remember) => {
+    const token = jwt.sign({ userId: user._id.toString(), role: user.role }, getJwtSecret(), {
+        expiresIn: remember ? "30d" : "1d",
     });
-    if (missing) return `${missing} is required.`;
-    if (typeof body.email !== "string" || !emailPattern.test(body.email.trim().toLowerCase())) return "Enter a valid email address.";
-    if (typeof body.password !== "string" || body.password.length < 6) return "Password must be at least 6 characters.";
-    if (typeof body.confirm !== "string" || body.password !== body.confirm) return "Passwords do not match.";
-    if (body.agree !== true) return "You must agree to the terms and privacy policy.";
-    return null;
+    res.setHeader("Set-Cookie", stringifySetCookie({ name: authCookie, value: token, ...cookieOptions(remember) }));
+};
+
+const clearAuthCookie = (res) => {
+    res.setHeader("Set-Cookie", stringifySetCookie({ name: authCookie, value: "", ...cookieOptions(), maxAge: 0 }));
 };
 
 const safeUser = (user) => ({
@@ -35,38 +46,54 @@ const safeUser = (user) => ({
 
 export const register = async (req, res) => {
     const body = req.body || {};
-    const role = typeof body.role === "string" ? body.role.toLowerCase() : "";
+    const name = typeof body.name === "string"
+        ? body.name.trim()
+        : typeof body.principalName === "string"
+            ? body.principalName.trim()
+            : typeof body.contactName === "string"
+                ? body.contactName.trim()
+                : "";
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const password = typeof body.password === "string" ? body.password : "";
+    const role = typeof body.role === "string" ? body.role.trim().toLowerCase() : "";
 
-    if (!registrationFields[role]) {
-        return res.status(400).json({ message: "Registration role must be donor, school, or ngo." });
+    if (!name || !email || !password || !role) {
+        return res.status(400).json({ message: "Name, email, password, and role are required." });
     }
 
-    const validationError = validateRegistration(body, role);
-    if (validationError) return res.status(400).json({ message: validationError });
+    if (!publicRoles.includes(role)) {
+        return res.status(400).json({ message: "Role must be donor, school, or ngo." });
+    }
 
-    const email = body.email.trim().toLowerCase();
+    if (!emailPattern.test(email)) {
+        return res.status(400).json({ message: "Enter a valid email address." });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters." });
+    }
+
     let user;
-
     try {
         if (await User.exists({ email })) {
             return res.status(409).json({ message: "An account with this email already exists." });
         }
 
         user = await User.create({
-            name: role === "school" ? body.principalName.trim() : role === "ngo" ? body.contactName.trim() : body.name.trim(),
+            name,
             email,
-            password: body.password,
+            password,
             role,
             accountStatus: role === "donor" ? "active" : "pending",
         });
 
         const profileData = { ...body, userId: user._id, email };
+        delete profileData.name;
         delete profileData.password;
         delete profileData.confirm;
-        delete profileData.agree;
         delete profileData.role;
+        delete profileData.agree;
 
-        if (role === "donor") await DonorProfile.create(profileData);
         if (role === "school") {
             profileData.infrastructure = {
                 hasToilets: body.hasToilets === true,
@@ -74,22 +101,27 @@ export const register = async (req, res) => {
                 hasComputers: body.hasComputers === true,
                 hasDrinkingWater: body.hasDrinkingWater === true,
             };
-            profileData.bankDetails = { bankAccount: body.bankAccount, ifsc: body.ifsc, upi: body.upi };
             delete profileData.hasToilets;
             delete profileData.hasLibrary;
             delete profileData.hasComputers;
             delete profileData.hasDrinkingWater;
-            delete profileData.bankAccount;
-            delete profileData.ifsc;
-            delete profileData.upi;
             await SchoolProfile.create(profileData);
+        } else if (role === "ngo") {
+            await NGOProfile.create(profileData);
+        } else {
+            await DonorProfile.create(profileData);
         }
-        if (role === "ngo") await NGOProfile.create(profileData);
 
-        return res.status(201).json({ success: true, message: "Registration successful", user: safeUser(user) });
+        return res.status(201).json({
+            message: "Registration successful",
+            user: safeUser(user),
+        });
     } catch (error) {
         if (user?._id) await User.deleteOne({ _id: user._id }).catch(() => { });
-        if (error.code === 11000) return res.status(409).json({ message: "An account with this email already exists." });
+        if (error.code === 11000) {
+            return res.status(409).json({ message: "An account with this email already exists." });
+        }
+
         console.error("Registration failed:", error.message);
         return res.status(500).json({ message: "Registration failed. Please try again." });
     }
@@ -99,7 +131,7 @@ export const login = async (req, res) => {
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const password = typeof req.body?.password === "string" ? req.body.password : "";
 
-    if (!emailPattern.test(email) || !password) {
+    if (!email || !password || !emailPattern.test(email)) {
         return res.status(400).json({ message: "Email and password are required." });
     }
 
@@ -110,16 +142,33 @@ export const login = async (req, res) => {
             return res.status(401).json({ message: "Invalid email or password." });
         }
 
+        if (user.accountStatus === "rejected") {
+            return res.status(401).json({ message: "This account has been rejected." });
+        }
+
+        if (user.accountStatus === "pending") {
+            return res.status(401).json({ message: "This account is pending approval." });
+        }
+
+        setAuthCookie(res, user, req.body?.remember === true);
+
         return res.status(200).json({
-            user: {
-                id: user._id.toString(),
-                name: user.name,
-                email: user.email,
-                role: user.role,
-            },
+            message: "Login successful",
+            user: safeUser(user),
         });
     } catch (error) {
         console.error("Login failed:", error.message);
-        return res.status(500).json({ message: "Unable to sign in right now." });
+        return res.status(500).json({ message: "Login failed. Please try again." });
     }
 };
+
+export const me = async (req, res) => {
+    return res.status(200).json({ user: safeUser(req.user) });
+};
+
+export const logout = (_req, res) => {
+    clearAuthCookie(res);
+    return res.status(200).json({ message: "Logged out successfully." });
+};
+
+export const getTokenFromRequest = (req) => parseCookie(req.headers.cookie || "")[authCookie];

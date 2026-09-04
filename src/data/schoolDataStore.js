@@ -1,6 +1,8 @@
 // VIDYADAAN — Centralized School Data Store
 // Linear/Stripe/Vercel inspired data structure for School Admin Module
 
+export { INFRA_16_CATEGORIES } from "../constants/infrastructureCategories.js";
+
 export const INITIAL_SCHOOL_PROFILE = {
   name: "Honnali Govt. Primary School",
   logo: "🏫",
@@ -25,25 +27,6 @@ export const INITIAL_SUMMARY_CARDS = [
   { id: "donations", label: "Total Donations", value: "₹4,82,000", change: 18, icon: "💰", color: "emerald" },
   { id: "ngos", label: "NGO Partners", value: "3", change: 0, icon: "🤝", color: "blue" },
   { id: "donors", label: "Active Donors", value: "42", change: 8, icon: "❤️", color: "amber" },
-];
-
-export const INFRA_16_CATEGORIES = [
-  "Classroom",
-  "Library",
-  "Computer Lab",
-  "Drinking Water",
-  "Electricity",
-  "Science Lab",
-  "Toilets",
-  "Playground",
-  "Campus",
-  "Mid-Day Meal",
-  "Transportation",
-  "Inclusive Education",
-  "Arts",
-  "Digital Learning",
-  "Health",
-  "Other",
 ];
 
 export const SCHOOL_PROJECTS_LIST = [

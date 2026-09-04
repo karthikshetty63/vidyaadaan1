@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { registerAccount } from "../../api/auth.js";
+import { Link, useNavigate } from "react-router-dom";
+import { registerAccount } from "../../api/auth";
 
 const STEPS = [
   "School Info",
@@ -8,36 +8,37 @@ const STEPS = [
   "Infrastructure",
   "Documents",
   "Bank Details",
-  "Password",
   "Review",
   "Success",
 ];
 
 const SchoolRegister = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState({
-    schoolName: "", udise: "", address: "", district: "", state: "",
-    principalName: "", email: "", phone: "", students: "", teachers: "",
-    hasToilets: false, hasLibrary: false, hasComputers: false, hasDrinkingWater: false,
-    bankAccount: "", ifsc: "", upi: "",
-    password: "", confirm: "",
-    agree: false,
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    schoolName: "", udise: "", address: "", district: "", state: "",
+    principalName: "", email: "", phone: "", password: "", students: "", teachers: "",
+    hasToilets: false, hasLibrary: false, hasComputers: false, hasDrinkingWater: false,
+    bankAccount: "", ifsc: "", upi: "",
+    agree: false,
+  });
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep((s) => Math.max(s - 1, 0));
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-  const submitRegistration = async () => {
-    setLoading(true);
+
+  const handleSubmit = async () => {
+    if (loading) return;
     setError("");
+    setLoading(true);
     try {
-      await registerAccount({ role: "school", ...form });
-      setStep(7);
-    } catch (registrationError) {
-      setError(registrationError.message);
+      await registerAccount({ ...form, role: "school" });
+      next();
+    } catch (err) {
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -70,6 +71,7 @@ const SchoolRegister = () => {
         <div><label className={labelCls}>Official Email *</label><input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="principal@school.gov.in" className={inputCls} /></div>
         <div><label className={labelCls}>Phone Number *</label><input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+91 98765 43210" className={inputCls} /></div>
       </div>
+      <div><label className={labelCls}>Password *</label><input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min 6 characters" className={inputCls} /></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div><label className={labelCls}>Total Students</label><input type="number" value={form.students} onChange={(e) => set("students", e.target.value)} placeholder="250" className={inputCls} /></div>
         <div><label className={labelCls}>Total Teachers</label><input type="number" value={form.teachers} onChange={(e) => set("teachers", e.target.value)} placeholder="12" className={inputCls} /></div>
@@ -127,15 +129,8 @@ const SchoolRegister = () => {
       </div>
     </div>,
 
-    /* Step 5: Password */
+    /* Step 5: Review */
     <div key="s5" className="flex flex-col gap-4">
-      <div><label className={labelCls}>Password *</label><input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Minimum 6 characters" className={inputCls} /></div>
-      <div><label className={labelCls}>Confirm Password *</label><input type="password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} placeholder="Repeat password" className={inputCls} /></div>
-      {form.password && form.confirm && form.password !== form.confirm && <p className="text-xs text-red-600 font-bold">Passwords do not match</p>}
-    </div>,
-
-    /* Step 6: Review */
-    <div key="s6" className="flex flex-col gap-4">
       <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-2 text-sm">
         <div className="font-bold text-slate-900 mb-3">Registration Summary</div>
         {[["School", form.schoolName || "—"], ["UDISE", form.udise || "—"], ["District", form.district || "—"], ["State", form.state || "—"], ["Principal", form.principalName || "—"], ["Email", form.email || "—"], ["Students", form.students || "—"], ["Teachers", form.teachers || "—"],].map(([k, v]) => (
@@ -146,17 +141,16 @@ const SchoolRegister = () => {
         <input type="checkbox" checked={form.agree} onChange={(e) => set("agree", e.target.checked)} className="w-4 h-4 accent-blue-600 mt-0.5" />
         <span className="text-xs text-slate-600 leading-relaxed">I declare that all information provided is accurate and I agree to VIDYADAAN's <span className="text-blue-600 font-bold">Terms of Service</span> and <span className="text-blue-600 font-bold">Privacy Policy</span>.</span>
       </label>
-      {error && <p role="alert" className="text-xs text-red-600 font-bold">{error}</p>}
     </div>,
   ];
 
-  if (step === 7) {
+  if (step === 6) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center px-6">
         <div className="text-center max-w-md">
           <div className="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6 text-5xl">✅</div>
           <h1 className="text-3xl font-extrabold text-slate-900 mb-3">Registration Submitted!</h1>
-          <p className="text-slate-500 mb-8">Your school has been registered. Our team will verify your details and activate your account. Proceed to login to view status.</p>
+          <p className="text-slate-500 mb-8">Your school has been registered and is <span className="font-bold text-amber-600">pending admin approval</span>. Our team will verify your details and activate your account. You will be able to log in only after approval.</p>
           <Link to="/login/school" className="h-14 px-8 inline-flex items-center gap-2 bg-blue-600 text-white font-bold rounded-full shadow-xl shadow-blue-600/25 hover:bg-blue-700 transition-all">Proceed to School Login →</Link>
         </div>
       </div>
@@ -177,7 +171,7 @@ const SchoolRegister = () => {
         <div className="w-full max-w-2xl">
           {/* Progress Steps */}
           <div className="flex items-center gap-1 mb-10 overflow-x-auto pb-2">
-            {STEPS.slice(0, 7).map((label, i) => (
+            {STEPS.slice(0, 6).map((label, i) => (
               <React.Fragment key={i}>
                 <div className={`flex flex-col items-center gap-1 shrink-0 ${i <= step ? "opacity-100" : "opacity-40"}`}>
                   <div className={`w-8 h-8 rounded-full font-black text-xs flex items-center justify-center ${i < step ? "bg-emerald-500 text-white" : i === step ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-600"}`}>
@@ -185,7 +179,7 @@ const SchoolRegister = () => {
                   </div>
                   <span className="text-[10px] font-semibold text-slate-600 text-center max-w-[60px] leading-tight">{label}</span>
                 </div>
-                {i < 6 && <div className={`flex-1 h-0.5 rounded-full min-w-[16px] ${i < step ? "bg-emerald-400" : "bg-slate-200"}`} />}
+                {i < 5 && <div className={`flex-1 h-0.5 rounded-full min-w-[16px] ${i < step ? "bg-emerald-400" : "bg-slate-200"}`} />}
               </React.Fragment>
             ))}
           </div>
@@ -195,14 +189,15 @@ const SchoolRegister = () => {
             <h2 className="text-2xl font-extrabold text-slate-900 mb-1">Step {step + 1}: {STEPS[step]}</h2>
             <p className="text-sm text-slate-500 mb-8">Fill in the details below to continue.</p>
             {steps[step]}
+            {error && <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
             <div className="flex items-center gap-3 mt-8 pt-6 border-t border-slate-100">
               {step > 0 && (
                 <button onClick={prev} className="h-12 px-6 border-2 border-slate-200 text-slate-700 font-bold text-sm rounded-full hover:border-blue-400 hover:text-blue-600 transition-all">← Previous</button>
               )}
-              <button onClick={step === 6 ? submitRegistration : next}
-                disabled={loading || (step === 6 && (!form.agree || !form.password || form.password !== form.confirm))}
+              <button onClick={step === 5 ? handleSubmit : next}
+                disabled={step === 5 && (!form.agree || loading)}
                 className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-sm rounded-full shadow-lg shadow-blue-600/20 hover:from-blue-500 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                {step === 6 ? (loading ? "Submitting Registration..." : "Submit Registration") : `Continue →`}
+                {loading ? "Submitting..." : step === 5 ? "Submit Registration" : `Continue →`}
               </button>
             </div>
           </div>

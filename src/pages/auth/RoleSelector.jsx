@@ -1,3 +1,4 @@
+import React from "react";
 import { Link } from "react-router-dom";
 import VidyadaanLogo from "../../components/ui/VidyadaanLogo";
 
@@ -107,7 +108,7 @@ const RoleSelector = () => {
                 </div>
                 <Link
                   to={role.href}
-                  className={`w-full h-12 flex items-center justify-center text-sm font-bold text-white rounded-full transition-all duration-200 shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-700 ${role.btnClass} active:scale-[0.98]`}
+                  className={`w-full h-12 flex items-center justify-center text-sm font-bold text-white rounded-full transition-all duration-200 shadow-xl ${role.btnClass} active:scale-[0.98]`}
                 >
                   {role.button}
                 </Link>

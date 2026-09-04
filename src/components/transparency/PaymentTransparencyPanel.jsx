@@ -1,4 +1,5 @@
 import React from "react";
+import { getFundingPercentage } from "../../utils/funding";
 
 const methodIcons = {
   "UPI": "📱",
@@ -17,7 +18,7 @@ const getMethodIcon = (method) => {
 };
 
 const PaymentTransparencyPanel = ({ payments, targetBudget, raisedAmount }) => {
-  const progressPct = Math.min(100, Math.round((raisedAmount / targetBudget) * 100));
+  const progressPct = getFundingPercentage(targetBudget, raisedAmount);
 
   return (
     <div className="space-y-6">

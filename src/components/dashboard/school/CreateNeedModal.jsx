@@ -1,23 +1,5 @@
 import React, { useState } from "react";
-
-export const INFRA_16_CATEGORIES = [
-  { id: "Classroom Development", label: "🏫 Classroom Development" },
-  { id: "Library", label: "📚 Library" },
-  { id: "Computer Lab", label: "💻 Computer Lab" },
-  { id: "Science Laboratory", label: "🔬 Science Laboratory" },
-  { id: "Drinking Water", label: "🚰 Drinking Water" },
-  { id: "Electricity", label: "⚡ Electricity" },
-  { id: "Toilets & Sanitation", label: "🚻 Toilets & Sanitation" },
-  { id: "Playground", label: "⚽ Playground" },
-  { id: "Campus Development", label: "🌳 Campus Development" },
-  { id: "Mid-Day Meal", label: "🍛 Mid-Day Meal" },
-  { id: "Transportation", label: "🚌 Transportation" },
-  { id: "Inclusive Education", label: "♿ Inclusive Education" },
-  { id: "Arts & Culture", label: "🎨 Arts & Culture" },
-  { id: "Digital Learning", label: "🎓 Digital Learning" },
-  { id: "Health & Wellness", label: "🩺 Health & Wellness" },
-  { id: "Other Infrastructure", label: "📦 Other Infrastructure" },
-];
+import { CREATE_NEED_CATEGORIES } from "../../../constants/infrastructureCategories";
 
 const SAMPLE_BEFORE_PHOTOS = [
   "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=600&auto=format&fit=crop",
@@ -58,7 +40,7 @@ const CreateNeedModal = ({ isOpen, onClose, onCreateNeed }) => {
         amount: `₹${Number(budget).toLocaleString("en-IN")}`,
         progress: 0,
         priority,
-        icon: INFRA_16_CATEGORIES.find((c) => c.id === category)?.label.split(" ")[0] || "📋",
+        icon: CREATE_NEED_CATEGORIES.find((c) => c.id === category)?.label.split(" ")[0] || "📋",
         img: finalImage,
         desc: desc.trim(),
         studentsBenefited: Number(students),
@@ -126,7 +108,7 @@ const CreateNeedModal = ({ isOpen, onClose, onCreateNeed }) => {
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full h-11 px-4 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:border-blue-500 focus:outline-none bg-slate-50/50"
               >
-                {INFRA_16_CATEGORIES.map((cat) => (
+                {CREATE_NEED_CATEGORIES.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.label}
                   </option>
@@ -261,11 +243,10 @@ const CreateNeedModal = ({ isOpen, onClose, onCreateNeed }) => {
                   key={idx}
                   type="button"
                   onClick={() => { setSelectedSampleIdx(idx); setPhotoUrl(""); }}
-                  className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
-                    selectedSampleIdx === idx && !photoUrl
+                  className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${selectedSampleIdx === idx && !photoUrl
                       ? "border-blue-600 scale-105 shadow-md"
                       : "border-slate-200 hover:border-slate-300"
-                  }`}
+                    }`}
                 >
                   <img src={url} alt="sample before" className="w-full h-full object-cover" />
                 </button>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getAmountRemaining } from "../../utils/funding";
 
 const NGO_SUPPORT_TYPES = [
   { id: "funds", label: "Allocate NGO Funds", icon: "💰", desc: "Release direct financial grants from NGO reserves" },
@@ -101,7 +102,7 @@ const NGOProjectSupportModal = ({ isOpen, onClose, need, onSupportSuccess }) => 
 
   const targetNum = typeof targetCost === "number" ? targetCost : parseInt(targetCost.replace(/[^0-9]/g, "")) || 45000;
   const raised = Math.round((targetNum * progress) / 100);
-  const remaining = Math.max(0, targetNum - raised);
+  const remaining = getAmountRemaining(targetNum, raised);
 
   const toggleSupportType = (id) => {
     setSelectedSupportTypes((prev) =>
@@ -241,11 +242,10 @@ const NGOProjectSupportModal = ({ isOpen, onClose, need, onSupportSuccess }) => 
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all shrink-0 border ${
-                    activeTab === tab.id
+                  className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all shrink-0 border ${activeTab === tab.id
                       ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20"
                       : "bg-white text-slate-600 border-slate-200 hover:border-emerald-300"
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -355,17 +355,15 @@ const NGOProjectSupportModal = ({ isOpen, onClose, need, onSupportSuccess }) => 
                           <div
                             key={type.id}
                             onClick={() => toggleSupportType(type.id)}
-                            className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
-                              active
+                            className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${active
                                 ? "bg-emerald-50/80 border-emerald-600 shadow-md shadow-emerald-500/10"
                                 : "bg-white border-slate-200 hover:border-slate-300"
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-2xl">{type.icon}</span>
-                              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
-                                active ? "bg-emerald-600 text-white" : "border border-slate-300"
-                              }`}>
+                              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${active ? "bg-emerald-600 text-white" : "border border-slate-300"
+                                }`}>
                                 {active ? "✓" : ""}
                               </span>
                             </div>
@@ -436,11 +434,10 @@ const NGOProjectSupportModal = ({ isOpen, onClose, need, onSupportSuccess }) => 
                           <label
                             key={item}
                             onClick={() => toggleMaterial(item)}
-                            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 ${
-                              checked
+                            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 ${checked
                                 ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                                 : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
-                            }`}
+                              }`}
                           >
                             <span>{checked ? "✓" : "○"}</span>
                             <span className="truncate">{item}</span>
@@ -467,11 +464,10 @@ const NGOProjectSupportModal = ({ isOpen, onClose, need, onSupportSuccess }) => 
                               key={role}
                               type="button"
                               onClick={() => toggleRole(role)}
-                              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                                active
+                              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${active
                                   ? "bg-teal-600 text-white border-teal-600"
                                   : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
-                              }`}
+                                }`}
                             >
                               {active ? "✓ " : "+ "}{role}
                             </button>
@@ -530,15 +526,13 @@ const NGOProjectSupportModal = ({ isOpen, onClose, need, onSupportSuccess }) => 
                           <div
                             key={key}
                             onClick={() => toggleChecklist(key)}
-                            className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center gap-2.5 ${
-                              checked
+                            className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center gap-2.5 ${checked
                                 ? "bg-emerald-50 border-emerald-300 text-emerald-800"
                                 : "bg-white border-slate-200 text-slate-600"
-                            }`}
+                              }`}
                           >
-                            <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-xs font-bold ${
-                              checked ? "bg-emerald-600 text-white" : "border border-slate-300 text-transparent"
-                            }`}>
+                            <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-xs font-bold ${checked ? "bg-emerald-600 text-white" : "border border-slate-300 text-transparent"
+                              }`}>
                               ✓
                             </span>
                             <span className="text-xs font-bold">{label}</span>
@@ -580,17 +574,15 @@ const NGOProjectSupportModal = ({ isOpen, onClose, need, onSupportSuccess }) => 
                       return (
                         <div
                           key={idx}
-                          className={`p-4 rounded-2xl border flex items-center gap-3 transition-all ${
-                            isDone
+                          className={`p-4 rounded-2xl border flex items-center gap-3 transition-all ${isDone
                               ? "bg-emerald-50/80 border-emerald-200 text-emerald-800"
                               : isCurrent
-                              ? "bg-blue-50 border-blue-400 text-blue-800 shadow-md animate-pulse"
-                              : "bg-slate-50 border-slate-200 text-slate-400"
-                          }`}
+                                ? "bg-blue-50 border-blue-400 text-blue-800 shadow-md animate-pulse"
+                                : "bg-slate-50 border-slate-200 text-slate-400"
+                            }`}
                         >
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
-                            isDone ? "bg-emerald-600 text-white" : isCurrent ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"
-                          }`}>
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${isDone ? "bg-emerald-600 text-white" : isCurrent ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"
+                            }`}>
                             {step.icon}
                           </div>
                           <div>

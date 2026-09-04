@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getAmountRemaining } from "../../utils/funding";
 
 const SponsorNeedModal = ({ isOpen, onClose, need, onDonateSuccess }) => {
   const [amount, setAmount] = useState(2500);
@@ -10,7 +11,7 @@ const SponsorNeedModal = ({ isOpen, onClose, need, onDonateSuccess }) => {
   const { label, schoolName, district, amount: targetCost, progress = 0, icon = "📋" } = need;
   const targetNum = typeof targetCost === "number" ? targetCost : parseInt(targetCost.replace(/[^0-9]/g, "")) || 45000;
   const raised = Math.round((targetNum * progress) / 100);
-  const remaining = Math.max(0, targetNum - raised);
+  const remaining = getAmountRemaining(targetNum, raised);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -110,11 +111,10 @@ const SponsorNeedModal = ({ isOpen, onClose, need, onDonateSuccess }) => {
                     key={idx}
                     type="button"
                     onClick={() => setAmount(preset)}
-                    className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${
-                      Number(amount) === preset
+                    className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${Number(amount) === preset
                         ? "bg-blue-600 text-white border-blue-600 shadow-md"
                         : "bg-white text-slate-700 border-slate-200 hover:border-blue-400"
-                    }`}
+                      }`}
                   >
                     {preset === remaining ? `Full Amount (₹${remaining.toLocaleString("en-IN")})` : `₹${preset.toLocaleString("en-IN")}`}
                   </button>

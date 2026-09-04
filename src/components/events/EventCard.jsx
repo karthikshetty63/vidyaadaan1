@@ -1,4 +1,5 @@
 import React from "react";
+import { getFundingSummary } from "../../utils/funding";
 
 const EventCard = ({
   event,
@@ -23,9 +24,10 @@ const EventCard = ({
     ngoPartner,
   } = event || {};
 
-  const targetBudget = requiredBudget ?? event?.budget ?? event?.donationGoal ?? 45000;
-  const currentRaised = raisedAmount ?? event?.raisedAmount ?? 0;
-  const pct = targetBudget > 0 ? Math.min(100, Math.round((currentRaised / targetBudget) * 100)) : 0;
+  const { budget: targetBudget, amountRaised: currentRaised, fundingPercentage: pct } = getFundingSummary({
+    requiredBudget: requiredBudget ?? event?.budget ?? event?.donationGoal ?? 45000,
+    raisedAmount: raisedAmount ?? event?.raisedAmount ?? 0,
+  });
   const sponsoredCount = requestedItems.filter((i) => i.sponsored).length;
   const totalItemsCount = requestedItems.length;
 
@@ -87,11 +89,10 @@ const EventCard = ({
               {requestedItems.map((item, idx) => (
                 <span
                   key={idx}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all ${
-                    item.sponsored
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all ${item.sponsored
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                       : "bg-amber-50 text-amber-700 border-amber-200"
-                  }`}
+                    }`}
                   title={item.sponsored ? `Sponsored by ${item.sponsorName}` : `Needs sponsorship (₹${item.cost})`}
                 >
                   {item.sponsored ? "✓ " : "⏳ "}{item.label}
@@ -113,11 +114,10 @@ const EventCard = ({
           </div>
           <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                pct >= 100
+              className={`h-full rounded-full transition-all duration-500 ${pct >= 100
                   ? "bg-emerald-500"
                   : "bg-gradient-to-r from-blue-600 via-blue-500 to-emerald-400"
-              }`}
+                }`}
               style={{ width: `${pct}%` }}
             />
           </div>

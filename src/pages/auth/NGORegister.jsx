@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { registerAccount } from "../../api/auth.js";
+import { registerAccount } from "../../api/auth";
 
-const STEPS = ["Organisation", "Mission", "Registration", "Address", "Contact", "Password", "Documents", "Review", "Success"];
+const STEPS = ["Organisation", "Mission", "Registration", "Address", "Contact", "Documents", "Review", "Success"];
 
 const inputCls = "w-full h-12 px-4 border-2 border-slate-200 rounded-xl text-sm focus:border-emerald-500 focus:outline-none transition-colors font-medium";
 const labelCls = "block text-xs font-bold text-slate-700 mb-1.5";
@@ -15,21 +15,22 @@ const NGORegister = () => {
     ngoName: "", type: "", established: "", website: "", mission: "",
     focus: [], regNumber: "", regDate: "", pan: "",
     address: "", district: "", state: "",
-    contactName: "", email: "", phone: "", altPhone: "",
-    password: "", confirm: "",
+    contactName: "", email: "", phone: "", altPhone: "", password: "",
     agree: false,
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep(s => Math.max(s - 1, 0));
-  const submitRegistration = async () => {
-    setLoading(true);
+
+  const handleSubmit = async () => {
+    if (loading) return;
     setError("");
+    setLoading(true);
     try {
-      await registerAccount({ role: "ngo", ...form });
-      setStep(8);
-    } catch (registrationError) {
-      setError(registrationError.message);
+      await registerAccount({ ...form, role: "ngo" });
+      next();
+    } catch (err) {
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -98,18 +99,12 @@ const NGORegister = () => {
         <div><label className={labelCls}>Official Email *</label><input type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="contact@ngo.org" className={inputCls} /></div>
         <div><label className={labelCls}>Phone *</label><input type="tel" value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+91 98765 43210" className={inputCls} /></div>
       </div>
+      <div><label className={labelCls}>Password *</label><input type="password" value={form.password} onChange={e => set("password", e.target.value)} placeholder="Min 6 characters" className={inputCls} /></div>
       <div><label className={labelCls}>Alternate Phone</label><input type="tel" value={form.altPhone} onChange={e => set("altPhone", e.target.value)} placeholder="+91 98765 43210" className={inputCls} /></div>
     </div>,
 
-    /* Step 5: Password */
-    <div key="s5" className="flex flex-col gap-4">
-      <div><label className={labelCls}>Password *</label><input type="password" value={form.password} onChange={e => set("password", e.target.value)} placeholder="Minimum 6 characters" className={inputCls} /></div>
-      <div><label className={labelCls}>Confirm Password *</label><input type="password" value={form.confirm} onChange={e => set("confirm", e.target.value)} placeholder="Repeat password" className={inputCls} /></div>
-      {form.password && form.confirm && form.password !== form.confirm && <p className="text-xs text-red-600 font-bold">Passwords do not match</p>}
-    </div>,
-
-    /* Step 6: Documents */
-    <div key="s6" className="flex flex-col gap-5">
+    /* Step 5: Documents */
+    <div key="s5" className="flex flex-col gap-5">
       {["Registration Certificate", "12A / 80G Certificate", "Annual Report (Last Year)", "PAN Card"].map(doc => (
         <div key={doc}>
           <label className={labelCls}>{doc}</label>
@@ -120,8 +115,8 @@ const NGORegister = () => {
       ))}
     </div>,
 
-    /* Step 7: Review */
-    <div key="s7" className="flex flex-col gap-4">
+    /* Step 6: Review */
+    <div key="s6" className="flex flex-col gap-4">
       <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-2 text-sm">
         <div className="font-bold text-slate-900 mb-3">NGO Registration Summary</div>
         {[["NGO Name", form.ngoName || "—"], ["Type", form.type || "—"], ["Reg. No.", form.regNumber || "—"], ["PAN", form.pan || "—"], ["State", form.state || "—"], ["Email", form.email || "—"], ["Focus", form.focus.join(", ") || "—"]].map(([k, v]) => (
@@ -132,17 +127,16 @@ const NGORegister = () => {
         <input type="checkbox" checked={form.agree} onChange={e => set("agree", e.target.checked)} className="w-4 h-4 accent-emerald-600 mt-0.5" />
         <span className="text-xs text-slate-600 leading-relaxed">I declare all information is accurate and agree to VIDYADAAN's <span className="text-emerald-600 font-bold">Terms of Service</span> and <span className="text-emerald-600 font-bold">Privacy Policy</span>.</span>
       </label>
-      {error && <p role="alert" className="text-xs text-red-600 font-bold">{error}</p>}
     </div>,
   ];
 
-  if (step === 8) {
+  if (step === 7) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 flex items-center justify-center px-6">
         <div className="text-center max-w-md">
           <div className="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6 text-5xl">🎉</div>
           <h1 className="text-3xl font-extrabold text-slate-900 mb-3">NGO Registered!</h1>
-          <p className="text-slate-500 mb-8">Our compliance team will verify your NGO. You can now proceed to login to manage your account.</p>
+          <p className="text-slate-500 mb-8">Your NGO has been registered and is <span className="font-bold text-amber-600">pending admin approval</span>. Our compliance team will verify your NGO and activate your account. You will be able to log in only after approval.</p>
           <Link to="/login/ngo" className="h-14 px-8 inline-flex items-center gap-2 bg-emerald-600 text-white font-bold rounded-full shadow-xl shadow-emerald-600/25 hover:bg-emerald-700 transition-all">Proceed to NGO Login →</Link>
         </div>
       </div>
@@ -163,13 +157,13 @@ const NGORegister = () => {
         <div className="w-full max-w-2xl">
           {/* Step Indicator */}
           <div className="flex items-center gap-1 mb-10 overflow-x-auto pb-2">
-            {STEPS.slice(0, 8).map((label, i) => (
+            {STEPS.slice(0, 7).map((label, i) => (
               <React.Fragment key={i}>
                 <div className={`flex flex-col items-center gap-1 shrink-0 ${i <= step ? "opacity-100" : "opacity-40"}`}>
                   <div className={`w-7 h-7 rounded-full font-black text-xs flex items-center justify-center ${i < step ? "bg-emerald-500 text-white" : i === step ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-600"}`}>{i < step ? "✓" : i + 1}</div>
                   <span className="text-[9px] font-semibold text-slate-600 text-center max-w-[55px] leading-tight">{label}</span>
                 </div>
-                {i < 7 && <div className={`flex-1 h-0.5 rounded-full min-w-[12px] ${i < step ? "bg-emerald-400" : "bg-slate-200"}`} />}
+                {i < 6 && <div className={`flex-1 h-0.5 rounded-full min-w-[12px] ${i < step ? "bg-emerald-400" : "bg-slate-200"}`} />}
               </React.Fragment>
             ))}
           </div>
@@ -178,12 +172,12 @@ const NGORegister = () => {
             <h2 className="text-2xl font-extrabold text-slate-900 mb-1">Step {step + 1}: {STEPS[step]}</h2>
             <p className="text-sm text-slate-500 mb-8">Fill in the details below to continue.</p>
             {steps[step]}
+            {error && <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
             <div className="flex items-center gap-3 mt-8 pt-6 border-t border-slate-100">
               {step > 0 && <button onClick={prev} className="h-12 px-6 border-2 border-slate-200 text-slate-700 font-bold text-sm rounded-full hover:border-emerald-400 hover:text-emerald-600 transition-all">← Previous</button>}
-              <button onClick={step === 7 ? submitRegistration : next}
-                disabled={loading || (step === 7 && (!form.agree || !form.password || form.password !== form.confirm))}
+              <button onClick={step === 6 ? handleSubmit : next} disabled={step === 6 && (!form.agree || loading)}
                 className="flex-1 h-12 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold text-sm rounded-full shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-emerald-600 transition-all disabled:opacity-50">
-                {step === 7 ? (loading ? "Submitting Registration..." : "Submit Registration") : "Continue →"}
+                {loading ? "Submitting..." : step === 6 ? "Submit Registration" : "Continue →"}
               </button>
             </div>
           </div>

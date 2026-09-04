@@ -1,6 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import GoogleSignInModal from "../../components/auth/GoogleSignInModal";
+import { useAuth } from "../../context/AuthContext";
 
 const AuthLayout = ({ image, quote, children }) => (
   <div className="min-h-screen flex">
@@ -47,6 +48,7 @@ const AuthLayout = ({ image, quote, children }) => (
 
 const SchoolLogin = () => {
   const navigate = useNavigate();
+  const { login, logout } = useAuth();
   const [form, setForm] = useState({ email: "", password: "", remember: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -56,31 +58,16 @@ const SchoolLogin = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email, password: form.password }),
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to sign in.");
-      }
-
-      if (data.user?.role !== "school") {
+      const user = await login(form);
+      if (user.role !== "school") {
+        await logout();
         setError("Please use the correct login page for your account.");
         return;
       }
-
-      localStorage.removeItem("vidyaadaanUser");
-      sessionStorage.removeItem("vidyaadaanUser");
-      const storage = form.remember ? localStorage : sessionStorage;
-      storage.setItem("vidyaadaanUser", JSON.stringify(data.user));
       navigate("/dashboard/school");
-    } catch {
-      setError("Unable to sign in. Please check your email and password and try again.");
+    } catch (loginError) {
+      setError(loginError.message || "Unable to sign in. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -103,11 +90,7 @@ const SchoolLogin = () => {
         <p className="text-slate-500 text-sm">Sign in to manage your school's development projects.</p>
       </div>
 
-      {error && (
-        <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          {error}
-        </p>
-      )}
+      {error && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div>

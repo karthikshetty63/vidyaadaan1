@@ -265,65 +265,7 @@ export const SCHOOL_EVENTS_DATA = [
   },
 ];
 
-export const SPONSOR_CHILD_DATA = [
-  {
-    id: "child-1",
-    name: "Kavya S.",
-    age: 10,
-    grade: "5th Grade",
-    school: "Govt. Primary School, Honnali",
-    dream: "Wants to become a Software Engineer and build apps for farmers",
-    story: "Kavya scores 95%+ in mathematics. Her father works as a daily wage laborer. She needs support for textbooks, school uniform, and a digital learning tablet.",
-    photo: "https://images.unsplash.com/photo-1544717305-2782549b5136?q=80&w=500&auto=format&fit=crop",
-    annualCost: 12000,
-    raisedCost: 8000,
-    priority: "High Need",
-    needs: [
-      { label: "Textbooks & Notebooks Set", cost: 2500, sponsored: true },
-      { label: "School Uniforms & Shoes (2 Pairs)", cost: 3500, sponsored: true },
-      { label: "Digital Learning Tablet", cost: 4500, sponsored: false },
-      { label: "Annual Mid-day Meal Nutrition Supplement", cost: 1500, sponsored: false },
-    ],
-  },
-  {
-    id: "child-2",
-    name: "Chetan Kumar",
-    age: 12,
-    grade: "7th Grade",
-    school: "Govt. High School, Tumakuru",
-    dream: "Wants to become a Doctor and serve rural villages",
-    story: "Chetan represents his school in state science fairs. He walks 4 km every day to attend school and needs a bicycle and science experiment kits.",
-    photo: "https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=500&auto=format&fit=crop",
-    annualCost: 15000,
-    raisedCost: 6000,
-    priority: "High Need",
-    needs: [
-      { label: "School Bicycle for 4 km Daily Travel", cost: 6000, sponsored: true },
-      { label: "Science Lab Experiment Kit", cost: 4000, sponsored: false },
-      { label: "English Dictionary & Library Pass", cost: 2000, sponsored: false },
-      { label: "Annual Exam Fee & Bag", cost: 3000, sponsored: false },
-    ],
-  },
-  {
-    id: "child-3",
-    name: "Meena R.",
-    age: 9,
-    grade: "4th Grade",
-    school: "Govt. Primary School, Ramanagara",
-    dream: "Wants to become a Teacher and teach village children",
-    story: "Meena loves reading storybooks and drawing. She needs support for art supplies, school bag, shoes, and monthly health checkups.",
-    photo: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=500&auto=format&fit=crop",
-    annualCost: 9600,
-    raisedCost: 9600,
-    priority: "Fully Sponsored",
-    needs: [
-      { label: "Art Supplies & Story Books", cost: 2600, sponsored: true },
-      { label: "Uniform & Shoes", cost: 3000, sponsored: true },
-      { label: "School Bag & Water Bottle", cost: 2000, sponsored: true },
-      { label: "Health & Nutrition Pack", cost: 2000, sponsored: true },
-    ],
-  },
-];
+export { SPONSOR_CHILD_DATA } from "./children.js";
 
 export const COMMUNITY_PILLARS = [
   { id: "events", title: "School Events", icon: "🎟️", count: "12 Events Active", desc: "Sponsor Annual Day, Sports Day, Science Fairs, and Health Camps." },

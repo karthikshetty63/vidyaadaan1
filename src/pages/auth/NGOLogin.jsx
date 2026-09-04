@@ -2,17 +2,33 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "./SchoolLogin";
 import GoogleSignInModal from "../../components/auth/GoogleSignInModal";
+import { useAuth } from "../../context/AuthContext";
 
 const NGOLogin = () => {
   const navigate = useNavigate();
+  const { login, logout } = useAuth();
   const [form, setForm] = useState({ email: "", password: "", remember: false });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [googleModalOpen, setGoogleModalOpen] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    setTimeout(() => { setLoading(false); navigate("/dashboard/ngo"); }, 1200);
+    try {
+      const user = await login(form);
+      if (user.role !== "ngo") {
+        await logout();
+        setError("Please use the correct login page for your account.");
+        return;
+      }
+      navigate("/dashboard/ngo");
+    } catch (loginError) {
+      setError(loginError.message || "Unable to sign in. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -31,6 +47,8 @@ const NGOLogin = () => {
         <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Welcome Back</h1>
         <p className="text-slate-500 text-sm">Sign in to manage your NGO's school projects and volunteers.</p>
       </div>
+
+      {error && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div>

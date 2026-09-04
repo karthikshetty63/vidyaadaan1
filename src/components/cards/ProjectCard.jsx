@@ -1,4 +1,5 @@
 import React from "react";
+import { getFundingPercentage } from "../../utils/funding";
 
 const formatCurrency = (n) =>
   new Intl.NumberFormat("en-IN", {
@@ -21,7 +22,7 @@ const ProjectCard = ({ project }) => {
     badgeColor = "bg-blue-600",
   } = project;
 
-  const pct = Math.round((raisedAmount / targetAmount) * 100);
+  const pct = getFundingPercentage(targetAmount, raisedAmount);
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative group">

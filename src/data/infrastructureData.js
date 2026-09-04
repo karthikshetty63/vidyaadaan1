@@ -1,24 +1,7 @@
 // VIDYADAAN — Infrastructure Project Mock Data
 // 15 categories matching the full project spec
 
-export const INFRA_CATEGORIES = [
-  "All",
-  "Classroom Development",
-  "Library",
-  "Computer Lab",
-  "Science Lab",
-  "Drinking Water",
-  "Electricity",
-  "Playground",
-  "Campus Development",
-  "Mid-Day Meal",
-  "Transportation",
-  "Inclusive Education",
-  "Arts & Culture",
-  "Digital Learning",
-  "Health & Wellness",
-  "Other Infrastructure",
-];
+export { INFRA_CATEGORIES } from "../constants/infrastructureCategories.js";
 
 export const INFRA_PROJECTS = [
   {
