@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import Navbar from "../components/layout/Navbar";
-import Footer from "../components/layout/Footer";
-import Container from "../components/layout/Container";
-import ProjectTimeline from "../components/transparency/ProjectTimeline";
-import ProjectPhotoGallery from "../components/transparency/ProjectPhotoGallery";
-import PaymentTransparencyPanel from "../components/transparency/PaymentTransparencyPanel";
-import UploadPhotoModal from "../components/transparency/UploadPhotoModal";
-import NGOVerifyModal from "../components/transparency/NGOVerifyModal";
-import { PROJECT_TRANSPARENCY_DATA } from "../data/transparencyData";
+import Navbar from "../../components/layout/Navbar";
+import Footer from "../../components/layout/Footer";
+import Container from "../../components/layout/Container";
+import ProjectTimeline from "../../components/transparency/ProjectTimeline";
+import ProjectPhotoGallery from "../../components/transparency/ProjectPhotoGallery";
+import PaymentTransparencyPanel from "../../components/transparency/PaymentTransparencyPanel";
+import UploadPhotoModal from "../../components/transparency/UploadPhotoModal";
+import NGOVerifyModal from "../../components/transparency/NGOVerifyModal";
+import { PROJECT_TRANSPARENCY_DATA } from "../../data/transparencyData";
 
 // ── Role Config ────────────────────────────────────────────────────────────
 const ROLE_CONFIG = {
@@ -209,11 +209,10 @@ const ProjectTransparencyPage = () => {
                   setActiveSection(sec.id);
                   document.getElementById(`section-${sec.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-bold transition-all shrink-0 ${
-                  activeSection === sec.id
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-bold transition-all shrink-0 ${activeSection === sec.id
                     ? "bg-blue-600 text-white shadow-sm"
                     : "text-slate-600 hover:text-blue-600 hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 <span>{sec.icon}</span>
                 <span>{sec.label}</span>
@@ -285,8 +284,8 @@ const ProjectTransparencyPage = () => {
                   {role === "school"
                     ? "Upload evidence at each stage. NGO will verify your uploads."
                     : role === "ngo"
-                    ? "Review and verify the photos uploaded by the School Admin."
-                    : "Every photo is geotagged, timestamped, and NGO-verified for complete transparency."}
+                      ? "Review and verify the photos uploaded by the School Admin."
+                      : "Every photo is geotagged, timestamped, and NGO-verified for complete transparency."}
                 </p>
               </div>
 

@@ -1,31 +1,31 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
+import Home from "../pages/public/Home";
 
-import CommunitySupport from "./pages/CommunitySupport";
-import ProjectDetails from "./pages/ProjectDetails";
+import CommunitySupport from "../pages/public/CommunitySupport";
+import ProjectDetails from "../pages/public/ProjectDetails";
 
-import DonorImpactPage from "./pages/DonorImpactPage";
-import RoleSelector from "./pages/auth/RoleSelector";
-import SchoolLogin from "./pages/auth/SchoolLogin";
-import NGOLogin from "./pages/auth/NGOLogin";
-import DonorLogin from "./pages/auth/DonorLogin";
-import JoinSelector from "./pages/auth/JoinSelector";
-import SchoolRegister from "./pages/auth/SchoolRegister";
-import NGORegister from "./pages/auth/NGORegister";
-import DonorRegister from "./pages/auth/DonorRegister";
-import SchoolDashboard from "./pages/dashboard/school/SchoolDashboard";
-import SchoolProfile from "./pages/dashboard/school/SchoolProfile";
-import Infrastructure from "./pages/dashboard/school/Infrastructure";
-import SchoolEvents from "./pages/dashboard/school/SchoolEvents";
-import ManageProjects from "./pages/dashboard/school/ManageProjects";
-import ProjectProgress from "./pages/dashboard/school/ProjectProgress";
-import Gallery from "./pages/dashboard/school/Gallery";
-import DonationHistory from "./pages/dashboard/school/DonationHistory";
-import SchoolReports from "./pages/dashboard/school/Reports";
-import SchoolNotifications from "./pages/dashboard/school/Notifications";
-import SchoolSettings from "./pages/dashboard/school/Settings";
-import NGODashboard from "./pages/dashboard/ngo/NGODashboard";
-import DonorDashboard from "./pages/dashboard/donor/DonorDashboard";
+import DonorImpactPage from "../pages/public/DonorImpactPage";
+import RoleSelector from "../pages/auth/RoleSelector";
+import SchoolLogin from "../pages/auth/SchoolLogin";
+import NGOLogin from "../pages/auth/NGOLogin";
+import DonorLogin from "../pages/auth/DonorLogin";
+import JoinSelector from "../pages/auth/JoinSelector";
+import SchoolRegister from "../pages/auth/SchoolRegister";
+import NGORegister from "../pages/auth/NGORegister";
+import DonorRegister from "../pages/auth/DonorRegister";
+import SchoolDashboard from "../pages/dashboard/school/SchoolDashboard";
+import SchoolProfile from "../pages/dashboard/school/SchoolProfile";
+import Infrastructure from "../pages/dashboard/school/Infrastructure";
+import SchoolEvents from "../pages/dashboard/school/SchoolEvents";
+import ManageProjects from "../pages/dashboard/school/ManageProjects";
+import ProjectProgress from "../pages/dashboard/school/ProjectProgress";
+import Gallery from "../pages/dashboard/school/Gallery";
+import DonationHistory from "../pages/dashboard/school/DonationHistory";
+import SchoolReports from "../pages/dashboard/school/Reports";
+import SchoolNotifications from "../pages/dashboard/school/Notifications";
+import SchoolSettings from "../pages/dashboard/school/Settings";
+import NGODashboard from "../pages/dashboard/ngo/NGODashboard";
+import DonorDashboard from "../pages/dashboard/donor/DonorDashboard";
 
 function App() {
   return (

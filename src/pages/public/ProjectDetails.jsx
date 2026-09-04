@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
-import Navbar from "../components/layout/Navbar";
-import Footer from "../components/layout/Footer";
-import Container from "../components/layout/Container";
-import PaymentFlowModal from "../components/payment/PaymentFlowModal";
-import NGOVerifyModal from "../components/transparency/NGOVerifyModal";
-import AddProgressUpdateModal from "../components/dashboard/school/AddProgressUpdateModal";
-import { INFRA_PROJECTS } from "../data/infrastructureData";
+import Navbar from "../../components/layout/Navbar";
+import Footer from "../../components/layout/Footer";
+import Container from "../../components/layout/Container";
+import PaymentFlowModal from "../../components/payment/PaymentFlowModal";
+import NGOVerifyModal from "../../components/transparency/NGOVerifyModal";
+import AddProgressUpdateModal from "../../components/dashboard/school/AddProgressUpdateModal";
+import { INFRA_PROJECTS } from "../../data/infrastructureData";
 
 const PROCESS_TIMELINE = [
   { step: 1, label: "Need Created", desc: "Infrastructure request logged by School Principal", icon: "📝", status: "completed" },
@@ -91,8 +91,8 @@ const ProjectDetails = () => {
     role === "school"
       ? "/dashboard/school#projects"
       : role === "ngo"
-      ? "/dashboard/ngo#needs"
-      : "/dashboard/donor#needs";
+        ? "/dashboard/ngo#needs"
+        : "/dashboard/donor#needs";
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -226,11 +226,10 @@ const ProjectDetails = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all shrink-0 border ${
-                  activeTab === tab.id
+                className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all shrink-0 border ${activeTab === tab.id
                     ? "bg-blue-600 text-white border-blue-600 shadow-md"
                     : "bg-slate-50 text-slate-700 border-slate-200 hover:border-blue-300"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -310,13 +309,12 @@ const ProjectDetails = () => {
                           <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-extrabold text-[10px]">
                             Stage: {photo.stageLabel}
                           </span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
-                            photo.verificationStatus === "verified"
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${photo.verificationStatus === "verified"
                               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                               : photo.verificationStatus === "rejected"
-                              ? "bg-red-50 text-red-700 border-red-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
-                          }`}>
+                                ? "bg-red-50 text-red-700 border-red-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            }`}>
                             {photo.verificationStatus === "verified" ? "🟢 NGO Verified" : photo.verificationStatus === "rejected" ? "🔴 Returned" : "🟡 Awaiting Verification"}
                           </span>
                         </div>
@@ -396,17 +394,15 @@ const ProjectDetails = () => {
                   {PROCESS_TIMELINE.map((item) => (
                     <div
                       key={item.step}
-                      className={`p-4 rounded-2xl border flex items-center gap-3 ${
-                        item.status === "completed"
+                      className={`p-4 rounded-2xl border flex items-center gap-3 ${item.status === "completed"
                           ? "bg-emerald-50/70 border-emerald-200 text-emerald-900"
                           : item.status === "current"
-                          ? "bg-blue-50 border-blue-400 text-blue-900 shadow-md"
-                          : "bg-slate-50 border-slate-200 text-slate-400"
-                      }`}
+                            ? "bg-blue-50 border-blue-400 text-blue-900 shadow-md"
+                            : "bg-slate-50 border-slate-200 text-slate-400"
+                        }`}
                     >
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
-                        item.status === "completed" ? "bg-emerald-600 text-white" : item.status === "current" ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"
-                      }`}>
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${item.status === "completed" ? "bg-emerald-600 text-white" : item.status === "current" ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"
+                        }`}>
                         {item.icon}
                       </div>
                       <div>

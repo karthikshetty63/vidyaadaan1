@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import Navbar from "../components/layout/Navbar";
-import Footer from "../components/layout/Footer";
-import Container from "../components/layout/Container";
+import Navbar from "../../components/layout/Navbar";
+import Footer from "../../components/layout/Footer";
+import Container from "../../components/layout/Container";
 
 // ── Platform-wide transparency stats ───────────────────────────────────────
 const PLATFORM_STATS = [
@@ -411,9 +411,8 @@ const TransparencyCenter = () => {
                   >
                     <span className="text-sm font-bold text-slate-800">{faq.q}</span>
                     <span
-                      className={`text-blue-600 text-lg font-black shrink-0 transition-transform duration-200 ${
-                        openFaq === i ? "rotate-45" : ""
-                      }`}
+                      className={`text-blue-600 text-lg font-black shrink-0 transition-transform duration-200 ${openFaq === i ? "rotate-45" : ""
+                        }`}
                     >
                       +
                     </span>

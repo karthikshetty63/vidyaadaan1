@@ -1,9 +1,9 @@
 import React from "react";
-import Navbar from "../components/layout/Navbar";
-import Footer from "../components/layout/Footer";
-import Container from "../components/layout/Container";
-import SectionTitle from "../components/ui/SectionTitle";
-import { DONOR_JOURNEY_STAGES, PAYMENT_TRANSPARENCY_HISTORY } from "../data/transparencyData";
+import Navbar from "../../components/layout/Navbar";
+import Footer from "../../components/layout/Footer";
+import Container from "../../components/layout/Container";
+import SectionTitle from "../../components/ui/SectionTitle";
+import { DONOR_JOURNEY_STAGES, PAYMENT_TRANSPARENCY_HISTORY } from "../../data/transparencyData";
 
 const DonorImpactPage = () => {
   return (

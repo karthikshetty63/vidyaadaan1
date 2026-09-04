@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import Navbar from "../components/layout/Navbar";
-import Footer from "../components/layout/Footer";
-import Container from "../components/layout/Container";
-import SectionTitle from "../components/ui/SectionTitle";
-import PaymentFlowModal from "../components/payment/PaymentFlowModal";
-import { SCHOOL_EVENTS_DATA, SPONSOR_CHILD_DATA, COMMUNITY_PILLARS } from "../data/transparencyData";
+import Navbar from "../../components/layout/Navbar";
+import Footer from "../../components/layout/Footer";
+import Container from "../../components/layout/Container";
+import SectionTitle from "../../components/ui/SectionTitle";
+import PaymentFlowModal from "../../components/payment/PaymentFlowModal";
+import { SCHOOL_EVENTS_DATA, SPONSOR_CHILD_DATA, COMMUNITY_PILLARS } from "../../data/transparencyData";
 
 const CommunitySupport = () => {
   const [activePillar, setActivePillar] = useState("events");
@@ -49,11 +49,10 @@ const CommunitySupport = () => {
               <button
                 key={p.id}
                 onClick={() => setActivePillar(p.id)}
-                className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1.5 ${
-                  activePillar === p.id
+                className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1.5 ${activePillar === p.id
                     ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20 scale-105"
                     : "bg-white text-slate-700 border-slate-200 hover:border-emerald-400"
-                }`}
+                  }`}
               >
                 <span className="text-2xl">{p.icon}</span>
                 <span className="text-[11px] font-extrabold leading-tight">{p.title}</span>
@@ -118,11 +117,10 @@ const CommunitySupport = () => {
                           {evt.items.map((item) => (
                             <div
                               key={item.id}
-                              className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-colors ${
-                                item.sponsored
+                              className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-colors ${item.sponsored
                                   ? "bg-slate-50 border-slate-200 text-slate-400"
                                   : "bg-amber-50/50 border-amber-200 text-slate-800"
-                              }`}
+                                }`}
                             >
                               <div>
                                 <span className="font-bold">{item.label}</span>
@@ -221,11 +219,10 @@ const CommunitySupport = () => {
                           {child.needs.map((need, i) => (
                             <div
                               key={i}
-                              className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
-                                need.sponsored
+                              className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${need.sponsored
                                   ? "bg-slate-50 border-slate-200 text-slate-400"
                                   : "bg-blue-50/60 border-blue-200 text-slate-800"
-                              }`}
+                                }`}
                             >
                               <span>{need.label}</span>
                               <div className="flex items-center gap-2">
