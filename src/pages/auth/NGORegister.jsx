@@ -27,7 +27,7 @@ const NGORegister = () => {
     setError("");
     try {
       await registerAccount({ role: "ngo", ...form });
-      setStep(9);
+      setStep(8);
     } catch (registrationError) {
       setError(registrationError.message);
     } finally {
@@ -136,7 +136,7 @@ const NGORegister = () => {
     </div>,
   ];
 
-  if (step === 9) {
+  if (step === 8) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 flex items-center justify-center px-6">
         <div className="text-center max-w-md">
@@ -180,10 +180,10 @@ const NGORegister = () => {
             {steps[step]}
             <div className="flex items-center gap-3 mt-8 pt-6 border-t border-slate-100">
               {step > 0 && <button onClick={prev} className="h-12 px-6 border-2 border-slate-200 text-slate-700 font-bold text-sm rounded-full hover:border-emerald-400 hover:text-emerald-600 transition-all">← Previous</button>}
-              <button onClick={step === 8 ? submitRegistration : next}
-                disabled={loading || (step === 8 && (!form.agree || !form.password || form.password !== form.confirm))}
+              <button onClick={step === 7 ? submitRegistration : next}
+                disabled={loading || (step === 7 && (!form.agree || !form.password || form.password !== form.confirm))}
                 className="flex-1 h-12 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold text-sm rounded-full shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-emerald-600 transition-all disabled:opacity-50">
-                {step === 8 ? (loading ? "Submitting Registration..." : "Submit Registration") : "Continue →"}
+                {step === 7 ? (loading ? "Submitting Registration..." : "Submit Registration") : "Continue →"}
               </button>
             </div>
           </div>
