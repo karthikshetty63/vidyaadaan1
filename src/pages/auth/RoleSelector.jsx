@@ -1,0 +1,131 @@
+import React from "react";
+import { Link } from "react-router-dom";
+import VidyadaanLogo from "../../components/ui/VidyadaanLogo";
+
+const roles = [
+  {
+    key: "school",
+    icon: (
+      <svg className="w-16 h-16" viewBox="0 0 64 64" fill="none">
+        <rect x="8" y="24" width="48" height="32" rx="4" fill="#EFF6FF" stroke="#3B82F6" strokeWidth="2" />
+        <path d="M4 28L32 10L60 28" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
+        <rect x="22" y="36" width="20" height="20" rx="2" fill="#DBEAFE" stroke="#3B82F6" strokeWidth="1.5" />
+        <rect x="26" y="28" width="4" height="4" rx="1" fill="#3B82F6" />
+        <rect x="34" y="28" width="4" height="4" rx="1" fill="#3B82F6" />
+        <path d="M32 10V6" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="32" cy="5" r="2" fill="#F59E0B" />
+      </svg>
+    ),
+    title: "School Admin",
+    color: "blue",
+    description: "Manage your school's development projects, upload infrastructure needs, and connect with NGOs and donors.",
+    button: "Continue as School",
+    href: "/login/school",
+    gradient: "from-blue-50 to-blue-100",
+    border: "border-blue-200",
+    btnClass: "bg-blue-600 hover:bg-blue-700 shadow-blue-500/25",
+  },
+  {
+    key: "ngo",
+    icon: (
+      <svg className="w-16 h-16" viewBox="0 0 64 64" fill="none">
+        <circle cx="32" cy="20" r="12" fill="#ECFDF5" stroke="#10B981" strokeWidth="2" />
+        <path d="M20 20c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#10B981" strokeWidth="1.5" strokeDasharray="3,2" />
+        <path d="M16 44c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#D1FAE5" stroke="#10B981" strokeWidth="2" />
+        <path d="M24 20l4 4 8-8" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="26" y="52" width="12" height="4" rx="2" fill="#10B981" />
+      </svg>
+    ),
+    title: "NGO Partner",
+    color: "emerald",
+    description: "Review school requests, manage volunteers, verify projects, and create real educational impact.",
+    button: "Continue as NGO",
+    href: "/login/ngo",
+    gradient: "from-emerald-50 to-emerald-100",
+    border: "border-emerald-200",
+    btnClass: "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/25",
+  },
+  {
+    key: "donor",
+    icon: (
+      <svg className="w-16 h-16" viewBox="0 0 64 64" fill="none">
+        <path d="M32 52L14 34C8 28 8 18 16 14c4-2 9-1 12 2l4 4 4-4c3-3 8-4 12-2 8 4 8 14 2 20L32 52z" fill="#FEF3C7" stroke="#F59E0B" strokeWidth="2" />
+        <path d="M24 24c2-3 6-4 9-2" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+    title: "Donor",
+    color: "amber",
+    description: "Support verified government schools and track every donation with complete transparency.",
+    button: "Continue as Donor",
+    href: "/login/donor",
+    gradient: "from-amber-50 to-amber-100",
+    border: "border-amber-200",
+    btnClass: "bg-amber-500 hover:bg-amber-600 shadow-amber-500/25",
+  },
+];
+
+const RoleSelector = () => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex flex-col">
+      {/* Mini Navbar */}
+      <header className="w-full px-8 py-5 flex items-center justify-between border-b border-slate-100 bg-white/80 backdrop-blur-md">
+        <Link to="/">
+          <VidyadaanLogo variant="dark" />
+        </Link>
+        <Link to="/" className="text-xs text-slate-500 hover:text-blue-600 font-semibold transition-colors flex items-center gap-1">
+          ← Back to Home
+        </Link>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-5xl">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold mb-6">
+              <span>👋</span> Welcome to VIDYADAAN
+            </div>
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
+              Welcome Back
+            </h1>
+            <p className="text-slate-500 text-base max-w-md mx-auto">
+              Select your role to continue with VIDYADAAN.
+            </p>
+          </div>
+
+          {/* Role Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {roles.map((role) => (
+              <div
+                key={role.key}
+                className={`bg-gradient-to-b ${role.gradient} border ${role.border} rounded-[24px] p-8 flex flex-col items-center text-center gap-5 hover:-translate-y-2 transition-all duration-300 shadow-lg hover:shadow-2xl group`}
+              >
+                <div className="w-24 h-24 rounded-2xl bg-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+                  {role.icon}
+                </div>
+                <div>
+                  <h2 className="text-xl font-extrabold text-slate-900 mb-2">{role.title}</h2>
+                  <p className="text-sm text-slate-600 leading-relaxed">{role.description}</p>
+                </div>
+                <Link
+                  to={role.href}
+                  className={`w-full h-12 flex items-center justify-center text-sm font-bold text-white rounded-full transition-all duration-200 shadow-xl ${role.btnClass} active:scale-[0.98]`}
+                >
+                  {role.button}
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-sm text-slate-500 mt-10">
+            Don't have an account?{" "}
+            <Link to="/join" className="text-blue-600 font-bold hover:underline">
+              Join VIDYADAAN
+            </Link>
+          </p>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default RoleSelector;
