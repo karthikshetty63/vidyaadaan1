@@ -1,11 +1,68 @@
-import React, { useState } from "react";
+import { useRef, useState } from "react";
+import { LuCircleCheck, LuPencil, LuSchool } from "react-icons/lu";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import SchoolProfileModal from "../../../components/dashboard/school/SchoolProfileModal";
+import Alert from "../../../components/ui/Alert";
+import Badge from "../../../components/ui/Badge";
+import Button from "../../../components/ui/Button";
+import Card, { CardHeader } from "../../../components/ui/Card";
+import PageHeader from "../../../components/ui/PageHeader";
+import ProtectedImage from "../../../components/ui/ProtectedImage";
+import StatCard from "../../../components/ui/StatCard";
 import { INITIAL_SCHOOL_PROFILE } from "../../../data/schoolDataStore";
+import { removeSchoolPhoto, uploadSchoolPhoto } from "../../../api/profile";
+import useMyProfile, { toSchoolDisplayProfile } from "../../../hooks/useMyProfile";
+import { UPLOAD_RULES, getUploadError } from "../../../../shared/registrationRules.js";
+
+const PHOTO_RULE = UPLOAD_RULES.school.schoolPhoto;
+
+const DetailList = ({ items }) => (
+  <dl className="divide-y divide-slate-200">
+    {items.map(([label, value]) => (
+      <div key={label} className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-4 px-5 py-3 text-sm">
+        <dt className="text-slate-500">{label}</dt>
+        <dd className="sm:col-span-2 font-medium text-slate-900 break-words">{value || "—"}</dd>
+      </div>
+    ))}
+  </dl>
+);
 
 const SchoolProfile = () => {
-  const [profile, setProfile] = useState(INITIAL_SCHOOL_PROFILE);
+  // Registered details + photo come from the API; local edits from the (existing) edit modal stay on this page.
+  const { profile: myProfile, setProfile: setMyProfile } = useMyProfile();
+  const [localEdits, setLocalEdits] = useState({});
+  const profile = { ...toSchoolDisplayProfile(myProfile, INITIAL_SCHOOL_PROFILE), ...localEdits };
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  const photoInput = useRef(null);
+  const [photoStatus, setPhotoStatus] = useState({ busy: false, error: "", message: "" });
+
+  const handlePhotoSelected = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const problem = getUploadError(PHOTO_RULE, file);
+    if (problem) return setPhotoStatus({ busy: false, error: problem, message: "" });
+    setPhotoStatus({ busy: true, error: "", message: "" });
+    try {
+      const res = await uploadSchoolPhoto(file);
+      setMyProfile((p) => ({ ...p, photo: res.photo }));
+      setPhotoStatus({ busy: false, error: "", message: "Photo updated." });
+    } catch (err) {
+      setPhotoStatus({ busy: false, error: err.message, message: "" });
+    }
+  };
+
+  const handlePhotoRemove = async () => {
+    setPhotoStatus({ busy: true, error: "", message: "" });
+    try {
+      await removeSchoolPhoto();
+      setMyProfile((p) => ({ ...p, photo: null }));
+      setPhotoStatus({ busy: false, error: "", message: "Photo removed." });
+    } catch (err) {
+      setPhotoStatus({ busy: false, error: err.message, message: "" });
+    }
+  };
 
   const facilities = [
     { label: "Smart Digital Classroom", available: true, note: "65-Inch Smart Screen" },
@@ -17,111 +74,91 @@ const SchoolProfile = () => {
   ];
 
   return (
-    <DashboardLayout role="school" userName={profile.name} userSub={profile.district} title="School Profile Management" subtitle={profile.name} notifications={[1, 2]}>
+    <DashboardLayout role="school" userName={profile.name} userSub={profile.district} title="School profile" subtitle={profile.name} notifications={[1, 2]}>
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+          <PageHeader
+            title="School profile"
+            description="Details from your registration. Keep them accurate so NGOs and donors can trust your requests."
+            actions={<Button variant="secondary" icon={LuPencil} onClick={() => setIsEditOpen(true)}>Edit profile</Button>}
+          />
 
-      <main className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
-
-        {/* Banner Card */}
-        <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-600 rounded-[28px] p-8 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-4xl border border-white/20 shadow-inner shrink-0">
-              {profile.logo || "🏫"}
-            </div>
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 border border-emerald-300/30 text-[10px] font-black uppercase">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Verified Government School
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black">{profile.name}</h1>
-              <p className="text-xs text-blue-100 font-medium">UDISE Code: {profile.udise} · Established {profile.established}</p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsEditOpen(true)}
-            className="h-11 px-6 bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-xs rounded-full shadow-md transition-all shrink-0 flex items-center gap-2"
-          >
-            ✏️ Edit School Profile
-          </button>
-        </div>
-
-        {/* Key Metrics Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-          <div className="p-5 bg-white rounded-[20px] border border-slate-200 shadow-sm space-y-1">
-            <span className="text-slate-400 font-bold block">Total Enrolled Students</span>
-            <span className="text-2xl font-black text-slate-900">{profile.studentsCount} Kids</span>
-          </div>
-          <div className="p-5 bg-white rounded-[20px] border border-slate-200 shadow-sm space-y-1">
-            <span className="text-slate-400 font-bold block">Teaching Staff</span>
-            <span className="text-2xl font-black text-slate-900">{profile.teachersCount} Teachers</span>
-          </div>
-          <div className="p-5 bg-white rounded-[20px] border border-slate-200 shadow-sm space-y-1">
-            <span className="text-slate-400 font-bold block">Development Score</span>
-            <span className="text-2xl font-black text-blue-600">{profile.developmentScore} / 100</span>
-          </div>
-          <div className="p-5 bg-white rounded-[20px] border border-slate-200 shadow-sm space-y-1">
-            <span className="text-slate-400 font-bold block">Verification Status</span>
-            <span className="text-2xl font-black text-emerald-600">✓ Verified</span>
-          </div>
-        </div>
-
-        {/* Details Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* Principal & Credentials */}
-          <div className="bg-white rounded-[24px] border border-slate-200 p-6 shadow-sm space-y-4">
-            <h3 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-              <span>👤</span> Principal & Administrative Info
-            </h3>
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between py-2 border-b border-slate-50">
-                <span className="text-slate-500 font-medium">Principal Name</span>
-                <span className="font-extrabold text-slate-900">{profile.principalName}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-slate-50">
-                <span className="text-slate-500 font-medium">Contact Phone</span>
-                <span className="font-extrabold text-slate-900">{profile.phone}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-slate-50">
-                <span className="text-slate-500 font-medium">Official Email</span>
-                <span className="font-extrabold text-slate-900">{profile.email}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-slate-500 font-medium">Location Address</span>
-                <span className="font-extrabold text-slate-900 text-right max-w-xs">{profile.location}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Infrastructure Checklist */}
-          <div className="bg-white rounded-[24px] border border-slate-200 p-6 shadow-sm space-y-4">
-            <h3 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-              <span>🏗️</span> Campus Facility Status
-            </h3>
-            <div className="space-y-2 text-xs">
-              {facilities.map((f) => (
-                <div key={f.label} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
-                  <div>
-                    <span className="font-bold text-slate-900 block">{f.label}</span>
-                    <span className="text-[10px] text-slate-400">{f.note}</span>
-                  </div>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${f.available ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
-                    }`}>
-                    {f.available ? "✓ Operational" : "⏳ Pending Need"}
-                  </span>
+          <Card className="p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+              <div className="flex items-center gap-4">
+                <span className="w-20 h-20 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
+                  <ProtectedImage
+                    fileId={profile.photo?.id}
+                    alt={`${profile.name} photograph`}
+                    className="w-full h-full object-cover"
+                    fallback={<LuSchool className="w-8 h-8 text-slate-400" aria-hidden="true" />}
+                  />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-semibold text-slate-900">{profile.name}</h2>
+                  <p className="mt-0.5 text-sm text-slate-500">UDISE {profile.udise} · Established {profile.established}</p>
+                  <Badge tone="success" icon={LuCircleCheck} className="mt-2">Verified school</Badge>
                 </div>
-              ))}
+              </div>
+
+              <div className="sm:ml-auto flex flex-wrap items-center gap-2">
+                <input ref={photoInput} type="file" accept={PHOTO_RULE.types.join(",")} onChange={handlePhotoSelected} className="sr-only" aria-label="Choose school photograph" />
+                <Button variant="secondary" size="sm" loading={photoStatus.busy} disabled={!myProfile} onClick={() => photoInput.current?.click()}>
+                  {photoStatus.busy ? "Saving…" : profile.photo ? "Change photo" : "Add photo"}
+                </Button>
+                {profile.photo && !photoStatus.busy && (
+                  <Button variant="ghost" size="sm" className="text-red-700 hover:bg-red-50 hover:text-red-800" onClick={handlePhotoRemove}>Remove</Button>
+                )}
+              </div>
             </div>
+
+            {photoStatus.error && <Alert tone="danger" className="mt-4">{photoStatus.error}</Alert>}
+            {photoStatus.message && <Alert tone="success" className="mt-4">{photoStatus.message}</Alert>}
+            <p className="mt-4 text-xs text-slate-500">School photograph: JPG, PNG or WebP, up to 5 MB.</p>
+          </Card>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StatCard label="Students enrolled" value={profile.studentsCount} />
+            <StatCard label="Teaching staff" value={profile.teachersCount} />
+            <StatCard label="Development score" value={`${profile.developmentScore} / 100`} />
+            <StatCard label="Verification" value="Verified" hint="Approved by VIDYADAAN" />
           </div>
 
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader title="Principal & contact" />
+              <DetailList
+                items={[
+                  ["Principal", profile.principalName],
+                  ["Phone", profile.phone],
+                  ["Official email", profile.email],
+                  ["Address", profile.location],
+                ]}
+              />
+            </Card>
 
+            <Card>
+              <CardHeader title="Campus facilities" />
+              <ul className="divide-y divide-slate-200">
+                {facilities.map((f) => (
+                  <li key={f.label} className="flex items-center justify-between gap-4 px-5 py-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900">{f.label}</p>
+                      <p className="text-xs text-slate-500">{f.note}</p>
+                    </div>
+                    <Badge tone={f.available ? "success" : "warning"}>{f.available ? "Operational" : "Needs support"}</Badge>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </div>
+        </div>
       </main>
       <SchoolProfileModal
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
         schoolData={profile}
-        onSave={(updated) => setProfile({ ...profile, ...updated })}
+        onSave={(updated) => setLocalEdits((edits) => ({ ...edits, ...updated }))}
       />
     </DashboardLayout>
   );

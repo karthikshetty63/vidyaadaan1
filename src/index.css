@@ -1,20 +1,41 @@
 @import "tailwindcss";
 
+/*
+ * VIDYADAAN design tokens
+ * ───────────────────────
+ * Colour roles
+ *   blue-600 / 700   primary interactive colour (buttons, links, active nav, focus)
+ *   brand-navy       brand ink — logo, dark panels, footer
+ *   brand-orange     logo accent only (never used for actions or status)
+ *   emerald          success / funded / verified
+ *   amber            warning / pending
+ *   red              error / destructive
+ *   slate            text, borders, surfaces
+ *
+ * Radius scale
+ *   rounded-md (6px)       tiny elements (checkbox, tags)
+ *   rounded-lg (8px)       small controls: nav items, icon buttons, tabs
+ *   rounded-control (10px) buttons, inputs, selects
+ *   rounded-2xl (16px)     cards
+ *   rounded-panel (20px)   large containers: modals, auth/registration panels
+ *   rounded-full           status badges and avatars only
+ *
+ * Shared components in src/components/ui/ use these tokens — prefer them over
+ * writing long class strings in pages.
+ */
 @theme {
-  --font-sans: 'Inter', 'Roboto', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-  --font-heading: 'Plus Jakarta Sans', 'Segoe UI', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+
+  --color-brand-navy: #0B192C;
+  --color-brand-ink: #070F1E;
+  --color-brand-orange: #FF6B00;
+
+  --radius-control: 0.625rem;
+  --radius-panel: 1.25rem;
 }
 
 @layer base {
-  :root {
-    --blue-primary: #1A56DB;
-    --blue-dark: #1E429F;
-    --blue-light: #EBF5FF;
-    --green-primary: #059669;
-    --green-light: #ECFDF5;
-    --orange-primary: #F97316;
-  }
-
   * {
     margin: 0;
     padding: 0;
@@ -26,21 +47,28 @@
   }
 
   body {
-    font-family: 'Inter', 'Roboto', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    font-family: var(--font-sans);
     background: #ffffff;
-    color: #111827;
+    color: var(--color-slate-900);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Plus Jakarta Sans', 'Segoe UI', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    font-family: var(--font-heading);
   }
 
   a { text-decoration: none; }
   button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
   img { display: block; max-width: 100%; }
+
+  /* Visible keyboard focus everywhere (mouse clicks don't show it). */
+  :focus-visible {
+    outline: 2px solid var(--color-blue-600);
+    outline-offset: 2px;
+  }
 }
 
 /* Handwritten font */
@@ -55,9 +83,9 @@
 
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #60a5fa; }
+::-webkit-scrollbar-track { background: var(--color-slate-100); }
+::-webkit-scrollbar-thumb { background: var(--color-slate-300); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-slate-400); }
 
 /* Section label */
 .section-label {

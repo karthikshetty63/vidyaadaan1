@@ -1,33 +1,30 @@
-import React from "react";
+import Card, { CardHeader } from "../ui/Card";
+import EmptyState from "../ui/EmptyState";
 
+/** Chronological activity list: { title, desc?, time } */
 const TimelineWidget = ({ events = [], title = "Recent Activity" }) => (
-  <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6">
-    <h3 className="text-base font-extrabold text-slate-900 mb-6">{title}</h3>
-    <div className="relative">
-      {/* Vertical line */}
-      <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-100 rounded-full" />
-      <div className="space-y-6">
+  <Card>
+    <CardHeader title={title} />
+    {events.length === 0 ? (
+      <EmptyState title="No recent activity" />
+    ) : (
+      <ol className="px-5 py-4">
         {events.map((event, i) => (
-          <div key={i} className="relative flex items-start gap-4 pl-10">
-            {/* Dot */}
-            <div className={`absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${event.color || "bg-blue-50"}`}>
-              {event.icon || "📌"}
-            </div>
+          <li key={i} className="relative flex gap-3 pb-5 last:pb-0">
+            {i < events.length - 1 && <span className="absolute left-[5px] top-4 bottom-0 w-px bg-slate-200" aria-hidden="true" />}
+            <span className="relative mt-1.5 w-[11px] h-[11px] rounded-full border-2 border-white bg-blue-600 ring-1 ring-slate-200 shrink-0" aria-hidden="true" />
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-bold text-slate-900 leading-snug">{event.title}</p>
-                <span className="text-[10px] text-slate-400 font-medium shrink-0 mt-0.5">{event.time}</span>
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="text-sm font-medium text-slate-900">{event.title}</p>
+                <time className="text-xs text-slate-500 shrink-0">{event.time}</time>
               </div>
-              {event.desc && <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{event.desc}</p>}
+              {event.desc && <p className="mt-0.5 text-sm text-slate-500">{event.desc}</p>}
             </div>
-          </div>
+          </li>
         ))}
-        {events.length === 0 && (
-          <p className="text-sm text-slate-400 pl-10">No recent activity.</p>
-        )}
-      </div>
-    </div>
-  </div>
+      </ol>
+    )}
+  </Card>
 );
 
 export default TimelineWidget;

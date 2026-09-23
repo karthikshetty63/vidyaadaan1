@@ -1,27 +1,32 @@
-import jwt from "jsonwebtoken";
-import process from "node:process";
+import mongoose from "mongoose";
 import User from "../models/User.js";
-import { getTokenFromRequest } from "../controllers/authController.js";
+import { getTokenFromRequest, verifyToken } from "../utils/authToken.js";
 
+// Loads the logged-in user from the httpOnly cookie. The database — not the token or
+// anything the browser sends — decides the user's current role and status.
 const requireAuth = async (req, res, next) => {
-    const token = getTokenFromRequest(req);
+    const payload = verifyToken(getTokenFromRequest(req));
 
-    if (!token || !process.env.JWT_SECRET) {
+    if (!payload || !mongoose.isValidObjectId(payload.userId)) {
         return res.status(401).json({ message: "Authentication is required." });
     }
 
     try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(payload.userId);
 
-        if (!user || user.accountStatus !== "active" || user.role !== payload.role) {
-            return res.status(401).json({ message: "Authentication is invalid or expired." });
+        if (
+            !user ||
+            user.accountStatus !== "active" ||
+            user.role !== payload.role ||
+            (user.tokenVersion ?? 0) !== payload.tv
+        ) {
+            return res.status(401).json({ message: "Your session is invalid or has expired. Please log in again." });
         }
 
         req.user = user;
         return next();
-    } catch {
-        return res.status(401).json({ message: "Authentication is invalid or expired." });
+    } catch (error) {
+        return next(error);
     }
 };
 

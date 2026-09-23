@@ -1,5 +1,9 @@
-import React from "react";
+import { LuCalendar, LuCircleCheck, LuMapPin } from "react-icons/lu";
 import { getFundingSummary } from "../../utils/funding";
+import Badge, { StatusBadge } from "../ui/Badge";
+import Button from "../ui/Button";
+import CoverImage from "../ui/CoverImage";
+import ProgressBar from "../ui/ProgressBar";
 
 const EventCard = ({
   event,
@@ -21,7 +25,6 @@ const EventCard = ({
     banner,
     requestedItems = [],
     status,
-    ngoPartner,
   } = event || {};
 
   const { budget: targetBudget, amountRaised: currentRaised, fundingPercentage: pct } = getFundingSummary({
@@ -32,155 +35,81 @@ const EventCard = ({
   const totalItemsCount = requestedItems.length;
 
   return (
-    <div className="bg-white rounded-[24px] border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between group">
-      {/* Banner & Overlay */}
-      <div className="relative h-48 overflow-hidden bg-slate-900">
-        <img
-          src={banner}
-          alt={title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-95"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent" />
+    <article className="flex flex-col bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+      <CoverImage src={banner} />
 
-        {/* Top Badges */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
-          <span className="px-3 py-1 rounded-full bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider shadow">
-            🎉 {category}
-          </span>
-          <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-slate-800 text-[10px] font-bold shadow flex items-center gap-1">
-            <span>📅</span> {date}
-          </span>
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge>{category}</Badge>
+          {status && <StatusBadge status={status} />}
+        </div>
+        <h3 className="mt-3 text-sm font-semibold text-slate-900">{title}</h3>
+        <p className="mt-1 text-sm text-slate-600">{schoolName}</p>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1"><LuMapPin className="w-3.5 h-3.5" aria-hidden="true" /> {district}</span>
+          <span className="inline-flex items-center gap-1"><LuCalendar className="w-3.5 h-3.5" aria-hidden="true" /> {date}</span>
         </div>
 
-        {/* School & District on banner bottom */}
-        <div className="absolute bottom-3 left-4 right-4 text-white">
-          <div className="flex items-center gap-1.5 text-xs font-extrabold text-blue-200">
-            <span>🏫</span> {schoolName}
-          </div>
-          <p className="text-[10px] text-slate-300 font-medium">📍 {district}</p>
-        </div>
-      </div>
+        {(expectedStudents || totalItemsCount > 0 || event?.requiredItems?.length > 0) && (
+          <p className="mt-3 text-xs text-slate-600">
+            {[
+              expectedStudents ? `${expectedStudents} students` : null,
+              totalItemsCount > 0
+                ? `${sponsoredCount} of ${totalItemsCount} items sponsored`
+                : event?.requiredItems?.length > 0
+                  ? `${event.requiredItems.length} items requested`
+                  : null,
+            ].filter(Boolean).join(" · ")}
+          </p>
+        )}
 
-      {/* Card Content */}
-      <div className="p-6 flex-1 flex flex-col justify-between">
-        <div>
-          {/* Title */}
-          <h3 className="font-extrabold text-slate-900 text-base leading-snug mb-3 group-hover:text-blue-600 transition-colors">
-            {title}
-          </h3>
-
-          {/* Stats pills */}
-          <div className="flex items-center gap-3 mb-4 text-xs font-semibold text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-            <div className="flex items-center gap-1">
-              <span className="text-base">👦</span>
-              <span><strong>{expectedStudents}</strong> Kids</span>
-            </div>
-            <div className="w-px h-4 bg-slate-200" />
-            <div className="flex items-center gap-1">
-              <span className="text-base">📦</span>
-              <span><strong>{sponsoredCount}/{totalItemsCount}</strong> Items Sponsored</span>
-            </div>
-          </div>
-
-          {/* Requested Items Chips */}
-          <div className="mb-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Requested Support Items:</p>
-            <div className="flex flex-wrap gap-1.5">
-              {requestedItems.map((item, idx) => (
-                <span
-                  key={idx}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all ${item.sponsored
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : "bg-amber-50 text-amber-700 border-amber-200"
-                    }`}
-                  title={item.sponsored ? `Sponsored by ${item.sponsorName}` : `Needs sponsorship (₹${item.cost})`}
-                >
-                  {item.sponsored ? "✓ " : "⏳ "}{item.label}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Budget Progress Bar */}
-        <div>
-          <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="font-extrabold text-slate-900">
-              ₹{currentRaised.toLocaleString("en-IN")} <span className="text-[10px] font-medium text-slate-400">raised</span>
-            </span>
-            <span className="font-bold text-slate-500 text-[11px]">
-              Goal ₹{targetBudget.toLocaleString("en-IN")} ({pct}%)
-            </span>
-          </div>
-          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${pct >= 100
-                  ? "bg-emerald-500"
-                  : "bg-gradient-to-r from-blue-600 via-blue-500 to-emerald-400"
+        {totalItemsCount > 0 && (
+          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Requested support items">
+            {requestedItems.map((item, idx) => (
+              <li
+                key={idx}
+                title={item.sponsored ? `Sponsored by ${item.sponsorName}` : `Needs sponsorship (₹${item.cost})`}
+                className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs ring-1 ring-inset ${
+                  item.sponsored ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : "bg-slate-50 text-slate-700 ring-slate-200"
                 }`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-
-          {/* Action Buttons based on Role */}
-          <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-            {status === "Completed" ? (
-              <button
-                onClick={() => onViewDetails && onViewDetails(event)}
-                className="w-full h-11 bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold text-xs rounded-full hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5"
               >
-                <span>🏆</span> Event Completed — View Impact
-              </button>
+                {item.sponsored && <LuCircleCheck className="w-3 h-3" aria-label="Sponsored" />}
+                {item.label}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-auto pt-4">
+          <div className="flex items-center justify-between text-xs text-slate-600 mb-1.5">
+            <span><span className="font-medium text-slate-900">₹{currentRaised.toLocaleString("en-IN")}</span> raised</span>
+            <span className="tabular-nums">Goal ₹{targetBudget.toLocaleString("en-IN")} · {pct}%</span>
+          </div>
+          <ProgressBar value={pct} label={`${title} funding`} />
+
+          <div className="mt-4 flex gap-2">
+            {status === "Completed" ? (
+              <Button variant="secondary" fullWidth onClick={() => onViewDetails && onViewDetails(event)}>View impact</Button>
             ) : userRole === "school" ? (
               <>
-                <button
-                  onClick={() => onPostEventUpload && onPostEventUpload(event)}
-                  className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-1"
-                >
-                  <span>📸</span> Upload Event Proof
-                </button>
-                <button
-                  onClick={() => onViewDetails && onViewDetails(event)}
-                  className="h-11 px-4 border border-slate-200 text-slate-700 font-bold text-xs rounded-full hover:bg-slate-50 transition-colors"
-                >
-                  Details
-                </button>
+                <Button className="flex-1" onClick={() => onPostEventUpload && onPostEventUpload(event)}>Upload event proof</Button>
+                <Button variant="secondary" onClick={() => onViewDetails && onViewDetails(event)}>Details</Button>
               </>
             ) : userRole === "ngo" ? (
               <>
-                <button
-                  onClick={() => onSponsorItems && onSponsorItems(event)}
-                  className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-1"
-                >
-                  <span>🤝</span> Support & Assign Volunteers
-                </button>
-                <button
-                  onClick={() => onViewDetails && onViewDetails(event)}
-                  className="h-11 px-4 border border-slate-200 text-slate-700 font-bold text-xs rounded-full hover:bg-slate-50 transition-colors"
-                >
-                  Review
-                </button>
+                <Button className="flex-1" onClick={() => onSponsorItems && onSponsorItems(event)}>Support & assign</Button>
+                <Button variant="secondary" onClick={() => onViewDetails && onViewDetails(event)}>Review</Button>
               </>
             ) : (
               <>
-                <button
-                  onClick={() => onSponsorItems && onSponsorItems(event)}
-                  className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-full shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-1"
-                >
-                  <span>🎁</span> Sponsor Items
-                </button>
-                <button
-                  onClick={() => onDonateAmount && onDonateAmount(event)}
-                  className="h-11 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-full shadow-md shadow-amber-500/20 transition-all"
-                >
-                  💙 Donate
-                </button>
+                <Button className="flex-1" onClick={() => onSponsorItems && onSponsorItems(event)}>Sponsor items</Button>
+                <Button variant="secondary" onClick={() => onDonateAmount && onDonateAmount(event)}>Donate</Button>
               </>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 

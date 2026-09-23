@@ -25,3 +25,6 @@ dist-ssr
 .env.git_disabled/
 .git_disabled/
 .env
+
+# Uploaded user files (school photos, verification documents) — never commit
+server/uploads/

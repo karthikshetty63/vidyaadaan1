@@ -28,6 +28,8 @@ import SchoolNotifications from "./pages/dashboard/school/Notifications";
 import SchoolSettings from "./pages/dashboard/school/Settings";
 import NGODashboard from "./pages/dashboard/ngo/NGODashboard";
 import DonorDashboard from "./pages/dashboard/donor/DonorDashboard";
+import AdminLogin from "./pages/auth/AdminLogin";
+import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 
 function App() {
   return (
@@ -47,6 +49,8 @@ function App() {
           <Route path="/login/school" element={<SchoolLogin />} />
           <Route path="/login/ngo" element={<NGOLogin />} />
           <Route path="/login/donor" element={<DonorLogin />} />
+          {/* Admin login only — admin accounts are created with `npm run create-admin` */}
+          <Route path="/login/admin" element={<AdminLogin />} />
 
           {/* Auth — Register */}
           <Route path="/join" element={<JoinSelector />} />
@@ -75,6 +79,11 @@ function App() {
           </Route>
           <Route element={<ProtectedRoute role="donor" />}>
             <Route path="/dashboard/donor" element={<DonorDashboard />} />
+          </Route>
+
+          {/* Platform admin — approves school & NGO registrations */}
+          <Route element={<ProtectedRoute role="admin" />}>
+            <Route path="/dashboard/admin" element={<AdminDashboard />} />
           </Route>
         </Routes>
       </AuthProvider>

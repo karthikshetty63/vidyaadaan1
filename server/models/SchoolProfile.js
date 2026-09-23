@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+const fileRef = { type: mongoose.Schema.Types.ObjectId, ref: "UploadedFile" };
+
 const schoolProfileSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
@@ -22,8 +24,21 @@ const schoolProfileSchema = new mongoose.Schema(
         bankAccount: String,
         ifsc: String,
         upi: String,
+        // School Photograph (shown on the school's dashboard/profile).
+        photo: fileRef,
+        // Private verification documents (owner + admin only).
+        documents: {
+            registrationCertificate: fileRef,
+            principalIdProof: fileRef,
+        },
     },
     { timestamps: true }
+);
+
+// One account per UDISE code. Partial so older records without a UDISE don't collide.
+schoolProfileSchema.index(
+    { udise: 1 },
+    { unique: true, partialFilterExpression: { udise: { $type: "string", $gt: "" } } }
 );
 
 const SchoolProfile = mongoose.models.SchoolProfile || mongoose.model("SchoolProfile", schoolProfileSchema);

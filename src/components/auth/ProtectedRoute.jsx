@@ -8,7 +8,8 @@ const ProtectedRoute = ({ role }) => {
     if (loading) return null;
     if (!user) return <Navigate to={`/login/${role}`} replace state={{ from: location }} />;
     if (user.role !== role) {
-        const fallback = ["school", "ngo", "donor"].includes(user.role) ? `/dashboard/${user.role}` : "/login";
+        // A convenience redirect only — the API enforces roles on every request.
+        const fallback = ["school", "ngo", "donor", "admin"].includes(user.role) ? `/dashboard/${user.role}` : "/login";
         return <Navigate to={fallback} replace />;
     }
 

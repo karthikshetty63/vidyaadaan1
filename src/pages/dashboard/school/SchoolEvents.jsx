@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { LuPlus } from "react-icons/lu";
+import Button from "../../../components/ui/Button";
+import PageHeader from "../../../components/ui/PageHeader";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import EventCard from "../../../components/events/EventCard";
 import CreateEventModal from "../../../components/events/CreateEventModal";
@@ -33,22 +36,14 @@ const SchoolEvents = () => {
   return (
     <DashboardLayout role="school" userName={profile.name} userSub={profile.district} title="School Events & Program Sponsorship" subtitle={profile.name} notifications={[1, 2]}>
 
-      <main className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-[24px] border border-slate-200 shadow-sm">
-          <div>
-            <h1 className="text-xl font-extrabold text-slate-900">School Events & Fundraiser Campaigns</h1>
-            <p className="text-xs text-slate-500">Organize Sports Day, Annual Day, Science Fair, Children's Day, and Midday Meal drives visible to NGOs & Donors.</p>
-          </div>
-
-          <button
-            onClick={() => setIsCreateOpen(true)}
-            className="h-11 px-6 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-full shadow-md transition-all shrink-0 flex items-center gap-1.5"
-          >
-            <span>➕</span> Create School Event
-          </button>
-        </div>
+        <PageHeader
+          title="School events"
+          description="Organise Sports Day, Annual Day, Science Fair, Children's Day and midday meal drives visible to NGOs and donors."
+          actions={<Button icon={LuPlus} onClick={() => setIsCreateOpen(true)}>Create event</Button>}
+        />
 
         {/* Event Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -62,7 +57,8 @@ const SchoolEvents = () => {
           ))}
         </div>
 
-      </main >
+        </div>
+      </main>
 
       <CreateEventModal
         isOpen={isCreateOpen}

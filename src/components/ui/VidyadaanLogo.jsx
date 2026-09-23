@@ -1,4 +1,3 @@
-import React from "react";
 
 export const LogoEmblem = ({ className = "w-10 h-10" }) => (
   <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -60,22 +59,21 @@ const VidyadaanLogo = ({ variant = "dark", showTagline = true, className = "" })
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       {/* Emblem Icon in Circle Badge */}
-      <div className="w-11 h-11 rounded-2xl bg-white shadow-md border border-slate-100 flex items-center justify-center p-1.5 shrink-0 hover:scale-105 transition-transform">
+      <div className="w-10 h-10 rounded-control bg-white border border-slate-200 shadow-xs flex items-center justify-center p-1.5 shrink-0">
         <LogoEmblem className="w-full h-full" />
       </div>
 
       {/* Brand Text */}
       <div className="flex flex-col leading-tight">
         <span
-          className={`font-black text-lg tracking-wider ${
-            isDarkBg ? "text-white" : "text-[#0B192C]"
+          className={`font-heading font-extrabold text-lg tracking-wide ${
+            isDarkBg ? "text-white" : "text-brand-navy"
           }`}
-          style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
         >
-          Vi<span className="text-[#FF6B00]">D</span>YA<span className="text-[#FF6B00]">D</span>AAN
+          Vi<span className="text-brand-orange">D</span>YA<span className="text-brand-orange">D</span>AAN
         </span>
         {showTagline && (
-          <span className="text-[10px] text-emerald-600 font-bold tracking-tight">
+          <span className={`text-xs font-medium ${isDarkBg ? "text-slate-400" : "text-slate-500"}`}>
             Empowering Education Across India
           </span>
         )}
