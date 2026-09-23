@@ -1,9 +1,24 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 const Sidebar = ({ role = "school", userName = "Admin", userSub = "" }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await logout();
+    } catch {
+      // AuthContext already cleared the local user; still leave the dashboard.
+    }
+    navigate(`/login/${role}`, { replace: true });
+  };
 
   const navs = {
     school: [
@@ -133,9 +148,9 @@ const Sidebar = ({ role = "school", userName = "Admin", userSub = "" }) => {
           </div>
         )}
         {!collapsed && (
-          <Link to="/" className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Logout">
+          <button type="button" onClick={handleLogout} disabled={loggingOut} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50" title="Logout" aria-label="Logout">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-          </Link>
+          </button>
         )}
       </div>
     </aside>

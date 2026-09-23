@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { parseCookie, stringifySetCookie } from "cookie";
 import jwt from "jsonwebtoken";
+import { Buffer } from "node:buffer";
 import process from "node:process";
 import DonorProfile from "../models/DonorProfile.js";
 import NGOProfile from "../models/NGOProfile.js";
@@ -9,6 +10,10 @@ import User from "../models/User.js";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const publicRoles = ["donor", "school", "ngo"];
+// Keep in sync with PASSWORD_MIN_LENGTH in src/api/auth.js.
+const PASSWORD_MIN_LENGTH = 8;
+// bcrypt ignores everything after 72 bytes, so longer passwords are rejected.
+const PASSWORD_MAX_BYTES = 72;
 const authCookie = "vidyaadaan_auth";
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -69,8 +74,12 @@ export const register = async (req, res) => {
         return res.status(400).json({ message: "Enter a valid email address." });
     }
 
-    if (password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters." });
+    if (password.length < PASSWORD_MIN_LENGTH) {
+        return res.status(400).json({ message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.` });
+    }
+
+    if (Buffer.byteLength(password, "utf8") > PASSWORD_MAX_BYTES) {
+        return res.status(400).json({ message: "Password is too long." });
     }
 
     let user;

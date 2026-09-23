@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { registerAccount } from "../../api/auth";
+import { getPasswordError, registerAccount } from "../../api/auth";
 
 const STEPS = ["Organisation", "Mission", "Registration", "Address", "Contact", "Documents", "Review", "Success"];
 
@@ -22,8 +22,27 @@ const NGORegister = () => {
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep(s => Math.max(s - 1, 0));
 
+  const PASSWORD_STEP = 4;
+
+  const handleContinue = () => {
+    if (step === PASSWORD_STEP) {
+      const passwordError = getPasswordError(form.password);
+      if (passwordError) {
+        setError(passwordError);
+        return;
+      }
+    }
+    setError("");
+    next();
+  };
+
   const handleSubmit = async () => {
     if (loading) return;
+    const passwordError = getPasswordError(form.password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
     setError("");
     setLoading(true);
     try {
@@ -99,7 +118,7 @@ const NGORegister = () => {
         <div><label className={labelCls}>Official Email *</label><input type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="contact@ngo.org" className={inputCls} /></div>
         <div><label className={labelCls}>Phone *</label><input type="tel" value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+91 98765 43210" className={inputCls} /></div>
       </div>
-      <div><label className={labelCls}>Password *</label><input type="password" value={form.password} onChange={e => set("password", e.target.value)} placeholder="Min 6 characters" className={inputCls} /></div>
+      <div><label className={labelCls}>Password *</label><input type="password" value={form.password} onChange={e => set("password", e.target.value)} placeholder="Min 8 characters" className={inputCls} /></div>
       <div><label className={labelCls}>Alternate Phone</label><input type="tel" value={form.altPhone} onChange={e => set("altPhone", e.target.value)} placeholder="+91 98765 43210" className={inputCls} /></div>
     </div>,
 
@@ -175,7 +194,7 @@ const NGORegister = () => {
             {error && <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
             <div className="flex items-center gap-3 mt-8 pt-6 border-t border-slate-100">
               {step > 0 && <button onClick={prev} className="h-12 px-6 border-2 border-slate-200 text-slate-700 font-bold text-sm rounded-full hover:border-emerald-400 hover:text-emerald-600 transition-all">← Previous</button>}
-              <button onClick={step === 6 ? handleSubmit : next} disabled={step === 6 && (!form.agree || loading)}
+              <button onClick={step === 6 ? handleSubmit : handleContinue} disabled={step === 6 && (!form.agree || loading)}
                 className="flex-1 h-12 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold text-sm rounded-full shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-emerald-600 transition-all disabled:opacity-50">
                 {loading ? "Submitting..." : step === 6 ? "Submit Registration" : "Continue →"}
               </button>

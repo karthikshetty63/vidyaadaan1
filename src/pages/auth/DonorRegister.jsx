@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { registerAccount } from "../../api/auth";
+import { getPasswordError, registerAccount } from "../../api/auth";
 
 const STEPS = ["Personal", "Address", "Password", "Preferences", "Review", "Success"];
 const inputCls = "w-full h-12 px-4 border-2 border-slate-200 rounded-xl text-sm focus:border-amber-500 focus:outline-none transition-colors font-medium";
@@ -21,10 +21,25 @@ const DonorRegister = () => {
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
   const prev = () => setStep(s => Math.max(s - 1, 0));
 
+  const PASSWORD_STEP = 2;
+
+  const handleContinue = () => {
+    if (step === PASSWORD_STEP) {
+      const passwordError = getPasswordError(form.password, form.confirm);
+      if (passwordError) {
+        setError(passwordError);
+        return;
+      }
+    }
+    setError("");
+    next();
+  };
+
   const handleSubmit = async () => {
     if (loading) return;
-    if (form.password !== form.confirm) {
-      setError("Passwords do not match.");
+    const passwordError = getPasswordError(form.password, form.confirm);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     setError("");
@@ -170,7 +185,7 @@ const DonorRegister = () => {
             {error && <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p>}
             <div className="flex items-center gap-3 mt-8 pt-6 border-t border-slate-100">
               {step > 0 && <button onClick={prev} className="h-12 px-6 border-2 border-slate-200 text-slate-700 font-bold text-sm rounded-full hover:border-amber-400 hover:text-amber-600 transition-all">← Previous</button>}
-              <button onClick={step === 4 ? handleSubmit : next} disabled={step === 4 && (!form.agree || loading)}
+              <button onClick={step === 4 ? handleSubmit : handleContinue} disabled={step === 4 && (!form.agree || loading)}
                 className="flex-1 h-12 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm rounded-full shadow-lg shadow-amber-500/20 hover:from-amber-400 hover:to-orange-400 transition-all disabled:opacity-50">
                 {loading ? "Creating Account..." : step === 4 ? "Create Account" : "Continue →"}
               </button>

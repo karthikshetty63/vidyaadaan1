@@ -29,8 +29,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
-        await logoutAccount();
-        setUser(null);
+        try {
+            await logoutAccount();
+        } finally {
+            // Clear local state even if the request fails, so the UI never shows a stale user.
+            setUser(null);
+        }
     };
 
     return (

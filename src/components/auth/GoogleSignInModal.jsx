@@ -1,52 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 
-const sampleAccounts = [
-  {
-    name: "Rohith (School Admin)",
-    email: "rohith.schooladmin@gmail.com",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop",
-    role: "school",
-    redirect: "/dashboard/school",
-    badge: "Honnali Govt. Primary School",
-  },
-  {
-    name: "Shiksha Seva Foundation",
-    email: "shikshaseva.ngo@gmail.com",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop",
-    role: "ngo",
-    redirect: "/dashboard/ngo",
-    badge: "Verified NGO Partner",
-  },
-  {
-    name: "Ramesh Kumar",
-    email: "ramesh.donor@gmail.com",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100&auto=format&fit=crop",
-    role: "donor",
-    redirect: "/dashboard/donor",
-    badge: "Champion Donor",
-  },
-];
-
-const GoogleSignInModal = ({ isOpen, onClose, defaultRole = null }) => {
-  const navigate = useNavigate();
-  const [selectedAcc, setSelectedAcc] = useState(null);
-  const [signingIn, setSigningIn] = useState(false);
-
+// DEMO ONLY — Google Sign-In is NOT implemented.
+// This modal intentionally does not sign anyone in or navigate anywhere.
+// Real Google OAuth must be verified on the backend before it can replace this.
+const GoogleSignInModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
-
-  const handleSelectAccount = (acc) => {
-    setSelectedAcc(acc);
-    setSigningIn(true);
-
-    setTimeout(() => {
-      setSigningIn(false);
-      onClose();
-      // Navigate to target dashboard based on role or defaultRole
-      const target = defaultRole ? `/dashboard/${defaultRole}` : acc.redirect;
-      navigate(target);
-    }, 1200);
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
@@ -54,7 +12,12 @@ const GoogleSignInModal = ({ isOpen, onClose, defaultRole = null }) => {
       <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-md bg-white rounded-[28px] shadow-2xl border border-slate-100 overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="google-demo-title"
+        className="relative w-full max-w-md bg-white rounded-[28px] shadow-2xl border border-slate-100 overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200"
+      >
         {/* Header */}
         <div className="px-6 py-6 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -78,13 +41,14 @@ const GoogleSignInModal = ({ isOpen, onClose, defaultRole = null }) => {
               />
             </svg>
             <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Sign in with Google</h3>
-              <p className="text-[10px] text-slate-400 font-medium">to continue to VIDYADAAN</p>
+              <h3 id="google-demo-title" className="font-extrabold text-slate-900 text-sm">Sign in with Google</h3>
+              <p className="text-[10px] text-slate-400 font-medium">Demo · not available yet</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
+            aria-label="Close"
             className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold text-xs flex items-center justify-center transition-colors"
           >
             ✕
@@ -92,66 +56,20 @@ const GoogleSignInModal = ({ isOpen, onClose, defaultRole = null }) => {
         </div>
 
         {/* Body */}
-        {signingIn ? (
-          <div className="p-10 text-center space-y-4">
-            <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mx-auto" />
-            <div>
-              <p className="text-sm font-extrabold text-slate-900">Signing in with Google...</p>
-              <p className="text-xs text-slate-500 mt-1">Connecting as {selectedAcc?.name}</p>
-            </div>
+        <div className="p-6 space-y-4">
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-sm text-amber-800 font-medium">
+            🚧 Google Sign-In is a <strong>demo feature</strong> and is not available yet.
+            Please sign in with your email and password.
           </div>
-        ) : (
-          <div className="p-6 space-y-4">
-            <p className="text-xs text-slate-500 font-medium text-center">
-              Choose an account to sign in to VIDYADAAN:
-            </p>
 
-            {/* Account List */}
-            <div className="space-y-2.5">
-              {sampleAccounts.map((acc) => (
-                <button
-                  key={acc.email}
-                  onClick={() => handleSelectAccount(acc)}
-                  className="w-full p-3.5 rounded-2xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50/50 transition-all flex items-center gap-3 text-left group"
-                >
-                  <img
-                    src={acc.avatar}
-                    alt={acc.name}
-                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-extrabold text-slate-900 group-hover:text-blue-600 truncate">
-                      {acc.name}
-                    </p>
-                    <p className="text-[11px] text-slate-400 truncate">{acc.email}</p>
-                    <span className="text-[9px] font-bold text-emerald-600">{acc.badge}</span>
-                  </div>
-                  <span className="text-slate-300 group-hover:text-blue-600 text-sm font-bold">→</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Add account option */}
-            <div className="pt-2 border-t border-slate-100">
-              <button
-                onClick={() =>
-                  handleSelectAccount({
-                    name: "User Account",
-                    email: "user@gmail.com",
-                    redirect: defaultRole ? `/dashboard/${defaultRole}` : "/dashboard/donor",
-                  })
-                }
-                className="w-full py-3 text-center text-xs font-bold text-slate-600 hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
-              >
-                <span>➕</span> Use another Google Account
-              </button>
-            </div>
-
-            <p className="text-[10px] text-slate-400 text-center leading-relaxed">
-              To continue, Google will share your name, email address, and profile picture with VIDYADAAN.
-            </p>
-          </div>
-        )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-full transition-all active:scale-[0.98]"
+          >
+            Use Email & Password
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerAccount } from "../../api/auth";
+import { getPasswordError, registerAccount } from "../../api/auth";
 
 const STEPS = [
   "School Info",
@@ -30,8 +30,27 @@ const SchoolRegister = () => {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  const PASSWORD_STEP = 1;
+
+  const handleContinue = () => {
+    if (step === PASSWORD_STEP) {
+      const passwordError = getPasswordError(form.password);
+      if (passwordError) {
+        setError(passwordError);
+        return;
+      }
+    }
+    setError("");
+    next();
+  };
+
   const handleSubmit = async () => {
     if (loading) return;
+    const passwordError = getPasswordError(form.password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
     setError("");
     setLoading(true);
     try {
@@ -71,7 +90,7 @@ const SchoolRegister = () => {
         <div><label className={labelCls}>Official Email *</label><input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="principal@school.gov.in" className={inputCls} /></div>
         <div><label className={labelCls}>Phone Number *</label><input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+91 98765 43210" className={inputCls} /></div>
       </div>
-      <div><label className={labelCls}>Password *</label><input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min 6 characters" className={inputCls} /></div>
+      <div><label className={labelCls}>Password *</label><input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min 8 characters" className={inputCls} /></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div><label className={labelCls}>Total Students</label><input type="number" value={form.students} onChange={(e) => set("students", e.target.value)} placeholder="250" className={inputCls} /></div>
         <div><label className={labelCls}>Total Teachers</label><input type="number" value={form.teachers} onChange={(e) => set("teachers", e.target.value)} placeholder="12" className={inputCls} /></div>
@@ -194,7 +213,7 @@ const SchoolRegister = () => {
               {step > 0 && (
                 <button onClick={prev} className="h-12 px-6 border-2 border-slate-200 text-slate-700 font-bold text-sm rounded-full hover:border-blue-400 hover:text-blue-600 transition-all">← Previous</button>
               )}
-              <button onClick={step === 5 ? handleSubmit : next}
+              <button onClick={step === 5 ? handleSubmit : handleContinue}
                 disabled={step === 5 && (!form.agree || loading)}
                 className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-sm rounded-full shadow-lg shadow-blue-600/20 hover:from-blue-500 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 {loading ? "Submitting..." : step === 5 ? "Submit Registration" : `Continue →`}
