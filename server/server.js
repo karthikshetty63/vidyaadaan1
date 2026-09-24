@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import process from "node:process";
 import createApp from "./app.js";
 import connectDB from "./config/db.js";
+import { isEmailConfigured, verifyEmailTransport } from "./services/emailService.js";
 
 dotenv.config();
 
@@ -24,6 +25,15 @@ const startServer = async () => {
         app.listen(PORT, () => {
             console.log(`Server running on http://localhost:${PORT}`);
         });
+
+        // Email is optional for starting the server; without it, forgot-password answers 503.
+        if (!isEmailConfigured()) {
+            console.warn("Email is not configured (SMTP_HOST / EMAIL_FROM). Password reset emails are disabled.");
+        } else {
+            verifyEmailTransport()
+                .then(() => console.log("Email (SMTP) connection verified"))
+                .catch((error) => console.warn("Email (SMTP) connection failed:", error.message));
+        }
     } catch (error) {
         console.error("Server failed to start:", error.message);
         process.exit(1);

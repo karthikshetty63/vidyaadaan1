@@ -29,6 +29,8 @@ import SchoolSettings from "./pages/dashboard/school/Settings";
 import NGODashboard from "./pages/dashboard/ngo/NGODashboard";
 import DonorDashboard from "./pages/dashboard/donor/DonorDashboard";
 import AdminLogin from "./pages/auth/AdminLogin";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 
 function App() {
@@ -51,6 +53,10 @@ function App() {
           <Route path="/login/donor" element={<DonorLogin />} />
           {/* Admin login only — admin accounts are created with `npm run create-admin` */}
           <Route path="/login/admin" element={<AdminLogin />} />
+
+          {/* Auth — Password reset, shared by every portal (accounts are identified by email) */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           {/* Auth — Register */}
           <Route path="/join" element={<JoinSelector />} />

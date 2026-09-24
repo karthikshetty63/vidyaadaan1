@@ -1,22 +1,27 @@
 import bcrypt from "bcryptjs";
 import { Buffer } from "node:buffer";
+import { createHash, randomBytes } from "node:crypto";
 import SchoolProfile from "../models/SchoolProfile.js";
 import NGOProfile from "../models/NGOProfile.js";
 import User from "../models/User.js";
 import {
     EMAIL_PATTERN,
     PASSWORD_MAX_BYTES,
+    PASSWORD_RESET_TOKEN_PATTERN,
+    PASSWORD_RESET_TTL_MINUTES,
     PUBLIC_ROLES,
     ROLES,
     UDISE_PATTERN,
     UPLOAD_RULES,
     getAccountName,
     getMissingUploads,
+    getPasswordError,
     getUnexpectedFields,
     normalizeEmail,
     pickProfileValues,
     validateRegistration,
 } from "../../shared/registrationRules.js";
+import { isEmailConfigured, sendPasswordResetEmail } from "../services/emailService.js";
 import { PROFILE_MODELS, duplicateKeyError, toProfileDocument } from "../services/profileModels.js";
 import { deleteUploadedFiles, storeUploads, validateUploads } from "../services/uploadService.js";
 import { clearAuthCookie, getTokenFromRequest, safeUser, setAuthCookie, verifyToken } from "../utils/authToken.js";
@@ -209,6 +214,107 @@ export const logout = async (req, res, next) => {
         return res.status(200).json({ message: "Logged out successfully." });
     } catch (error) {
         clearAuthCookie(res);
+        return next(error);
+    }
+};
+
+// ─── Forgot / reset password ─────────────────────────────────────────────────
+const RESET_TTL_MS = PASSWORD_RESET_TTL_MINUTES * 60 * 1000;
+// At most one reset email per account per minute, however many IP addresses ask.
+const RESET_EMAIL_COOLDOWN_MS = 60 * 1000;
+const FORGOT_PASSWORD_MESSAGE = "If an account exists for this email, a password reset link has been sent.";
+const INVALID_RESET_LINK = {
+    code: "INVALID_RESET_TOKEN",
+    message: "This password reset link is invalid or has expired. Please request a new one.",
+};
+
+const hashResetToken = (token) => createHash("sha256").update(token).digest("hex");
+
+// Not awaited by the request, so the response time does not reveal whether the account exists.
+const deliverResetEmail = async (user, token, frontendOrigin) => {
+    try {
+        await sendPasswordResetEmail({
+            to: user.email,
+            name: user.name,
+            resetUrl: `${frontendOrigin}/reset-password/${token}`,
+            expiresInMinutes: PASSWORD_RESET_TTL_MINUTES,
+        });
+    } catch (error) {
+        // Never log the link or token. Drop the undelivered token so the user can ask again right away.
+        console.error("Password reset email could not be sent:", error.message);
+        await User.updateOne(
+            { _id: user._id, passwordResetToken: hashResetToken(token) },
+            { $unset: { passwordResetToken: 1, passwordResetExpires: 1 } }
+        ).catch(() => {});
+    }
+};
+
+export const forgotPassword = async (req, res, next) => {
+    const email = normalizeEmail(req.body?.email);
+    if (!email) return badRequest(res, "Email address is required.", { email: "Email address is required." });
+    if (!EMAIL_PATTERN.test(email) || email.length > 254) {
+        return badRequest(res, "Enter a valid email address.", { email: "Enter a valid email address." });
+    }
+    // Checked before any lookup, so every email address gets the same answer.
+    if (!isEmailConfigured()) {
+        return res.status(503).json({
+            code: "EMAIL_UNAVAILABLE",
+            message: "Password reset emails are unavailable right now. Please try again later or contact VIDYADAAN support.",
+        });
+    }
+
+    try {
+        const user = await User.findOne({ email }).select("+passwordResetExpires");
+        // A token's expiry minus its lifetime is when it was issued.
+        const lastSentAt = user?.passwordResetExpires ? user.passwordResetExpires.getTime() - RESET_TTL_MS : 0;
+        if (user && Date.now() - lastSentAt >= RESET_EMAIL_COOLDOWN_MS) {
+            const token = randomBytes(32).toString("hex");
+            await User.updateOne(
+                { _id: user._id },
+                { $set: { passwordResetToken: hashResetToken(token), passwordResetExpires: new Date(Date.now() + RESET_TTL_MS) } }
+            );
+            deliverResetEmail(user, token, req.app.locals.frontendOrigin);
+        }
+        return res.status(200).json({ message: FORGOT_PASSWORD_MESSAGE });
+    } catch (error) {
+        return next(error);
+    }
+};
+
+export const resetPassword = async (req, res, next) => {
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    const password = typeof body.password === "string" ? body.password : "";
+    const confirmPassword = typeof body.confirmPassword === "string" ? body.confirmPassword : "";
+
+    if (!password || !confirmPassword) {
+        const errors = {};
+        if (!password) errors.password = "New password is required.";
+        if (!confirmPassword) errors.confirmPassword = "Please confirm your new password.";
+        return badRequest(res, Object.values(errors)[0], errors);
+    }
+    const passwordError = getPasswordError(password);
+    if (passwordError) return badRequest(res, passwordError, { password: passwordError });
+    if (password !== confirmPassword) return badRequest(res, "Passwords do not match.", { confirmPassword: "Passwords do not match." });
+
+    const { token } = req.params;
+    if (!PASSWORD_RESET_TOKEN_PATTERN.test(token)) return res.status(400).json(INVALID_RESET_LINK);
+
+    try {
+        // Claim the token atomically: if the link is submitted twice at once, only one request succeeds.
+        const user = await User.findOneAndUpdate(
+            { passwordResetToken: hashResetToken(token), passwordResetExpires: { $gt: new Date() } },
+            { $unset: { passwordResetToken: 1, passwordResetExpires: 1 } }
+        );
+        if (!user) return res.status(400).json(INVALID_RESET_LINK);
+
+        // Plain text here: the pre-save hook hashes it exactly once, the same way registration does.
+        user.password = password;
+        // Sign the account out on every device, in case someone else had access.
+        user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+        await user.save();
+
+        return res.status(200).json({ message: "Your password has been reset. You can now sign in with your new password." });
+    } catch (error) {
         return next(error);
     }
 };

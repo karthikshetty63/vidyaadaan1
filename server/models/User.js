@@ -19,12 +19,17 @@ const userSchema = new mongoose.Schema(
         statusChangedAt: { type: Date },
         statusChangedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         rejectionReason: { type: String, trim: true, maxlength: 500 },
+        // Forgot-password: only the SHA-256 hash of the emailed token is stored, never the token itself.
+        passwordResetToken: { type: String, select: false },
+        passwordResetExpires: { type: Date, select: false },
     },
     {
         timestamps: true,
         toJSON: {
             transform: (_doc, ret) => {
                 delete ret.password;
+                delete ret.passwordResetToken;
+                delete ret.passwordResetExpires;
                 return ret;
             },
         },
@@ -33,6 +38,8 @@ const userSchema = new mongoose.Schema(
 
 // Admin approval queue lookups: { role: "school", accountStatus: "pending" }.
 userSchema.index({ role: 1, accountStatus: 1, createdAt: -1 });
+// Reset-link lookups; most users never have a token, so the index stays small.
+userSchema.index({ passwordResetToken: 1 }, { sparse: true });
 
 userSchema.pre("save", async function hashPassword() {
     if (!this.isModified("password")) return;

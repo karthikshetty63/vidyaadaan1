@@ -4,9 +4,9 @@ import { LuArrowLeft } from "react-icons/lu";
 import AuthLayout from "./AuthLayout";
 import GoogleSignInModal from "./GoogleSignInModal";
 import LoginErrorAlert from "./LoginErrorAlert";
-import Alert from "../ui/Alert";
 import Button from "../ui/Button";
 import FormField, { Input } from "../ui/FormField";
+import { EMAIL_PATTERN } from "../../api/auth";
 import usePortalLogin from "../../hooks/usePortalLogin";
 
 const GoogleMark = () => (
@@ -38,7 +38,6 @@ const PortalLogin = ({
 }) => {
   const { form, setForm, loading, error, correctPortal, handleSubmit } = usePortalLogin(role);
   const [googleModalOpen, setGoogleModalOpen] = useState(false);
-  const [showResetHelp, setShowResetHelp] = useState(false);
 
   return (
     <AuthLayout image={image} quote={quote}>
@@ -92,14 +91,15 @@ const PortalLogin = ({
               />
               Remember me
             </label>
-            <button type="button" onClick={() => setShowResetHelp((v) => !v)} aria-expanded={showResetHelp} className="text-sm font-medium text-blue-700 hover:underline">
+            {/* One reset flow for every portal; it remembers where to come back to. */}
+            <Link
+              to="/forgot-password"
+              state={{ signInPath: `/login/${role}`, email: EMAIL_PATTERN.test(form.email.trim()) ? form.email.trim() : "" }}
+              className="text-sm font-medium text-blue-700 hover:underline"
+            >
               Forgot password?
-            </button>
+            </Link>
           </div>
-
-          {showResetHelp && (
-            <Alert tone="neutral">Self-service password reset isn't available yet. Please contact the VIDYADAAN team to reset your password.</Alert>
-          )}
 
           <Button type="submit" size="lg" fullWidth loading={loading}>
             {loading ? "Signing in…" : submitLabel}

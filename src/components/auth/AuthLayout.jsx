@@ -25,7 +25,7 @@ const AuthLayout = ({ image, quote, children }) => (
 
     <main className="w-full lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 py-10">
       <div className="w-full max-w-sm mx-auto">
-        <Link to="/" className="inline-flex mb-10 lg:hidden">
+        <Link to="/" className="flex w-fit mb-10 lg:hidden">
           <VidyadaanLogo variant="dark" showTagline={false} />
         </Link>
         {children}

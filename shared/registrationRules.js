@@ -12,6 +12,10 @@ export const PASSWORD_MIN_LENGTH = 8;
 // bcrypt silently ignores everything after 72 bytes, so longer passwords are rejected.
 export const PASSWORD_MAX_BYTES = 72;
 
+// Password reset links carry 32 random bytes (64 hex characters), are single-use and expire quickly.
+export const PASSWORD_RESET_TTL_MINUTES = 15;
+export const PASSWORD_RESET_TOKEN_PATTERN = /^[a-f0-9]{64}$/;
+
 // Option lists already shown by the existing registration forms.
 export const SCHOOL_STATES = ["Karnataka", "Tamil Nadu", "Andhra Pradesh", "Telangana", "Kerala", "Maharashtra", "Gujarat", "Rajasthan", "Uttar Pradesh", "Bihar"];
 export const NGO_STATES = ["Karnataka", "Tamil Nadu", "Andhra Pradesh", "Telangana", "Kerala", "Maharashtra", "Gujarat", "Rajasthan"];

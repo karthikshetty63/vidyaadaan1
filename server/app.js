@@ -15,6 +15,9 @@ const DEFAULT_RATE_LIMITS = {
     // Counts only failed attempts: 10 wrong passwords per 15 minutes per IP.
     login: { windowMs: 15 * 60 * 1000, limit: 10 },
     register: { windowMs: 60 * 60 * 1000, limit: 20 },
+    // Each request can send an email, so this is kept tight: 5 per 15 minutes per IP.
+    forgotPassword: { windowMs: 15 * 60 * 1000, limit: 5 },
+    resetPassword: { windowMs: 15 * 60 * 1000, limit: 10 },
 };
 
 const makeLimiter = (config, message, options = {}) =>
@@ -32,12 +35,14 @@ const makeLimiter = (config, message, options = {}) =>
 /**
  * @param {object} [options]
  * @param {string} [options.corsOrigin] the React app's origin (cookies are only accepted from it)
- * @param {false|{login?:object, register?:object}} [options.rateLimits] false disables limits (tests)
+ * @param {false|{login?:object, register?:object, forgotPassword?:object, resetPassword?:object}} [options.rateLimits] false disables limits (tests)
  * @param {string|number|boolean} [options.trustProxy] set when running behind a reverse proxy
  */
 export const createApp = ({ corsOrigin = "http://localhost:5173", rateLimits = DEFAULT_RATE_LIMITS, trustProxy } = {}) => {
     const app = express();
     if (trustProxy !== undefined) app.set("trust proxy", trustProxy);
+    // Links in emails point at the configured React app — never at the request's Host header.
+    app.locals.frontendOrigin = corsOrigin.replace(/\/+$/, "");
 
     const limits = rateLimits === false ? {} : { ...DEFAULT_RATE_LIMITS, ...rateLimits };
 
@@ -53,6 +58,8 @@ export const createApp = ({ corsOrigin = "http://localhost:5173", rateLimits = D
     app.use("/api/auth", createAuthRouter({
         loginLimiter: makeLimiter(limits.login, "Too many failed login attempts. Please wait 15 minutes and try again.", { skipSuccessfulRequests: true }),
         registerLimiter: makeLimiter(limits.register, "Too many registration attempts. Please try again later."),
+        forgotPasswordLimiter: makeLimiter(limits.forgotPassword, "Too many password reset requests. Please wait 15 minutes and try again."),
+        resetPasswordLimiter: makeLimiter(limits.resetPassword, "Too many password reset attempts. Please wait 15 minutes and try again."),
     }));
     app.use("/api/admin", adminRoutes);
     app.use("/api/profile", profileRoutes);

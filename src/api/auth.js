@@ -1,7 +1,13 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-// Password rule lives in one shared module used by the backend too.
-export { PASSWORD_MIN_LENGTH, getPasswordError } from "../../shared/registrationRules.js";
+// Password/email rules live in one shared module used by the backend too.
+export {
+    EMAIL_PATTERN,
+    PASSWORD_MIN_LENGTH,
+    PASSWORD_RESET_TOKEN_PATTERN,
+    PASSWORD_RESET_TTL_MINUTES,
+    getPasswordError,
+} from "../../shared/registrationRules.js";
 
 /** Error thrown for any failed API call. Carries the server's structured details. */
 export class ApiError extends Error {
@@ -74,6 +80,13 @@ export const loginAccount = (credentials) => apiRequest("/api/auth/login", { met
 export const getCurrentUser = () => apiRequest("/api/auth/me");
 
 export const logoutAccount = () => apiRequest("/api/auth/logout", { method: "POST" });
+
+/** Resolves with the same generic message whether or not an account exists for the email. */
+export const requestPasswordReset = (email) => apiRequest("/api/auth/forgot-password", { method: "POST", body: { email } });
+
+/** `token` comes from the emailed link (/reset-password/:token). */
+export const resetPassword = (token, password, confirmPassword) =>
+    apiRequest(`/api/auth/reset-password/${encodeURIComponent(token)}`, { method: "POST", body: { password, confirmPassword } });
 
 /** Download a private file (owner/admin only) and return a temporary object URL. Revoke it when done. */
 export const fetchFileObjectUrl = async (fileId) => {
