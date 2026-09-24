@@ -1,10 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LuCheck } from "react-icons/lu";
+import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 import VidyadaanLogo from "../ui/VidyadaanLogo";
 
 const LAST_PORTAL_KEY = "vidyadaan:last-portal";
+
+// Shared timing for the option states: short, no movement, off for reduced motion.
+const TRANSITION = "duration-150 ease-out motion-reduce:transition-none";
+const LINK = "group ml-1 whitespace-nowrap font-medium text-blue-700 underline-offset-4 transition-colors duration-150 hover:text-blue-800 hover:underline";
+// Inline-block keeps the arrow out of the underline; it only moves when motion is allowed.
+const LINK_ARROW = "ml-1 inline-block transition-transform duration-150 ease-out motion-safe:group-hover:translate-x-0.5";
 
 const readLastPortal = () => {
   try {
@@ -21,7 +28,7 @@ const readLastPortal = () => {
  *
  * options: [{ key, icon, title, description, href, continueLabel }]
  */
-const AccountChooser = ({ title, description, options, legend, headerLink, note, footer, rememberChoice = false }) => {
+const AccountChooser = ({ eyebrow, title, description, options, legend, headerLink, note, footer, rememberChoice = false }) => {
   const navigate = useNavigate();
   const [lastUsed] = useState(() => (rememberChoice && options.some((o) => o.key === readLastPortal()) ? readLastPortal() : ""));
   const [selected, setSelected] = useState(lastUsed);
@@ -40,25 +47,32 @@ const AccountChooser = ({ title, description, options, legend, headerLink, note,
     navigate(choice.href);
   };
 
+  // Shown top-right on larger screens, below the panel on phones.
+  const headerPrompt = headerLink && (
+    <>
+      {headerLink.prompt}{" "}
+      <Link to={headerLink.href} className={LINK}>
+        {headerLink.label}
+        <span aria-hidden="true" className={LINK_ARROW}>→</span>
+      </Link>
+    </>
+  );
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <header className="h-16 shrink-0 flex items-center justify-between gap-4 px-4 sm:px-8">
         <Link to="/" aria-label="VIDYADAAN home"><VidyadaanLogo variant="dark" showTagline={false} /></Link>
-        {headerLink && (
-          <p className="hidden sm:block text-sm text-slate-600">
-            {headerLink.prompt}{" "}
-            <Link to={headerLink.href} className="font-medium text-blue-700 hover:underline">{headerLink.label}</Link>
-          </p>
-        )}
+        {headerPrompt && <p className="hidden sm:block text-sm text-slate-600">{headerPrompt}</p>}
       </header>
 
       <main className="flex-1 flex items-start sm:items-center justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-md">
           <div className="bg-white border border-slate-200 rounded-panel shadow-xs px-5 py-7 sm:px-8 sm:py-8">
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">{title}</h1>
-            {description && <p className="mt-1.5 text-sm text-slate-600">{description}</p>}
+            {eyebrow && <p className="text-[13px] leading-5 font-medium tracking-[0.02em] text-slate-500">{eyebrow}</p>}
+            <h1 className={`${eyebrow ? "mt-1" : ""} text-2xl leading-tight font-semibold tracking-[-0.01em] text-slate-900`}>{title}</h1>
+            {description && <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>}
 
-            <form onSubmit={handleSubmit} className="mt-6">
+            <form onSubmit={handleSubmit} className="mt-7">
               <fieldset>
                 <legend className="sr-only">{legend}</legend>
                 <div className="space-y-2">
@@ -67,8 +81,10 @@ const AccountChooser = ({ title, description, options, legend, headerLink, note,
                     return (
                       <label
                         key={key}
-                        className={`relative flex items-center gap-3.5 rounded-control border px-4 py-3.5 cursor-pointer transition-colors ${
-                          isSelected ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                        className={`group relative flex items-center gap-3.5 rounded-control border px-4 py-3.5 cursor-pointer ${TRANSITION} transition-[border-color,background-color,box-shadow] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-blue-600 ${
+                          isSelected
+                            ? "border-blue-600 bg-blue-50/50 ring-1 ring-blue-600"
+                            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70 hover:shadow-xs"
                         }`}
                       >
                         <input
@@ -77,11 +93,13 @@ const AccountChooser = ({ title, description, options, legend, headerLink, note,
                           value={key}
                           checked={isSelected}
                           onChange={() => setSelected(key)}
-                          className="peer sr-only"
+                          className="sr-only"
                         />
                         <span
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                            isSelected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600"
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ring-1 ring-inset ${TRANSITION} transition-[color,background-color,box-shadow] ${
+                            isSelected
+                              ? "bg-blue-600 text-white ring-blue-600"
+                              : "bg-slate-100 text-slate-600 ring-transparent group-hover:bg-white group-hover:text-blue-700 group-hover:ring-slate-200"
                           }`}
                           aria-hidden="true"
                         >
@@ -89,20 +107,21 @@ const AccountChooser = ({ title, description, options, legend, headerLink, note,
                         </span>
                         <span className="flex-1 min-w-0">
                           <span className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-slate-900">{optionTitle}</span>
-                            {lastUsed === key && (
-                              <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">Last used</span>
-                            )}
+                            <span className="text-[15px] leading-6 font-semibold text-slate-900">{optionTitle}</span>
+                            {lastUsed === key && <Badge>Last used</Badge>}
                           </span>
-                          <span className="mt-0.5 block text-sm text-slate-500">{optionDescription}</span>
+                          <span className="block text-sm leading-5 text-slate-500">{optionDescription}</span>
                         </span>
                         <span
-                          className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-600 peer-focus-visible:ring-offset-2 ${
-                            isSelected ? "border-blue-600 bg-blue-600 text-white" : "border-slate-300 bg-white"
+                          className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${TRANSITION} transition-[border-color,background-color] ${
+                            isSelected ? "border-blue-600 bg-blue-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"
                           }`}
                           aria-hidden="true"
                         >
-                          {isSelected && <LuCheck className="w-3.5 h-3.5" strokeWidth={3} />}
+                          <LuCheck
+                            className={`w-3.5 h-3.5 ${TRANSITION} transition-opacity ${isSelected ? "opacity-100" : "opacity-0"}`}
+                            strokeWidth={3}
+                          />
                         </span>
                       </label>
                     );
@@ -118,12 +137,7 @@ const AccountChooser = ({ title, description, options, legend, headerLink, note,
             {note && <p className="mt-4 text-xs text-slate-500 text-center">{note}</p>}
           </div>
 
-          {headerLink && (
-            <p className="sm:hidden mt-6 text-center text-sm text-slate-600">
-              {headerLink.prompt}{" "}
-              <Link to={headerLink.href} className="font-medium text-blue-700 hover:underline">{headerLink.label}</Link>
-            </p>
-          )}
+          {headerPrompt && <p className="sm:hidden mt-6 text-center text-sm text-slate-600">{headerPrompt}</p>}
           {footer && <div className="mt-6 text-center text-sm text-slate-500">{footer}</div>}
         </div>
       </main>

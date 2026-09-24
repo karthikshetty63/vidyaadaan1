@@ -10,8 +10,9 @@ const portals = [
 
 const RoleSelector = () => (
   <AccountChooser
+    eyebrow="Welcome back"
     title="Sign in to VIDYADAAN"
-    description="Choose the type of account you use."
+    description="Choose your account type to continue."
     legend="Account type"
     options={portals}
     rememberChoice
@@ -19,7 +20,7 @@ const RoleSelector = () => (
     footer={
       <>
         Platform administrator?{" "}
-        <Link to="/login/admin" className="font-medium text-slate-700 hover:text-slate-900 hover:underline">Admin sign in</Link>
+        <Link to="/login/admin" className="font-medium text-slate-700 underline-offset-4 transition-colors duration-150 hover:text-slate-900 hover:underline">Admin sign in</Link>
       </>
     }
   />
