@@ -59,7 +59,8 @@ const ResetPassword = () => {
     }
   };
 
-  const heading = "text-2xl font-semibold tracking-tight text-slate-900 outline-none";
+  const heading = "mt-1 text-2xl leading-tight font-semibold tracking-[-0.01em] text-balance text-slate-900 outline-none";
+  const lead = "mt-2 text-sm leading-6 text-pretty text-slate-600";
 
   return (
     <AuthLayout image="https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=900&auto=format&fit=crop">
@@ -69,10 +70,12 @@ const ResetPassword = () => {
         </Link>
       )}
 
+      <p className="text-sm font-medium text-blue-700">Account recovery</p>
+
       {status === "done" && (
         <>
           <h1 ref={headingRef} tabIndex={-1} className={heading}>Password updated</h1>
-          <p className="mt-2 text-sm text-slate-600">Your password has been reset successfully.</p>
+          <p className={lead}>Your password has been reset successfully. Sign in with your new password to continue.</p>
           <Link to="/login" className={buttonClasses({ size: "lg", fullWidth: true, className: "mt-8" })}>
             Continue to sign in
           </Link>
@@ -82,7 +85,7 @@ const ResetPassword = () => {
       {status === "invalid" && (
         <>
           <h1 ref={headingRef} tabIndex={-1} className={heading}>This link is no longer valid</h1>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className={lead}>
             Password reset links expire after {PASSWORD_RESET_TTL_MINUTES} minutes and can only be used once. Request a new link to continue.
           </p>
           <Link to="/forgot-password" className={buttonClasses({ size: "lg", fullWidth: true, className: "mt-8" })}>
@@ -94,7 +97,7 @@ const ResetPassword = () => {
       {status === "form" && (
         <>
           <h1 className={heading}>Create a new password</h1>
-          <p className="mt-2 text-sm text-slate-600">Choose a new password for your VIDYADAAN account.</p>
+          <p className={lead}>Choose a new password for your VIDYADAAN account. You&apos;ll use it the next time you sign in.</p>
 
           <div className="mt-8">
             {error && <Alert tone="danger" className="mb-5">{error}</Alert>}
