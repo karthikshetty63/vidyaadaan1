@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import VidyadaanLogo from "../ui/VidyadaanLogo";
+import { useAuth } from "../../context/AuthContext";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -15,6 +16,9 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
+  // Signed in (e.g. with "Remember me"): offer the dashboard instead of Login / Join.
+  const dashboardHref = user ? `/dashboard/${user.role}` : null;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -99,18 +103,29 @@ const Navbar = () => {
 
             {/* Right Action Controls */}
             <div className="hidden sm:flex items-center gap-3">
-              <Link
-                to="/login"
-                className="px-5 py-2 text-xs font-bold text-blue-600 border-2 border-blue-600 rounded-full hover:bg-blue-50 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                to="/join"
-                className="px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-colors shadow-md shadow-blue-500/20"
-              >
-                Join VIDYADAAN
-              </Link>
+              {dashboardHref ? (
+                <Link
+                  to={dashboardHref}
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-colors shadow-md shadow-blue-500/20"
+                >
+                  Go to dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="px-5 py-2 text-xs font-bold text-blue-600 border-2 border-blue-600 rounded-full hover:bg-blue-50 transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/join"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-colors shadow-md shadow-blue-500/20"
+                  >
+                    Join VIDYADAAN
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile Hamburger */}
@@ -157,14 +172,23 @@ const Navbar = () => {
             )}
 
             <div className="pt-4 mt-2 border-t border-slate-100 flex gap-3">
-              <Link to="/login" onClick={() => setMobileOpen(false)}
-                className="flex-1 text-center py-2.5 text-xs font-bold text-blue-600 border-2 border-blue-600 rounded-full">
-                Login
-              </Link>
-              <Link to="/join" onClick={() => setMobileOpen(false)}
-                className="flex-1 text-center py-2.5 text-xs font-bold text-white bg-blue-600 rounded-full shadow-md">
-                Join VIDYADAAN
-              </Link>
+              {dashboardHref ? (
+                <Link to={dashboardHref} onClick={() => setMobileOpen(false)}
+                  className="flex-1 text-center py-2.5 text-xs font-bold text-white bg-blue-600 rounded-full shadow-md">
+                  Go to dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" onClick={() => setMobileOpen(false)}
+                    className="flex-1 text-center py-2.5 text-xs font-bold text-blue-600 border-2 border-blue-600 rounded-full">
+                    Login
+                  </Link>
+                  <Link to="/join" onClick={() => setMobileOpen(false)}
+                    className="flex-1 text-center py-2.5 text-xs font-bold text-white bg-blue-600 rounded-full shadow-md">
+                    Join VIDYADAAN
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

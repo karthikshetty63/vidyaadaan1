@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 import { createHash, randomBytes } from "node:crypto";
 import SchoolProfile from "../models/SchoolProfile.js";
 import NGOProfile from "../models/NGOProfile.js";
+import RevokedSession from "../models/RevokedSession.js";
 import User from "../models/User.js";
 import {
     EMAIL_PATTERN,
@@ -22,6 +23,7 @@ import {
     validateRegistration,
 } from "../../shared/registrationRules.js";
 import { isEmailConfigured, sendPasswordResetEmail } from "../services/emailService.js";
+import { GoogleTokenError, isGoogleSignInConfigured, verifyGoogleIdToken } from "../services/googleAuth.js";
 import { PROFILE_MODELS, duplicateKeyError, toProfileDocument } from "../services/profileModels.js";
 import { deleteUploadedFiles, storeUploads, validateUploads } from "../services/uploadService.js";
 import { clearAuthCookie, getTokenFromRequest, safeUser, setAuthCookie, verifyToken } from "../utils/authToken.js";
@@ -147,6 +149,28 @@ const findUserForLogin = async (identifier, portalRole) => {
     return undefined;
 };
 
+// Once someone has proven who they are (password or Google), explain why they can't continue, if they can't.
+const refuseSignIn = (res, user, portalRole) => {
+    if (portalRole && user.role !== portalRole) {
+        return res.status(403).json({
+            code: "WRONG_PORTAL",
+            role: user.role,
+            message: `This is a ${ROLE_LABELS[user.role]} account. Please use the ${ROLE_LABELS[user.role]} login page.`,
+        });
+    }
+    if (user.accountStatus === "pending") {
+        return res.status(403).json({ code: "ACCOUNT_PENDING", message: "Your account is pending admin approval. You can log in once it has been approved." });
+    }
+    if (user.accountStatus === "rejected") {
+        return res.status(403).json({
+            code: "ACCOUNT_REJECTED",
+            reason: user.rejectionReason || null,
+            message: `Your registration was rejected${user.rejectionReason ? `: ${user.rejectionReason}` : "."} Please contact VIDYADAAN support.`,
+        });
+    }
+    return null;
+};
+
 export const login = async (req, res, next) => {
     const body = req.body && typeof req.body === "object" ? req.body : {};
     const identifier = normalizeEmail(body.email);
@@ -166,7 +190,8 @@ export const login = async (req, res, next) => {
 
         const passwordFits = Buffer.byteLength(password, "utf8") <= PASSWORD_MAX_BYTES;
         let passwordOk = false;
-        if (user && passwordFits) {
+        // Google-only accounts have no password; they take the same slow path as an unknown email.
+        if (user?.password && passwordFits) {
             passwordOk = await user.verifyPassword(password);
         } else {
             await bcrypt.compare(password.slice(0, PASSWORD_MAX_BYTES), await getDummyHash());
@@ -176,23 +201,8 @@ export const login = async (req, res, next) => {
         }
 
         // The password was correct, so it is safe to explain why login cannot continue.
-        if (portalRole && user.role !== portalRole) {
-            return res.status(403).json({
-                code: "WRONG_PORTAL",
-                role: user.role,
-                message: `This is a ${ROLE_LABELS[user.role]} account. Please use the ${ROLE_LABELS[user.role]} login page.`,
-            });
-        }
-        if (user.accountStatus === "pending") {
-            return res.status(403).json({ code: "ACCOUNT_PENDING", message: "Your account is pending admin approval. You can log in once it has been approved." });
-        }
-        if (user.accountStatus === "rejected") {
-            return res.status(403).json({
-                code: "ACCOUNT_REJECTED",
-                reason: user.rejectionReason || null,
-                message: `Your registration was rejected${user.rejectionReason ? `: ${user.rejectionReason}` : "."} Please contact VIDYADAAN support.`,
-            });
-        }
+        const refused = refuseSignIn(res, user, portalRole);
+        if (refused) return refused;
 
         setAuthCookie(res, user, body.remember === true);
         return res.status(200).json({ message: "Login successful.", user: safeUser(user) });
@@ -205,15 +215,113 @@ export const me = (req, res) => res.status(200).json({ user: safeUser(req.user) 
 
 export const logout = async (req, res, next) => {
     try {
-        // Revoke the token server-side (signs this user out on every device), then clear the cookie.
+        // Ends this device's session only; a copied cookie stops working too. Security events
+        // (password reset, linking Google, rejection) still sign out every device via tokenVersion.
         const payload = verifyToken(getTokenFromRequest(req));
-        if (payload?.userId) {
+        if (payload?.sid) {
+            await RevokedSession.updateOne(
+                { sid: payload.sid },
+                { $max: { expiresAt: new Date(payload.exp * 1000) } },
+                { upsert: true }
+            );
+        } else if (payload?.userId) {
+            // Sessions issued before per-device sign-out have no id: fall back to signing out everywhere.
             await User.updateOne({ _id: payload.userId }, { $inc: { tokenVersion: 1 } });
         }
         clearAuthCookie(res);
         return res.status(200).json({ message: "Logged out successfully." });
     } catch (error) {
         clearAuthCookie(res);
+        return next(error);
+    }
+};
+
+// ─── Sign in with Google ─────────────────────────────────────────────────────
+// Schools and NGOs can only sign in to an account that already exists (their registration needs
+// documents and admin approval). A donor without an account gets one. The admin console is password-only.
+const createGoogleDonor = async (res, google, remember) => {
+    let user;
+    try {
+        user = await User.create({
+            name: google.name || google.email.split("@")[0],
+            email: google.email,
+            role: "donor",
+            accountStatus: "active",
+            googleId: google.googleId,
+        });
+        await PROFILE_MODELS.donor.create({ userId: user._id });
+    } catch (error) {
+        if (user?._id) await User.deleteOne({ _id: user._id }).catch(() => {});
+        // Two sign-ins for the same new account at the same moment: the other one won.
+        if (error.code === 11000) return res.status(409).json({ code: "GOOGLE_RETRY", message: "Your account was just created. Please try again." });
+        throw error;
+    }
+    setAuthCookie(res, user, remember);
+    return res.status(201).json({ message: "Account created.", user: safeUser(user), created: true });
+};
+
+export const googleLogin = async (req, res, next) => {
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    const portalRole = body.role;
+    const credential = typeof body.credential === "string" ? body.credential : "";
+
+    if (portalRole === "admin") return badRequest(res, "Google sign-in isn't available for the admin console.");
+    if (!PUBLIC_ROLES.includes(portalRole)) return badRequest(res, "Unknown login portal.");
+    if (!credential || credential.length > 4096) return badRequest(res, "Google didn't send your sign-in details. Please try again.");
+    if (!isGoogleSignInConfigured()) {
+        return res.status(503).json({ code: "GOOGLE_UNAVAILABLE", message: "Google sign-in isn't set up yet. Please sign in with your email and password." });
+    }
+
+    let google;
+    try {
+        google = await verifyGoogleIdToken(credential);
+    } catch (error) {
+        if (error instanceof GoogleTokenError) {
+            return res.status(401).json({ code: "GOOGLE_TOKEN_INVALID", message: "Google sign-in didn't work. Please try again." });
+        }
+        console.error("Google sign-in unavailable:", error.message);
+        return res.status(503).json({ code: "GOOGLE_UNAVAILABLE", message: "Google sign-in isn't available right now. Please try again, or use your email and password." });
+    }
+
+    try {
+        const user =
+            (await User.findOne({ googleId: google.googleId }).select("+password")) ||
+            (await User.findOne({ email: google.email }).select("+password"));
+
+        if (!user) {
+            if (portalRole !== "donor") {
+                return res.status(404).json({
+                    code: "GOOGLE_NO_ACCOUNT",
+                    message: `There's no ${ROLE_LABELS[portalRole]} account for ${google.email}. Register first, or sign in with your email and password.`,
+                });
+            }
+            return await createGoogleDonor(res, google, body.remember === true);
+        }
+
+        if (user.googleId && user.googleId !== google.googleId) {
+            return res.status(409).json({
+                code: "GOOGLE_ACCOUNT_MISMATCH",
+                message: "This VIDYADAAN account is linked to a different Google account. Sign in with that Google account instead.",
+            });
+        }
+        const refused = refuseSignIn(res, user, portalRole);
+        if (refused) return refused;
+
+        // First Google sign-in for an existing account: link it. Registration never proved that whoever set
+        // the password owned this email, so that password is removed and every other session is signed out.
+        const linked = !user.googleId;
+        if (linked) {
+            user.googleId = google.googleId;
+            if (user.password) {
+                user.password = undefined;
+                user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+            }
+            await user.save();
+        }
+
+        setAuthCookie(res, user, body.remember === true);
+        return res.status(200).json({ message: "Login successful.", user: safeUser(user), linked });
+    } catch (error) {
         return next(error);
     }
 };

@@ -3,6 +3,7 @@ import process from "node:process";
 import createApp from "./app.js";
 import connectDB from "./config/db.js";
 import { isEmailConfigured, verifyEmailTransport } from "./services/emailService.js";
+import { isGoogleSignInConfigured } from "./services/googleAuth.js";
 
 dotenv.config();
 
@@ -34,6 +35,11 @@ const startServer = async () => {
                 .then(() => console.log("Email (SMTP) connection verified"))
                 .catch((error) => console.warn("Email (SMTP) connection failed:", error.message));
         }
+        console.log(
+            isGoogleSignInConfigured()
+                ? "Google sign-in: enabled"
+                : "Google sign-in is not configured (VITE_GOOGLE_CLIENT_ID). The Google button stays hidden."
+        );
     } catch (error) {
         console.error("Server failed to start:", error.message);
         process.exit(1);

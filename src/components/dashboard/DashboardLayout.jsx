@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import DashboardNavbar from "./DashboardNavbar";
+import Alert from "../ui/Alert";
 
 // Shell for every dashboard page: sidebar (drawer below 1024px) + top bar + scrolling content.
 // `backgroundClass` is still accepted from older pages but all dashboards now share bg-slate-50.
@@ -14,6 +16,11 @@ const DashboardLayout = ({
     children,
 }) => {
     const [navOpen, setNavOpen] = useState(false);
+    const location = useLocation();
+    const navigate = useNavigate();
+    // Set by the sign-in page the first time an existing account is linked to Google.
+    const googleLinked = location.state?.notice === "google-linked";
+    const dismissNotice = () => navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
 
     return (
         <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
@@ -28,6 +35,17 @@ const DashboardLayout = ({
                     onMenuClick={() => setNavOpen(true)}
                     menuOpen={navOpen}
                 />
+                {googleLinked && (
+                    <div className="shrink-0 px-4 sm:px-6 lg:px-8 pt-4">
+                        <Alert tone="info" title="Google sign-in is now linked" className="mx-auto w-full max-w-7xl">
+                            For your security, your old password was removed and other devices were signed out. To use a password
+                            again, choose &ldquo;Forgot password?&rdquo; on the sign-in page.
+                            <button type="button" onClick={dismissNotice} className="mt-2 block font-medium underline underline-offset-2">
+                                Got it
+                            </button>
+                        </Alert>
+                    </div>
+                )}
                 {children}
             </div>
         </div>

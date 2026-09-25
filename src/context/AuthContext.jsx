@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getCurrentUser, loginAccount, logoutAccount } from "../api/auth";
+import { getCurrentUser, loginAccount, loginWithGoogleAccount, logoutAccount } from "../api/auth";
 
 const AuthContext = createContext(null);
 
@@ -28,6 +28,13 @@ export const AuthProvider = ({ children }) => {
         return data.user;
     };
 
+    // Resolves with the whole response: { user, linked, created }.
+    const loginWithGoogle = async (payload) => {
+        const data = await loginWithGoogleAccount(payload);
+        setUser(data.user);
+        return data;
+    };
+
     const logout = async () => {
         try {
             await logoutAccount();
@@ -38,7 +45,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, isAuthenticated: Boolean(user), login, logout, refreshUser }}>
+        <AuthContext.Provider value={{ user, loading, isAuthenticated: Boolean(user), login, loginWithGoogle, logout, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

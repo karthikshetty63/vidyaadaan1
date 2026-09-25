@@ -1,7 +1,11 @@
+import GoogleSignInButton from "../../components/auth/GoogleSignInButton";
+import LoginErrorAlert from "../../components/auth/LoginErrorAlert";
 import RegistrationLayout, { AgreeCheckbox, RegistrationSuccess, ReviewSummary } from "../../components/auth/RegistrationLayout";
 import ChoiceChips from "../../components/ui/ChoiceChips";
 import FormField, { Input, Select, Textarea } from "../../components/ui/FormField";
 import SegmentedControl from "../../components/ui/SegmentedControl";
+import { GOOGLE_SIGN_IN_ENABLED } from "../../hooks/useGoogleButton";
+import usePortalLogin from "../../hooks/usePortalLogin";
 import useRegistrationForm from "../../hooks/useRegistrationForm";
 import { DONOR_CAUSES, DONOR_FREQUENCIES, DONOR_STATES } from "../../../shared/registrationRules.js";
 
@@ -17,6 +21,8 @@ const INITIAL_FORM = {
 
 const DonorRegister = () => {
   const { form, set, step, errors, messages, loading, handleContinue, handleSubmit, prev } = useRegistrationForm("donor", INITIAL_FORM);
+  // One-click alternative to the form: Google creates the donor account (or signs in to an existing one).
+  const google = usePortalLogin("donor");
   const isLastStep = step === STEPS.length - 1;
 
   if (step === STEPS.length) {
@@ -31,6 +37,18 @@ const DonorRegister = () => {
 
   const steps = [
     <div key="personal" className="space-y-5">
+      {GOOGLE_SIGN_IN_ENABLED && (
+        <div className="space-y-4">
+          <LoginErrorAlert error={google.error} correctPortal={google.correctPortal} />
+          <GoogleSignInButton text="signup_with" onCredential={google.handleGoogleCredential} busy={google.googleLoading} />
+          <p className="text-center text-xs text-slate-500">
+            By continuing with Google, you agree to VIDYADAAN&apos;s Terms of Service and Privacy Policy.
+          </p>
+          <div className="flex items-center gap-3 pt-1 text-xs text-slate-500" aria-hidden="true">
+            <span className="h-px flex-1 bg-slate-200" /> or register with your email <span className="h-px flex-1 bg-slate-200" />
+          </div>
+        </div>
+      )}
       <FormField label="Full name" required error={errors.name}>
         {(f) => <Input {...f} autoComplete="name" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Ramesh Kumar" />}
       </FormField>

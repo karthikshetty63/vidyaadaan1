@@ -10,10 +10,13 @@ const userSchema = new mongoose.Schema(
     {
         name: { type: String, required: true, trim: true, maxlength: 150 },
         email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 254 },
-        password: { type: String, required: true, select: false },
+        // Optional only for accounts that sign in with Google (they can add one later via Forgot password).
+        password: { type: String, select: false, required: [function passwordRequired() { return !this.googleId; }, "Password is required."] },
+        // The Google account ("sub" claim) linked through Sign in with Google.
+        googleId: { type: String, unique: true, sparse: true },
         role: { type: String, required: true, enum: ROLES },
         accountStatus: { type: String, enum: ACCOUNT_STATUSES, default: "active" },
-        // Incremented on logout / rejection so every previously issued JWT stops working.
+        // Incremented on password reset, linking Google, or rejection: every session on every device ends.
         tokenVersion: { type: Number, default: 0 },
         // Approval audit trail (set by an admin).
         statusChangedAt: { type: Date },
@@ -28,6 +31,7 @@ const userSchema = new mongoose.Schema(
         toJSON: {
             transform: (_doc, ret) => {
                 delete ret.password;
+                delete ret.googleId;
                 delete ret.passwordResetToken;
                 delete ret.passwordResetExpires;
                 return ret;
@@ -42,12 +46,13 @@ userSchema.index({ role: 1, accountStatus: 1, createdAt: -1 });
 userSchema.index({ passwordResetToken: 1 }, { sparse: true });
 
 userSchema.pre("save", async function hashPassword() {
-    if (!this.isModified("password")) return;
+    // Nothing to hash when the password was removed (e.g. when an account is linked to Google).
+    if (!this.isModified("password") || !this.password) return;
     this.password = await bcrypt.hash(this.password, BCRYPT_ROUNDS);
 });
 
 userSchema.methods.verifyPassword = function verifyPassword(candidate) {
-    return bcrypt.compare(candidate, this.password);
+    return this.password ? bcrypt.compare(candidate, this.password) : Promise.resolve(false);
 };
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);

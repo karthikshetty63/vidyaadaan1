@@ -10,7 +10,7 @@ const AdminLogin = () => (
     description="Review and approve school and NGO registrations."
     identifierLabel="Admin email"
     identifierPlaceholder="admin@vidyadaan.org"
-    showGoogleDemo={false}
+    showGoogle={false}
     footerNote={<p className="text-slate-500">Admin accounts are created by the platform team. There is no public admin registration.</p>}
   />
 );

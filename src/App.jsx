@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import GuestRoute from "./components/auth/GuestRoute";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Home from "./pages/Home";
 
@@ -46,23 +47,26 @@ function App() {
 
           <Route path="/impact" element={<DonorImpactPage />} />
 
-          {/* Auth — Login */}
-          <Route path="/login" element={<RoleSelector />} />
-          <Route path="/login/school" element={<SchoolLogin />} />
-          <Route path="/login/ngo" element={<NGOLogin />} />
-          <Route path="/login/donor" element={<DonorLogin />} />
-          {/* Admin login only — admin accounts are created with `npm run create-admin` */}
-          <Route path="/login/admin" element={<AdminLogin />} />
+          {/* Sign-in and registration: anyone already signed in goes straight to their dashboard */}
+          <Route element={<GuestRoute />}>
+            {/* Auth — Login */}
+            <Route path="/login" element={<RoleSelector />} />
+            <Route path="/login/school" element={<SchoolLogin />} />
+            <Route path="/login/ngo" element={<NGOLogin />} />
+            <Route path="/login/donor" element={<DonorLogin />} />
+            {/* Admin login only — admin accounts are created with `npm run create-admin` */}
+            <Route path="/login/admin" element={<AdminLogin />} />
+
+            {/* Auth — Register */}
+            <Route path="/join" element={<JoinSelector />} />
+            <Route path="/join/school" element={<SchoolRegister />} />
+            <Route path="/join/ngo" element={<NGORegister />} />
+            <Route path="/join/donor" element={<DonorRegister />} />
+          </Route>
 
           {/* Auth — Password reset, shared by every portal (accounts are identified by email) */}
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-
-          {/* Auth — Register */}
-          <Route path="/join" element={<JoinSelector />} />
-          <Route path="/join/school" element={<SchoolRegister />} />
-          <Route path="/join/ngo" element={<NGORegister />} />
-          <Route path="/join/donor" element={<DonorRegister />} />
 
           {/* School Admin Portal — 12 Pages */}
           <Route element={<ProtectedRoute role="school" />}>

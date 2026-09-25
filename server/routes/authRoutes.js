@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { forgotPassword, login, logout, me, register, resetPassword } from "../controllers/authController.js";
+import { forgotPassword, googleLogin, login, logout, me, register, resetPassword } from "../controllers/authController.js";
 import requireAuth from "../middleware/authMiddleware.js";
 import acceptUploads from "../middleware/uploadMiddleware.js";
 
@@ -9,6 +9,8 @@ const createAuthRouter = ({ loginLimiter, registerLimiter, forgotPasswordLimiter
 
     router.post("/register", registerLimiter, acceptUploads, register);
     router.post("/login", loginLimiter, login);
+    // Shares the login limiter: failed sign-ins of either kind count together.
+    router.post("/google", loginLimiter, googleLogin);
     router.get("/me", requireAuth, me);
     router.post("/logout", logout);
     router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);

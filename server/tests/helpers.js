@@ -17,7 +17,7 @@ const { createApp } = await import("../app.js");
 const { setUploadDir } = await import("../utils/fileStorage.js");
 const { createOrResetAdmin } = await import("../services/adminAccount.js");
 const models = await Promise.all(
-    ["User", "SchoolProfile", "NGOProfile", "DonorProfile", "UploadedFile"].map((m) => import(`../models/${m}.js`))
+    ["User", "SchoolProfile", "NGOProfile", "DonorProfile", "UploadedFile", "RevokedSession"].map((m) => import(`../models/${m}.js`))
 );
 
 export const FRONTEND_ORIGIN = "http://localhost:5173";

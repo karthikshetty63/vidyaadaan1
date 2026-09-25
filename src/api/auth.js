@@ -77,6 +77,9 @@ export const registerAccount = (role, values, files = {}) => {
 /** credentials: { email, password, remember, role } — role = the login portal being used. */
 export const loginAccount = (credentials) => apiRequest("/api/auth/login", { method: "POST", body: credentials });
 
+/** { credential, role, remember } — credential is the ID token Google gives the Sign in with Google button. */
+export const loginWithGoogleAccount = (payload) => apiRequest("/api/auth/google", { method: "POST", body: payload });
+
 export const getCurrentUser = () => apiRequest("/api/auth/me");
 
 export const logoutAccount = () => apiRequest("/api/auth/logout", { method: "POST" });
