@@ -7,6 +7,7 @@ import Contact from "./pages/legal/Contact";
 import Privacy from "./pages/legal/Privacy";
 import RefundPolicy from "./pages/legal/RefundPolicy";
 import Terms from "./pages/legal/Terms";
+import ProjectDetails from "./pages/projects/ProjectDetails";
 import RoleSelector from "./pages/auth/RoleSelector";
 import SchoolLogin from "./pages/auth/SchoolLogin";
 import NGOLogin from "./pages/auth/NGOLogin";
@@ -23,6 +24,7 @@ import ManageProjects from "./pages/dashboard/school/ManageProjects";
 import ProjectProgress from "./pages/dashboard/school/ProjectProgress";
 import Gallery from "./pages/dashboard/school/Gallery";
 import DonationHistory from "./pages/dashboard/school/DonationHistory";
+import SchoolAlumni from "./pages/dashboard/school/Alumni";
 import SchoolReports from "./pages/dashboard/school/Reports";
 import SchoolNotifications from "./pages/dashboard/school/Notifications";
 import SchoolSettings from "./pages/dashboard/school/Settings";
@@ -44,6 +46,8 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/contact" element={<Contact />} />
+          {/* An approved project's public page (the "View project" link in alumni emails). No sign-in needed. */}
+          <Route path="/projects/:projectId" element={<ProjectDetails />} />
 
           {/* Sign-in and registration: anyone already signed in goes straight to their dashboard */}
           <Route element={<GuestRoute />}>
@@ -76,6 +80,7 @@ function App() {
             <Route path="/dashboard/school/progress" element={<ProjectProgress />} />
             <Route path="/dashboard/school/gallery" element={<Gallery />} />
             <Route path="/dashboard/school/donations" element={<DonationHistory />} />
+            <Route path="/dashboard/school/alumni" element={<SchoolAlumni />} />
             <Route path="/dashboard/school/reports" element={<SchoolReports />} />
             <Route path="/dashboard/school/notifications" element={<SchoolNotifications />} />
             <Route path="/dashboard/school/settings" element={<SchoolSettings />} />

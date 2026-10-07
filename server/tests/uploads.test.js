@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
-import fs from "node:fs";
 import { after, before, describe, test } from "node:test";
 import { FILES, PASSWORD, createClient, donorData, login, ngoData, registrationForm, requiredFiles, schoolData, startTestServer } from "./helpers.js";
 
@@ -10,7 +9,7 @@ let UploadedFile;
 
 const newClient = () => createClient(server.baseUrl);
 const registerWithFiles = (data, files) => newClient().post("/api/auth/register", { form: registrationForm(data, files) });
-const diskFiles = () => fs.readdirSync(server.uploadDir);
+const storedFiles = () => server.storedFiles();
 
 /** Register + approve a school (with its required documents plus `files`) and return a logged-in client. */
 const approvedSchool = async (files = {}) => {
@@ -32,9 +31,9 @@ after(() => server.stop());
 
 describe("registration uploads", () => {
     test("school with photo + documents: files stored, linked to profile, visible after login", async () => {
-        const before = diskFiles().length;
+        const before = (await storedFiles()).length;
         const { c } = await approvedSchool({ schoolPhoto: FILES.png(), schoolCertificate: FILES.pdf(), principalIdProof: FILES.jpeg() });
-        assert.equal(diskFiles().length, before + 3);
+        assert.equal((await storedFiles()).length, before + 3);
 
         const me = await c.get("/api/profile/me");
         assert.equal(me.status, 200);
@@ -64,13 +63,13 @@ describe("registration uploads", () => {
     });
 
     test("invalid type (exe) → 400, nothing stored, no account", async () => {
-        const before = diskFiles().length;
+        const before = (await storedFiles()).length;
         const data = schoolData();
         const res = await registerWithFiles(data, { schoolCertificate: FILES.exe() });
         assert.equal(res.status, 400);
         assert.ok(res.body.errors.schoolCertificate);
         assert.equal(res.body.step, 3, "points the form back to the Documents step");
-        assert.equal(diskFiles().length, before);
+        assert.equal((await storedFiles()).length, before);
         assert.equal(await User.countDocuments({ email: data.email }), 0);
     });
 
@@ -87,12 +86,12 @@ describe("registration uploads", () => {
     });
 
     test("oversized file (> 5 MB) → 413 and nothing stored", async () => {
-        const before = diskFiles().length;
+        const before = (await storedFiles()).length;
         const data = schoolData();
         const res = await registerWithFiles(data, { schoolPhoto: FILES.oversized() });
         assert.equal(res.status, 413);
         assert.match(res.body.message, /5 MB/);
-        assert.equal(diskFiles().length, before);
+        assert.equal((await storedFiles()).length, before);
         assert.equal(await User.countDocuments({ email: data.email }), 0);
     });
 
@@ -112,10 +111,10 @@ describe("registration uploads", () => {
     });
 
     test("validation failure on a text field leaves no files behind", async () => {
-        const before = diskFiles().length;
+        const before = (await storedFiles()).length;
         const res = await registerWithFiles(schoolData({ ifsc: "bad" }), { schoolPhoto: FILES.png() });
         assert.equal(res.status, 400);
-        assert.equal(diskFiles().length, before);
+        assert.equal((await storedFiles()).length, before);
     });
 
     test("required documents: school certificate + principal ID, NGO certificate + PAN, donor PAN", async () => {
@@ -150,12 +149,11 @@ describe("registration uploads", () => {
 });
 
 describe("school photo replace / remove", () => {
-    test("replace: new photo linked, old file removed from disk and DB", async () => {
+    test("replace: new photo linked, old file removed from storage and DB", async () => {
         const { c } = await approvedSchool({ schoolPhoto: FILES.png() });
         const oldId = (await c.get("/api/profile/me")).body.profile.photo.id;
         const oldDoc = await UploadedFile.findById(oldId);
-        const oldPath = `${server.uploadDir}/${oldDoc.storageKey}`;
-        assert.ok(fs.existsSync(oldPath));
+        assert.ok(await server.fileStored(oldDoc.storageKey));
 
         const form = new FormData();
         form.append("schoolPhoto", FILES.jpeg());
@@ -166,7 +164,7 @@ describe("school photo replace / remove", () => {
         const me = await c.get("/api/profile/me");
         assert.equal(me.body.profile.photo.id, res.body.photo.id);
         assert.equal(await UploadedFile.findById(oldId), null);
-        assert.equal(fs.existsSync(oldPath), false);
+        assert.equal(await server.fileStored(oldDoc.storageKey), false);
         assert.equal((await c.get(`/api/files/${oldId}`)).status, 404);
     });
 
@@ -213,7 +211,7 @@ describe("private file access", () => {
     });
 
     test("upload folder is not publicly served", async () => {
-        const [name] = diskFiles();
+        const [name] = await storedFiles();
         assert.ok(name, "there should be at least one stored file by now");
         for (const path of [`/uploads/${name}`, `/server/uploads/${name}`, `/api/uploads/${name}`]) {
             const res = await newClient().get(path);

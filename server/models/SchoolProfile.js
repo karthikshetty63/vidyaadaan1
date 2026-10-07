@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { MAP_LOCATION_SOURCES } from "../../shared/mapLocationRules.js";
 import { UPI_QR_STATUSES } from "../../shared/upiQrRules.js";
 
 const fileRef = { type: mongoose.Schema.Types.ObjectId, ref: "UploadedFile" };
@@ -15,6 +16,20 @@ const paymentQrSchema = new mongoose.Schema(
         reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         reviewedAt: Date,
         rejectionReason: String,
+    },
+    { _id: false }
+);
+
+// Where the school is on the map (shared/mapLocationRules.js): only the coordinates, never the link.
+// Seen by the school itself and VIDYADAAN admins only.
+const mapLocationSchema = new mongoose.Schema(
+    {
+        lat: { type: Number, required: true, min: -90, max: 90 },
+        lng: { type: Number, required: true, min: -180, max: 180 },
+        source: { type: String, enum: MAP_LOCATION_SOURCES, required: true },
+        // DEVICE only: how precise the device said the position was, in metres.
+        accuracy: { type: Number, min: 0 },
+        setAt: { type: Date, required: true },
     },
     { _id: false }
 );
@@ -42,6 +57,7 @@ const schoolProfileSchema = new mongoose.Schema(
         ifsc: String,
         upi: String,
         paymentQr: paymentQrSchema,
+        mapLocation: mapLocationSchema,
         // School Photograph (shown on the school's dashboard/profile).
         photo: fileRef,
         // Private verification documents (owner + admin only).

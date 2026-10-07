@@ -10,6 +10,7 @@ import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import EmptyState from "../../../components/ui/EmptyState";
 import FormField, { Textarea } from "../../../components/ui/FormField";
+import { MapLink } from "../../../components/ui/MapPreview";
 import Modal from "../../../components/ui/Modal";
 import PageHeader from "../../../components/ui/PageHeader";
 import ProtectedImage from "../../../components/ui/ProtectedImage";
@@ -28,7 +29,7 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString("en-IN
 
 const FIELD_LABELS = {
   school: [
-    ["schoolName", "School name"], ["udise", "UDISE code"], ["address", "Address"], ["district", "District"], ["state", "State"],
+    ["schoolName", "School name"], ["udise", "UDISE code"], ["address", "Address"], ["district", "District"], ["state", "State"], ["mapLocation", "Location on map"],
     ["principalName", "Principal"], ["email", "Official email"], ["phone", "Phone"], ["students", "Students"], ["teachers", "Teachers"],
     ["infrastructure", "Facilities"], ["bankAccount", "Bank account"], ["ifsc", "IFSC"], ["upi", "UPI ID"],
   ],
@@ -170,7 +171,9 @@ const AccountReviewModal = ({ accountId, onClose, onDecision }) => {
                 {FIELD_LABELS[account.role].map(([key, label]) => (
                   <div key={key} className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-4 px-4 py-2.5 text-sm">
                     <dt className="text-slate-500">{label}</dt>
-                    <dd className="sm:col-span-2 font-medium text-slate-900 break-words">{formatValue(key, profile[key])}</dd>
+                    <dd className="sm:col-span-2 font-medium text-slate-900 break-words">
+                      {key === "mapLocation" && profile.mapLocation ? <MapLink point={profile.mapLocation} /> : formatValue(key, profile[key])}
+                    </dd>
                   </div>
                 ))}
               </dl>

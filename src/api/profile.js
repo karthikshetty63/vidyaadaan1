@@ -15,5 +15,14 @@ export const savePaymentQr = (link) => apiRequest("/api/profile/payment-qr", { m
 
 export const removePaymentQr = () => apiRequest("/api/profile/payment-qr", { method: "DELETE" });
 
+// ─── The school's location on the map (school and admins only) ─────────────────
+/** Where a Google Maps link points ({ location: { lat, lng } }), to show it before saving. Short links are opened by the server. */
+export const resolveMapLink = (link) => apiRequest("/api/profile/map-location/resolve", { method: "POST", body: { link } });
+
+/** { source: "LINK", link } or { source: "DEVICE", lat, lng, accuracy }. Resolves with { message, mapLocation }. */
+export const saveMapLocation = (location) => apiRequest("/api/profile/map-location", { method: "PUT", body: location });
+
+export const removeMapLocation = () => apiRequest("/api/profile/map-location", { method: "DELETE" });
+
 /** Only the fields in `changes` are updated (see SCHOOL_PROFILE_EDITABLE). */
 export const updateSchoolProfile = (changes) => apiRequest("/api/profile/school", { method: "PATCH", body: changes });

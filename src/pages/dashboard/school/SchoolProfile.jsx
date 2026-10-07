@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { LuCircleCheck, LuPencil, LuSchool } from "react-icons/lu";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
+import MapLocationCard from "../../../components/dashboard/school/MapLocationCard";
 import SchoolProfileModal from "../../../components/dashboard/school/SchoolProfileModal";
 import Alert from "../../../components/ui/Alert";
 import Badge from "../../../components/ui/Badge";
@@ -168,6 +169,8 @@ const SchoolProfile = () => {
                   </ul>
                 </Card>
               </div>
+
+              <MapLocationCard mapLocation={profile.mapLocation || null} onChange={(mapLocation) => setProfile((p) => ({ ...p, mapLocation }))} />
             </>
           )}
         </div>

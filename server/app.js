@@ -5,6 +5,7 @@ import cors from "cors";
 import express from "express";
 import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
+import path from "node:path";
 import { apiNotFound, errorHandler } from "./middleware/errorHandler.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import createApprovedProjectRouter from "./routes/approvedProjectRoutes.js";
@@ -13,6 +14,8 @@ import createDonationRouter from "./routes/donationRoutes.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import ngoRoutes from "./routes/ngoRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
+import createPublicProjectRouter from "./routes/publicProjectRoutes.js";
+import schoolAlumniRoutes from "./routes/schoolAlumniRoutes.js";
 import schoolCommitmentRoutes from "./routes/schoolCommitmentRoutes.js";
 import schoolPaymentRoutes from "./routes/schoolPaymentRoutes.js";
 import schoolPhotoRoutes from "./routes/schoolPhotoRoutes.js";
@@ -29,6 +32,22 @@ const DEFAULT_RATE_LIMITS = {
     donationOrders: { windowMs: 15 * 60 * 1000, limit: 20 },
     // The same for an NGO paying its parts online: 20 per 15 minutes per NGO.
     ngoOnlineOrders: { windowMs: 15 * 60 * 1000, limit: 20 },
+    // Public project pages need no sign-in: 120 per minute per IP is plenty for people, not for scrapers.
+    publicProjects: { windowMs: 60 * 1000, limit: 120 },
+};
+
+// What the website may load. Everything is VIDYADAAN's own except Google Fonts, Unsplash photos (sign-in
+// pages), Razorpay Checkout, Sign in with Google and the Google Maps preview of a school's location.
+const CONTENT_SECURITY_POLICY = {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "https://*.razorpay.com", "https://accounts.google.com/gsi/client"],
+    styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://accounts.google.com/gsi/style"],
+    fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+    imgSrc: ["'self'", "data:", "blob:", "https://images.unsplash.com", "https://*.razorpay.com", "https://*.gstatic.com", "https://*.googleusercontent.com", "https://*.google.com"],
+    connectSrc: ["'self'", "https://*.razorpay.com", "https://accounts.google.com/gsi/"],
+    frameSrc: ["https://*.razorpay.com", "https://accounts.google.com/gsi/", "https://maps.google.com", "https://www.google.com"],
+    // The host serves HTTPS and redirects plain HTTP itself; on a computer the site is plain http://localhost.
+    upgradeInsecureRequests: null,
 };
 
 const makeLimiter = (config, message, options = {}) =>
@@ -46,10 +65,11 @@ const makeLimiter = (config, message, options = {}) =>
 /**
  * @param {object} [options]
  * @param {string} [options.corsOrigin] the React app's origin (cookies are only accepted from it)
- * @param {false|{login?:object, register?:object, forgotPassword?:object, resetPassword?:object, donationOrders?:object, ngoOnlineOrders?:object}} [options.rateLimits] false disables limits (tests)
+ * @param {false|{login?:object, register?:object, forgotPassword?:object, resetPassword?:object, donationOrders?:object, ngoOnlineOrders?:object, publicProjects?:object}} [options.rateLimits] false disables limits (tests)
  * @param {string|number|boolean} [options.trustProxy] set when running behind a reverse proxy
+ * @param {string} [options.clientDir] the built website (dist/), to serve it from this same address (production)
  */
-export const createApp = ({ corsOrigin = "http://localhost:5173", rateLimits = DEFAULT_RATE_LIMITS, trustProxy } = {}) => {
+export const createApp = ({ corsOrigin = "http://localhost:5173", rateLimits = DEFAULT_RATE_LIMITS, trustProxy, clientDir } = {}) => {
     const app = express();
     if (trustProxy !== undefined) app.set("trust proxy", trustProxy);
     // Links in emails point at the configured React app — never at the request's Host header.
@@ -58,7 +78,16 @@ export const createApp = ({ corsOrigin = "http://localhost:5173", rateLimits = D
     const limits = rateLimits === false ? {} : { ...DEFAULT_RATE_LIMITS, ...rateLimits };
 
     // Security headers. Resource policy "same-site" lets the React dev server (another port) read API responses.
-    app.use(helmet({ crossOriginResourcePolicy: { policy: "same-site" } }));
+    app.use(
+        helmet({
+            crossOriginResourcePolicy: { policy: "same-site" },
+            contentSecurityPolicy: { directives: CONTENT_SECURITY_POLICY },
+            // Sign in with Google opens a popup that has to report back to the page.
+            crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+            // Google sign-in checks which site it is on, which "no-referrer" would hide.
+            referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+        })
+    );
     app.use(cors({ origin: corsOrigin, credentials: true }));
     app.use(express.json({ limit: "100kb" }));
 
@@ -79,11 +108,16 @@ export const createApp = ({ corsOrigin = "http://localhost:5173", rateLimits = D
     app.use("/api/school/photos", schoolPhotoRoutes);
     app.use("/api/school/commitments", schoolCommitmentRoutes);
     app.use("/api/school/payments", schoolPaymentRoutes);
+    app.use("/api/school/alumni", schoolAlumniRoutes);
     app.use("/api/projects", createApprovedProjectRouter({
         // Counted per signed-in NGO (the router checks who it is before this runs).
         onlineOrderLimiter: makeLimiter(limits.ngoOnlineOrders, "Too many payment attempts. Please wait a few minutes and try again.", {
             keyGenerator: (req) => req.user._id.toString(),
         }),
+    }));
+    // No sign-in: the public page of an approved project (the link in alumni emails).
+    app.use("/api/public/projects", createPublicProjectRouter({
+        limiter: makeLimiter(limits.publicProjects, "Too many requests. Please wait a minute and try again."),
     }));
     app.use("/api/ngo", ngoRoutes);
     app.use("/api/donations", createDonationRouter({
@@ -92,6 +126,19 @@ export const createApp = ({ corsOrigin = "http://localhost:5173", rateLimits = D
             keyGenerator: (req) => req.user._id.toString(),
         }),
     }));
+
+    if (clientDir) {
+        // The built website, from the same address as the API, so the sign-in cookie is first-party in
+        // every browser. Files in /assets get a new name with every build, so browsers may keep them;
+        // index.html is always checked again, so a new deploy reaches people on their next visit.
+        app.use("/assets", express.static(path.join(clientDir, "assets"), { immutable: true, maxAge: "1y" }), (_req, res) => res.status(404).end());
+        app.use(express.static(clientDir, { index: false, maxAge: "1h" }));
+        // Every other page (/, /projects/<id>, /dashboard/…) is the React app, which picks the page itself.
+        app.get(/^(?!\/api(?:\/|$))/, (_req, res) => {
+            res.set("Cache-Control", "no-cache");
+            res.sendFile(path.join(clientDir, "index.html"));
+        });
+    }
 
     app.use("/api", apiNotFound);
     app.use(errorHandler);

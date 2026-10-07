@@ -18,8 +18,14 @@ const Privacy = () => (
       <p><span className="font-medium text-zinc-950">Donors:</span> address, city, state and PIN code; date of birth if you give it; your donation preferences; and a copy of your PAN card for verification.</p>
       <p>
         <span className="font-medium text-zinc-950">Schools:</span> the school&rsquo;s name, UDISE code, address, district and state; the principal&rsquo;s
-        name and contact details; student and teacher numbers and facilities; bank account number, IFSC, UPI ID and UPI payment QR; a school
-        photo; the registration certificate and the principal&rsquo;s ID proof; and the needs, progress updates and photos the school adds.
+        name and contact details; student and teacher numbers and facilities; bank account number, IFSC, UPI ID and UPI payment QR; the school&rsquo;s location on the map, if it adds one (only
+        the coordinates, from a Google Maps link or from the device&rsquo;s location, which the browser asks permission for and reads
+        once); a school photo; the registration certificate and the principal&rsquo;s ID proof; and the needs, progress updates and photos the school adds.
+      </p>
+      <p>
+        <span className="font-medium text-zinc-950">Alumni:</span> the name, register number, email address and (if given) graduation year of
+        former students a school adds to its alumni list. They are used only to email each alum when one of that school&rsquo;s projects is
+        approved, and we keep a record of each email sent.
       </p>
       <p>
         <span className="font-medium text-zinc-950">NGOs:</span> the organisation&rsquo;s name, type, year, website, mission, focus areas,
@@ -50,6 +56,8 @@ const Privacy = () => (
         <li>Signed-in NGOs and donors see approved needs. Donors see only a need&rsquo;s title, category, priority, status, budget, amount raised, and the school&rsquo;s name, district and state.</li>
         <li>A school&rsquo;s bank details, UPI ID and UPI QR are shown only to NGOs that have committed to one of its needs, and to administrators. Donors never see them.</li>
         <li>An NGO&rsquo;s payment proof is seen only by that NGO, the school it paid and administrators. A school sees the NGO payments made for its needs, online or direct.</li>
+        <li>A school&rsquo;s location on the map is seen only by that school and administrators.</li>
+        <li>A school&rsquo;s alumni list is seen only by that school. Each alumni email is sent to one person, so no alum sees another&rsquo;s name or address.</li>
       </ul>
     </LegalSection>
 

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { returnPathAfterLogin } from "../utils/loginReturn";
 
 // "Remember me" also keeps what was typed in the email / UDISE box on this device, per portal.
 // Never the password. Storage can be unavailable (private mode), so every access is guarded.
@@ -51,9 +52,9 @@ const usePortalLogin = (role) => {
       const result = await signIn();
       // Ticked: keep what they typed (or, after Google, their account email). Unticked: forget it.
       writeRemembered(role, form.remember ? form.email.trim() || result?.user?.email || result?.email || "" : "");
-      // Return to the protected page the user originally asked for, if it belongs to this portal.
-      const from = location.state?.from?.pathname;
-      navigate(from && from.startsWith(`/dashboard/${role}`) ? from : `/dashboard/${role}`, {
+      // Return to the protected page the user originally asked for, if it belongs to this portal, or to
+      // the public project page they came from ("Sign in to donate").
+      navigate(returnPathAfterLogin(location.state?.from?.pathname, role), {
         replace: true,
         // The dashboard explains once that linking Google removed the old password.
         state: result?.linked ? { notice: "google-linked" } : undefined,

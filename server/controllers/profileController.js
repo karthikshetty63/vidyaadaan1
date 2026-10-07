@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import UploadedFile from "../models/UploadedFile.js";
 import { SCHOOL_FACILITY_FIELDS, UPLOAD_RULES, validateSchoolProfileUpdate } from "../../shared/registrationRules.js";
 import { PROFILE_MODELS } from "../services/profileModels.js";
+import { mapLocationToClient } from "./mapLocationController.js";
 import { paymentQrToClient } from "./paymentQrController.js";
 import { deleteUploadedFiles, fileSummary, storeUploads, validateUploads } from "../services/uploadService.js";
 
@@ -22,6 +23,7 @@ const profileToClient = async (user, profile) => {
     if (user.role === "school") {
         result.photo = result.photo ? byId.get(result.photo.toString()) || null : null;
         result.paymentQr = paymentQrToClient(profile.paymentQr);
+        result.mapLocation = mapLocationToClient(profile.mapLocation);
     }
     if (result.documents) {
         result.documents = Object.fromEntries(

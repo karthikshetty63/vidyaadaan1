@@ -23,6 +23,7 @@ import CategoryIcon from "../../../components/ui/CategoryIcon";
 import { useAuth } from "../../../context/AuthContext";
 import useMyProfile, { toSchoolDisplayProfile } from "../../../hooks/useMyProfile";
 import useMyProjects from "../../../hooks/useMyProjects";
+import { useAlumniSummary } from "../../../hooks/useSchoolAlumni";
 import useSchoolCommitments from "../../../hooks/useSchoolCommitments";
 import useSchoolPayments from "../../../hooks/useSchoolPayments";
 import { FUNDING_PARTS } from "../../../api/projects";
@@ -57,6 +58,7 @@ const Dashboard = () => {
   const { payments } = useSchoolPayments();
   const paymentsToCheck = payments.filter((p) => p.status === "SUBMITTED");
   const [isNeedModalOpen, setIsNeedModalOpen] = useState(false);
+  const alumniSummary = useAlumniSummary();
 
   // Every figure below is counted from the school's own projects. Only approved projects count
   // towards students and funds; donations, NGOs and events have no records yet, so they show none.
@@ -142,6 +144,13 @@ const Dashboard = () => {
                 {profile.district && <HeroChip icon={LuMapPin}>{profile.district}</HeroChip>}
                 {(myProfile?.students != null || myProfile?.teachers != null) && (
                   <HeroChip icon={LuUsers}>{profile.studentsCount} students · {profile.teachersCount} teachers</HeroChip>
+                )}
+                {alumniSummary && (
+                  <Link to="/dashboard/school/alumni" className="rounded-full transition-opacity hover:opacity-80">
+                    <HeroChip icon={LuGraduationCap}>
+                      {alumniSummary.active === 1 ? "1 active alum" : `${alumniSummary.active.toLocaleString("en-IN")} active alumni`}
+                    </HeroChip>
+                  </Link>
                 )}
               </>
             }

@@ -246,9 +246,8 @@ describe("rollback", () => {
         };
         const consoleError = console.error;
         console.error = () => {};
-        const { readdirSync } = await import("node:fs");
         const filesBefore = await models.UploadedFile.countDocuments();
-        const diskBefore = readdirSync(server.uploadDir).sort();
+        const storedBefore = await server.storedFiles();
         try {
             const res = await client.post("/api/auth/register", { form: registrationForm(data, { schoolPhoto: FILES.png(), schoolCertificate: FILES.pdf(), principalIdProof: FILES.jpeg() }) });
             assert.equal(res.status, 500);
@@ -261,6 +260,6 @@ describe("rollback", () => {
         const user = await models.User.findOne({ email: data.email });
         assert.equal(user, null);
         assert.equal(await models.UploadedFile.countDocuments(), filesBefore, "file records rolled back");
-        assert.deepEqual(readdirSync(server.uploadDir).sort(), diskBefore, "no orphan files on disk");
+        assert.deepEqual(await server.storedFiles(), storedBefore, "no orphan files left in storage");
     });
 });

@@ -7,6 +7,7 @@ import Button from "../ui/Button";
 import Card from "../ui/Card";
 import EmptyState from "../ui/EmptyState";
 import FormField, { Textarea } from "../ui/FormField";
+import { MapLink } from "../ui/MapPreview";
 import Modal from "../ui/Modal";
 import SegmentedControl from "../ui/SegmentedControl";
 import StatCard from "../ui/StatCard";
@@ -115,6 +116,7 @@ const ProjectReviewModal = ({ projectId, onClose, onDecision }) => {
                 ["School", project.school?.name],
                 ["UDISE code", project.school?.udise],
                 ["Location", place(project.school)],
+                ["Location on map", project.school?.mapLocation ? <MapLink point={project.school.mapLocation} /> : "Not added by the school"],
                 ["Contact", project.school ? `${project.school.contactName} · ${project.school.email}` : ""],
                 ["Account", project.school ? (project.school.accountStatus === "active" ? "Approved" : project.school.accountStatus) : ""],
               ]}

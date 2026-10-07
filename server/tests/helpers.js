@@ -1,11 +1,8 @@
 // Shared setup for the automated auth test suite.
-// Runs the real Express app against a throwaway in-memory MongoDB and a temporary
-// uploads folder. It never loads .env and never touches the real (Atlas) database.
+// Runs the real Express app against a throwaway in-memory MongoDB (uploaded files are stored in it
+// too, with GridFS). It never loads .env and never touches the real (Atlas) database.
 import { Buffer } from "node:buffer";
 import { randomBytes } from "node:crypto";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import process from "node:process";
 
 process.env.NODE_ENV = "test";
@@ -14,7 +11,7 @@ process.env.JWT_SECRET = randomBytes(32).toString("hex");
 const { MongoMemoryServer } = await import("mongodb-memory-server");
 const { default: mongoose } = await import("mongoose");
 const { createApp } = await import("../app.js");
-const { setUploadDir } = await import("../utils/fileStorage.js");
+const { listStoredFileKeys, storedFileExists } = await import("../utils/fileStorage.js");
 const { createOrResetAdmin } = await import("../services/adminAccount.js");
 const { UPLOAD_RULES } = await import("../../shared/registrationRules.js");
 const models = await Promise.all(
@@ -30,9 +27,6 @@ export const startTestServer = async ({ rateLimits = false } = {}) => {
     // Build unique indexes before tests that rely on them (duplicate email/UDISE/PAN).
     await Promise.all(models.map((m) => m.default.init()));
 
-    const uploadDir = fs.mkdtempSync(path.join(os.tmpdir(), "vidyaadaan-uploads-"));
-    setUploadDir(uploadDir);
-
     const app = createApp({ corsOrigin: FRONTEND_ORIGIN, rateLimits });
     const server = await new Promise((resolve) => {
         const s = app.listen(0, () => resolve(s));
@@ -41,13 +35,14 @@ export const startTestServer = async ({ rateLimits = false } = {}) => {
 
     return {
         baseUrl,
-        uploadDir,
         mongoose,
+        /** The storageKeys of every uploaded file stored so far. */
+        storedFiles: listStoredFileKeys,
+        fileStored: storedFileExists,
         stop: async () => {
             await new Promise((resolve) => server.close(resolve));
             await mongoose.disconnect();
             await mongo.stop();
-            fs.rmSync(uploadDir, { recursive: true, force: true });
         },
     };
 };

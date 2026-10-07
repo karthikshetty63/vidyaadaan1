@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+// Development: the API on port 5000. A production build calls its own address (the server serves the website too).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? "" : "http://localhost:5000");
 
 // Password/email rules live in one shared module used by the backend too.
 export {

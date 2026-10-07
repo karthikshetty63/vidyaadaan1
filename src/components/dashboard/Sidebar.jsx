@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LuBell, LuBuilding2, LuCalendarDays, LuChevronsLeft, LuChevronsRight, LuClipboardList,
-  LuFileChartColumn, LuFolderKanban, LuHandCoins, LuImages, LuLayoutDashboard, LuLogOut, LuSchool, LuSettings,
+  LuFileChartColumn, LuFolderKanban, LuGraduationCap, LuHandCoins, LuImages, LuLayoutDashboard, LuLogOut, LuSchool, LuSettings,
   LuTrendingUp, LuUserCheck, LuUsers, LuWallet, LuX,
 } from "react-icons/lu";
 import { useAuth } from "../../context/AuthContext";
@@ -19,6 +19,7 @@ const NAV = {
     { icon: LuTrendingUp, label: "Project Progress", href: "/dashboard/school/progress" },
     { icon: LuImages, label: "Gallery", href: "/dashboard/school/gallery" },
     { icon: LuHandCoins, label: "Donation History", href: "/dashboard/school/donations" },
+    { icon: LuGraduationCap, label: "Alumni", href: "/dashboard/school/alumni" },
     { icon: LuFileChartColumn, label: "Reports", href: "/dashboard/school/reports" },
     { icon: LuBell, label: "Notifications", href: "/dashboard/school/notifications" },
     { icon: LuSettings, label: "Settings", href: "/dashboard/school/settings" },

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
 import { after, before, describe, test } from "node:test";
 import { FILES, PASSWORD, createAdmin, createClient, donorData, login, ngoData, registerActive, schoolData, startTestServer } from "./helpers.js";
 
@@ -7,7 +6,7 @@ let server;
 let UploadedFile;
 let admin;
 const newClient = () => createClient(server.baseUrl);
-const diskFiles = () => fs.readdirSync(server.uploadDir);
+const storedFiles = () => server.storedFiles();
 
 const inDays = (days) => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
 const signedIn = async (factory, role) => {
@@ -45,11 +44,11 @@ const photoForm = ({ projectId, stage = "Before", caption = "", file = FILES.png
 };
 const upload = (c, options) => c.post("/api/school/photos", { form: photoForm(options) });
 
-/** Runs `fn` and checks it left no file behind on disk or in the database. */
+/** Runs `fn` and checks it left no file behind in storage or in the database. */
 const expectNothingStored = async (fn) => {
-    const before = { disk: diskFiles().length, db: await UploadedFile.countDocuments() };
+    const before = { stored: (await storedFiles()).length, db: await UploadedFile.countDocuments() };
     await fn();
-    assert.equal(diskFiles().length, before.disk, "a file was written to disk");
+    assert.equal((await storedFiles()).length, before.stored, "a file was stored");
     assert.equal(await UploadedFile.countDocuments(), before.db, "an UploadedFile record was created");
 };
 
@@ -171,17 +170,16 @@ describe("invalid uploads are refused and store nothing", () => {
 });
 
 describe("deleting photos", () => {
-    test("the school deletes its photo: gone from the gallery, the database and the disk", async () => {
+    test("the school deletes its photo: gone from the gallery, the database and storage", async () => {
         const photo = (await upload(school, { projectId: project.id, stage: "Completed" })).body.photo;
         const doc = await UploadedFile.findById(photo.file.id);
-        const filePath = `${server.uploadDir}/${doc.storageKey}`;
-        assert.ok(fs.existsSync(filePath));
+        assert.ok(await server.fileStored(doc.storageKey));
 
         const res = await school.delete(`/api/school/photos/${photo.id}`);
         assert.equal(res.status, 200);
         assert.ok(!(await school.get("/api/school/photos")).body.photos.some((p) => p.id === photo.id));
         assert.equal(await UploadedFile.findById(photo.file.id), null);
-        assert.equal(fs.existsSync(filePath), false);
+        assert.equal(await server.fileStored(doc.storageKey), false);
         assert.equal((await school.delete(`/api/school/photos/${photo.id}`)).status, 404, "second delete");
     });
 

@@ -29,6 +29,9 @@ export const createProject = (values) => apiRequest("/api/school/projects", { me
 /** Approved school needs that still need support (no school contact details). NGOs get the partner view, donors a smaller read-only view. */
 export const listApprovedProjects = () => apiRequest("/api/projects");
 
+/** One approved project for anyone, signed in or not (the public project page). Unapproved or missing: 404. */
+export const getPublicProject = (id) => apiRequest(`/api/public/projects/${encodeURIComponent(id)}`);
+
 // ─── NGO funding commitments ─────────────────────────────────────────────────
 /** The needs the signed-in NGO has committed to fund (completed ones too). */
 export const listMyCommitments = () => apiRequest("/api/projects/committed");
