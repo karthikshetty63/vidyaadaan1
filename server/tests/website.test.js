@@ -6,7 +6,7 @@ import process from "node:process";
 import { after, before, describe, test } from "node:test";
 
 process.env.NODE_ENV = "test";
-const { createApp } = await import("../app.js");
+const { createApp, normalizeOrigin } = await import("../app.js");
 
 // A stand-in for the built website (dist/): index.html and one hashed asset.
 const dist = fs.mkdtempSync(path.join(os.tmpdir(), "vidyaadaan-dist-"));
@@ -86,5 +86,43 @@ describe("the server also serves the website (production)", () => {
         assert.equal((await fetch(url(apiOnly, "/"))).status, 404);
         assert.equal((await fetch(url(apiOnly, "/projects/abc"))).status, 404);
         assert.equal((await fetch(url(apiOnly, "/api/test"))).status, 200);
+    });
+});
+
+describe("FRONTEND_ORIGIN, as typed into a hosting dashboard", () => {
+    test("stray spaces, a line break from copying, a final / and capitals are cleaned up", () => {
+        for (const typed of ["https://vidyadaan.onrender.com", " https://vidyadaan.onrender.com\n", "https://vidyadaan.onrender.com/", "\thttps://Vidyadaan.onRender.com/\r\n"]) {
+            assert.equal(normalizeOrigin(typed), "https://vidyadaan.onrender.com", JSON.stringify(typed));
+        }
+        assert.equal(normalizeOrigin("http://localhost:5173"), "http://localhost:5173");
+    });
+
+    test("anything that isn't just the website's address stops the server with a clear message", () => {
+        for (const typed of [
+            "vidyadaan.onrender.com",
+            "“https://vidyadaan.onrender.com”",
+            "\"https://vidyadaan.onrender.com\"",
+            "https://vidyadaan.onrender.com/dashboard",
+            "https://vidyadaan.onrender.com?x=1",
+            "https://vidyadaan.onrender.com​",
+            "https://vidyadaan.onrender.com https://other.example",
+            "ftp://vidyadaan.onrender.com",
+            "",
+        ]) {
+            assert.throws(() => normalizeOrigin(typed), /FRONTEND_ORIGIN must be only the website's address/, JSON.stringify(typed));
+            assert.throws(() => createApp({ corsOrigin: typed, rateLimits: false }), /FRONTEND_ORIGIN/, `createApp ${JSON.stringify(typed)}`);
+        }
+    });
+
+    test("an address copied with a line break still serves every request (the failed deploy)", async () => {
+        const server = await listen(createApp({ corsOrigin: "https://vidyadaan.onrender.com\n", rateLimits: false, clientDir: dist }));
+        try {
+            const health = await fetch(url(server, "/api/test"));
+            assert.equal(health.status, 200);
+            assert.equal(health.headers.get("access-control-allow-origin"), "https://vidyadaan.onrender.com");
+            assert.equal((await fetch(url(server, "/"))).status, 200);
+        } finally {
+            await new Promise((r) => server.close(r));
+        }
     });
 });

@@ -63,17 +63,39 @@ const makeLimiter = (config, message, options = {}) =>
         : (_req, _res, next) => next();
 
 /**
+ * The website's address (FRONTEND_ORIGIN), cleaned up: surrounding spaces or a line break picked up when
+ * copying it are removed, and so is a final "/". Anything that isn't a plain http(s) address stops the
+ * server with a clear message, instead of every response failing on an invalid header.
+ * " https://Vidyadaan.onrender.com/\n" → "https://vidyadaan.onrender.com"
+ */
+export const normalizeOrigin = (value) => {
+    const text = String(value ?? "").trim();
+    let url = null;
+    try {
+        url = new URL(text);
+    } catch {
+        // reported below
+    }
+    const plain = url && ["http:", "https:"].includes(url.protocol) && url.pathname === "/" && !url.search && !url.hash && !url.username && !url.password;
+    if (!plain || !/^[\x21-\x7e]+$/.test(text)) {
+        throw new Error(`FRONTEND_ORIGIN must be only the website's address, like https://vidyadaan.onrender.com. It is ${JSON.stringify(text)}.`);
+    }
+    return url.origin;
+};
+
+/**
  * @param {object} [options]
  * @param {string} [options.corsOrigin] the React app's origin (cookies are only accepted from it)
  * @param {false|{login?:object, register?:object, forgotPassword?:object, resetPassword?:object, donationOrders?:object, ngoOnlineOrders?:object, publicProjects?:object}} [options.rateLimits] false disables limits (tests)
  * @param {string|number|boolean} [options.trustProxy] set when running behind a reverse proxy
  * @param {string} [options.clientDir] the built website (dist/), to serve it from this same address (production)
  */
-export const createApp = ({ corsOrigin = "http://localhost:5173", rateLimits = DEFAULT_RATE_LIMITS, trustProxy, clientDir } = {}) => {
+export const createApp = ({ corsOrigin: configuredOrigin = "http://localhost:5173", rateLimits = DEFAULT_RATE_LIMITS, trustProxy, clientDir } = {}) => {
+    const corsOrigin = normalizeOrigin(configuredOrigin);
     const app = express();
     if (trustProxy !== undefined) app.set("trust proxy", trustProxy);
     // Links in emails point at the configured React app — never at the request's Host header.
-    app.locals.frontendOrigin = corsOrigin.replace(/\/+$/, "");
+    app.locals.frontendOrigin = corsOrigin;
 
     const limits = rateLimits === false ? {} : { ...DEFAULT_RATE_LIMITS, ...rateLimits };
 

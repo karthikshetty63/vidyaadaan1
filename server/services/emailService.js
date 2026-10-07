@@ -25,10 +25,12 @@ export const setBrevoFetch = (fn) => {
 };
 
 const brevoKey = () => (process.env.BREVO_API_KEY || "").trim();
+// The sender, without spaces or a line break picked up when copying it into a hosting dashboard.
+const sender = () => (process.env.EMAIL_FROM || "").trim();
 
 /** Who sends email: "test", "brevo" or "smtp"; null when email isn't set up. */
 export const emailProvider = () => {
-    if (!process.env.EMAIL_FROM) return null;
+    if (!sender()) return null;
     if (customTransport) return "test";
     if (brevoKey()) return "brevo";
     return process.env.SMTP_HOST ? "smtp" : null;
@@ -87,14 +89,14 @@ export const verifyEmailTransport = async () => {
 /** One email to one address. */
 export const sendEmail = ({ to, subject, text, html }) => {
     const provider = emailProvider();
-    if (provider === "test") return customTransport.sendMail({ from: process.env.EMAIL_FROM, to, subject, text, html });
+    if (provider === "test") return customTransport.sendMail({ from: sender(), to, subject, text, html });
     if (provider === "brevo") {
         return brevoRequest(BREVO_SEND_URL, {
             method: "POST",
-            body: JSON.stringify({ sender: parseAddress(process.env.EMAIL_FROM), to: [{ email: to }], subject, textContent: text, htmlContent: html }),
+            body: JSON.stringify({ sender: parseAddress(sender()), to: [{ email: to }], subject, textContent: text, htmlContent: html }),
         });
     }
-    return getSmtpTransport().sendMail({ from: process.env.EMAIL_FROM, to, subject, text, html });
+    return getSmtpTransport().sendMail({ from: sender(), to, subject, text, html });
 };
 
 const escapeHtml = (value) =>
