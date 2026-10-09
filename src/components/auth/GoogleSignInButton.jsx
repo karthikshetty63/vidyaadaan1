@@ -4,11 +4,11 @@ import useGoogleButton from "../../hooks/useGoogleButton";
 /**
  * Google's official Sign in with Google button (Google requires its own button design).
  * Renders nothing when Google sign-in isn't configured (no VITE_GOOGLE_CLIENT_ID).
- * text: "continue_with" | "signin_with" | "signup_with"
+ * text: "continue_with" | "signin_with" | "signup_with"; shape: "rectangular" | "pill"
  */
-const GoogleSignInButton = ({ text, onCredential, busy = false }) => {
+const GoogleSignInButton = ({ text, shape, onCredential, busy = false }) => {
   const containerRef = useRef(null);
-  const status = useGoogleButton(containerRef, { text, onCredential });
+  const status = useGoogleButton(containerRef, { text, shape, onCredential });
   if (status === "disabled") return null;
 
   return (

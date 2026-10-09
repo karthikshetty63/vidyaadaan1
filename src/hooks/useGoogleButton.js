@@ -32,7 +32,7 @@ const loadGoogleScript = () => {
  * Draws Google's official button inside `containerRef` and calls `onCredential(idToken)` once the
  * person picks their Google account. Returns "disabled" | "loading" | "ready" | "error".
  */
-const useGoogleButton = (containerRef, { text = "continue_with", onCredential }) => {
+const useGoogleButton = (containerRef, { text = "continue_with", shape = "rectangular", onCredential }) => {
   const [status, setStatus] = useState(GOOGLE_SIGN_IN_ENABLED ? "loading" : "disabled");
   const handlerRef = useRef(onCredential);
 
@@ -63,7 +63,7 @@ const useGoogleButton = (containerRef, { text = "continue_with", onCredential })
           theme: "outline",
           size: "large",
           text,
-          shape: "rectangular",
+          shape,
           logo_alignment: "center",
           // Google's button takes a fixed width (200–400px); match the form column.
           width: Math.min(400, Math.max(200, Math.floor(container.offsetWidth))),
@@ -76,7 +76,7 @@ const useGoogleButton = (containerRef, { text = "continue_with", onCredential })
     return () => {
       cancelled = true;
     };
-  }, [containerRef, text]);
+  }, [containerRef, text, shape]);
 
   return status;
 };
