@@ -3,13 +3,14 @@
 // app against a throwaway database.
 import cors from "cors";
 import express from "express";
-import { rateLimit } from "express-rate-limit";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import path from "node:path";
 import { apiNotFound, errorHandler } from "./middleware/errorHandler.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import createApprovedProjectRouter from "./routes/approvedProjectRoutes.js";
 import createAuthRouter from "./routes/authRoutes.js";
+import createChatbotRouter from "./routes/chatbotRoutes.js";
 import createDonationRouter from "./routes/donationRoutes.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import ngoRoutes from "./routes/ngoRoutes.js";
@@ -34,6 +35,9 @@ const DEFAULT_RATE_LIMITS = {
     ngoOnlineOrders: { windowMs: 15 * 60 * 1000, limit: 20 },
     // Public project pages need no sign-in: 120 per minute per IP is plenty for people, not for scrapers.
     publicProjects: { windowMs: 60 * 1000, limit: 120 },
+    // Each help-assistant question can be a paid AI request: 20 per 10 minutes per account (per IP when
+    // not signed in).
+    chatbot: { windowMs: 10 * 60 * 1000, limit: 20 },
 };
 
 // What the website may load. Everything is VIDYADAAN's own except Google Fonts, Unsplash photos (sign-in
@@ -86,7 +90,7 @@ export const normalizeOrigin = (value) => {
 /**
  * @param {object} [options]
  * @param {string} [options.corsOrigin] the React app's origin (cookies are only accepted from it)
- * @param {false|{login?:object, register?:object, forgotPassword?:object, resetPassword?:object, donationOrders?:object, ngoOnlineOrders?:object, publicProjects?:object}} [options.rateLimits] false disables limits (tests)
+ * @param {false|{login?:object, register?:object, forgotPassword?:object, resetPassword?:object, donationOrders?:object, ngoOnlineOrders?:object, publicProjects?:object, chatbot?:object}} [options.rateLimits] false disables limits (tests)
  * @param {string|number|boolean} [options.trustProxy] set when running behind a reverse proxy
  * @param {string} [options.clientDir] the built website (dist/), to serve it from this same address (production)
  */
@@ -140,6 +144,12 @@ export const createApp = ({ corsOrigin: configuredOrigin = "http://localhost:517
     // No sign-in: the public page of an approved project (the link in alumni emails).
     app.use("/api/public/projects", createPublicProjectRouter({
         limiter: makeLimiter(limits.publicProjects, "Too many requests. Please wait a minute and try again."),
+    }));
+    // Signed in or not: the help assistant (its persona comes from the session, never from the browser).
+    app.use("/api/chatbot", createChatbotRouter({
+        limiter: makeLimiter(limits.chatbot, "You've asked a lot of questions in a short time. Please wait a few minutes and try again.", {
+            keyGenerator: (req) => (req.user ? `user:${req.user._id}` : `ip:${ipKeyGenerator(req.ip)}`),
+        }),
     }));
     app.use("/api/ngo", ngoRoutes);
     app.use("/api/donations", createDonationRouter({

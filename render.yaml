@@ -40,6 +40,9 @@ services:
         sync: false
       - key: RAZORPAY_KEY_SECRET
         sync: false
+      # Optional: AI answers in the help assistant (paid Anthropic API). Without it, FAQ answers only.
+      - key: ANTHROPIC_API_KEY
+        sync: false
       # Read while building the website, so set it before the first deploy (or redeploy after setting it).
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false

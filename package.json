@@ -13,6 +13,7 @@
     "create-admin": "node server/scripts/createAdmin.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.1",
     "bcryptjs": "^3.0.3",
     "cookie": "^2.0.1",
     "cors": "^2.8.6",

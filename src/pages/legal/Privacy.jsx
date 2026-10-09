@@ -37,6 +37,14 @@ const Privacy = () => (
         the need, the parts paid for, the time, and the Razorpay order and payment IDs. Razorpay collects your payment details in its own
         checkout. We never receive or store card numbers, CVV, UPI PIN or bank login details.
       </p>
+      <p>
+        <span className="font-medium text-zinc-950">Help assistant:</span> the questions you type into the help assistant (the chat button)
+        and the recent messages of that conversation. We don&rsquo;t save conversations: they stay in your browser until you reload or
+        leave the page. When AI answers are switched on, your question, the recent messages, the matching help topics and, if you are
+        signed in and ask about them, a short summary of your own account&rsquo;s projects, payments, donations or review queues are sent
+        to Anthropic, which provides the AI, to write the answer. Please don&rsquo;t type passwords, bank details or other private
+        information into the chat.
+      </p>
     </LegalSection>
 
     <LegalSection title="2. Why we use it">
@@ -67,6 +75,7 @@ const Privacy = () => (
         <li>Razorpay, for online payments;</li>
         <li>Google, if you choose to sign in with Google;</li>
         <li>MongoDB Atlas, where our database is hosted;</li>
+        <li>Anthropic, for the help assistant&rsquo;s AI answers (when they are switched on);</li>
         <li>our email provider, to send emails such as password reset links.</li>
       </ul>
     </LegalSection>

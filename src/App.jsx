@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import GuestRoute from "./components/auth/GuestRoute";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ChatbotWidget from "./components/chatbot/ChatbotWidget";
 import Home from "./pages/Home";
 import Contact from "./pages/legal/Contact";
 import Privacy from "./pages/legal/Privacy";
@@ -99,6 +100,8 @@ function App() {
             <Route path="/dashboard/admin" element={<AdminDashboard />} />
           </Route>
         </Routes>
+        {/* The help assistant's button, on every page (signed in or not). */}
+        <ChatbotWidget />
       </AuthProvider>
     </BrowserRouter>
   );
