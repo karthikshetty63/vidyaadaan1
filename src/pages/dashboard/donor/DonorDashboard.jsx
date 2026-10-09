@@ -3,6 +3,7 @@ import { LuBadgeCheck, LuCalendarDays, LuCircleCheck, LuClipboardList, LuHandCoi
 import DashboardHero from "../../../components/dashboard/DashboardHero";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import NeedCard from "../../../components/dashboard/NeedCard";
+import ReportDownloads from "../../../components/dashboard/ReportDownloads";
 import PaymentFlowModal from "../../../components/payment/PaymentFlowModal";
 import Alert from "../../../components/ui/Alert";
 import Button from "../../../components/ui/Button";
@@ -13,7 +14,10 @@ import SegmentedControl from "../../../components/ui/SegmentedControl";
 import StatCard from "../../../components/ui/StatCard";
 import { useAuth } from "../../../context/AuthContext";
 import useApprovedProjects from "../../../hooks/useApprovedProjects";
+import useMyDonations from "../../../hooks/useMyDonations";
 import { formatINR } from "../../../utils/format";
+import { displayValue } from "../../../utils/report";
+import { buildDonorReport } from "../../../utils/reportCards";
 
 const scrollToSection = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -33,6 +37,14 @@ const DonorDashboard = () => {
   // The need being donated to. After a confirmed donation its funding is reloaded from the server.
   const [donatingTo, setDonatingTo] = useState(null);
   const [needCategory, setNeedCategory] = useState("All");
+  // The donor's own confirmed donations ("My donations" and the report card).
+  const myDonations = useMyDonations();
+  const donations = myDonations.donations;
+  const givenTotal = donations.reduce((sum, d) => sum + d.amount, 0);
+  const afterDonation = () => {
+    refreshNeeds();
+    myDonations.refresh();
+  };
 
   // Every figure is counted from the approved needs above — nothing is estimated.
   const ready = !needsLoading && !needsError;
@@ -131,15 +143,61 @@ const DonorDashboard = () => {
           </section>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <Card as="section" id="donations" aria-labelledby="donations-heading" className="xl:col-span-2 scroll-mt-6">
-              <CardHeader title={<span id="donations-heading">My donations</span>} />
-              {/* The server records every donation, but there is no list of a donor's donations to show yet. */}
-              <EmptyState
-                icon={LuHandCoins}
-                title="Your donation history will appear here"
-                description="This list isn't available yet. Every donation you complete is already saved, and the school's funding goes up as soon as Razorpay confirms the payment."
-                action={<Button variant="secondary" onClick={() => scrollToSection("needs")}>Browse school needs</Button>}
+            <Card as="section" id="donations" aria-labelledby="donations-heading" className="xl:col-span-2 scroll-mt-6 overflow-hidden">
+              <CardHeader
+                title={<span id="donations-heading">My donations</span>}
+                description={
+                  donations.length
+                    ? `${formatINR(givenTotal)} given in ${plural(donations.length, "donation", "donations")}, confirmed by Razorpay`
+                    : "Your confirmed donations and their receipts"
+                }
+                actions={donations.length > 0 && <ReportDownloads kind="donor" buildReport={() => buildDonorReport({ user, donations })} />}
               />
+              {myDonations.loading && <p className="px-5 py-4 text-sm text-slate-500" role="status">Loading your donations…</p>}
+              {!myDonations.loading && myDonations.error && (
+                <p className="px-5 py-4 text-sm text-slate-600">
+                  {myDonations.error}{" "}
+                  <button type="button" onClick={myDonations.reload} className="font-medium text-primary-700 underline underline-offset-2">Try again</button>
+                </p>
+              )}
+              {!myDonations.loading && !myDonations.error && donations.length === 0 && (
+                <EmptyState
+                  icon={LuHandCoins}
+                  title="No donations yet"
+                  description="When you donate to a school need, it appears here once Razorpay confirms the payment, with its payment ID as your receipt."
+                  action={<Button variant="secondary" onClick={() => scrollToSection("needs")}>Browse school needs</Button>}
+                />
+              )}
+              {donations.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-surface-muted text-left">
+                        {["Date", "School need", "School", "Amount", "Payment ID"].map((h) => (
+                          <th key={h} scope="col" className={`whitespace-nowrap px-5 py-2.5 text-xs font-medium text-slate-500 ${h === "Amount" ? "text-right" : ""}`}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {donations.map((d) => (
+                        <tr key={d.id}>
+                          <td className="whitespace-nowrap px-5 py-3 text-slate-600">{displayValue(d.verifiedAt || d.createdAt, "date")}</td>
+                          <td className="min-w-44 px-5 py-3 font-medium text-slate-900">{d.project.title}</td>
+                          <td className="min-w-40 px-5 py-3 text-slate-600">
+                            {d.school.name}
+                            {(d.school.district || d.school.state) && <span className="block text-xs text-slate-500">{[d.school.district, d.school.state].filter(Boolean).join(", ")}</span>}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3 text-right font-medium tabular-nums text-slate-900">{formatINR(d.amount)}</td>
+                          <td className="whitespace-nowrap px-5 py-3 font-mono text-xs text-slate-600">
+                            {d.paymentId}
+                            {d.mode === "test" && <span className="ml-2 rounded-full bg-amber-50 px-1.5 py-0.5 font-sans text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200">Test</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </Card>
 
             <Card as="section" aria-labelledby="how-heading">
@@ -172,8 +230,8 @@ const DonorDashboard = () => {
         </div>
       </main>
 
-      {/* After a confirmed donation, or when the server says the need has changed, the needs reload from the server. */}
-      {donatingTo && <PaymentFlowModal need={donatingTo} onClose={() => setDonatingTo(null)} onConfirmed={refreshNeeds} onNeedChanged={refreshNeeds} />}
+      {/* After a confirmed donation the needs and "My donations" reload from the server; when the need has changed, the needs do. */}
+      {donatingTo && <PaymentFlowModal need={donatingTo} onClose={() => setDonatingTo(null)} onConfirmed={afterDonation} onNeedChanged={refreshNeeds} />}
     </DashboardLayout>
   );
 };

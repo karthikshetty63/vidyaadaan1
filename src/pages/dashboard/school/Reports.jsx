@@ -1,4 +1,4 @@
-import { LuArrowRight, LuDownload, LuFileChartColumn, LuFolderKanban, LuInfo } from "react-icons/lu";
+import { LuArrowRight, LuFileChartColumn, LuFolderKanban, LuInfo } from "react-icons/lu";
 import { Link } from "react-router-dom";
 import BarList from "../../../components/charts/BarList";
 import Meter from "../../../components/charts/Meter";
@@ -6,9 +6,9 @@ import StackedBar from "../../../components/charts/StackedBar";
 import { SERIES_COLORS } from "../../../components/charts/palette";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import ProjectStatusBadge from "../../../components/dashboard/ProjectStatusBadge";
+import ReportDownloads from "../../../components/dashboard/ReportDownloads";
 import Alert from "../../../components/ui/Alert";
 import Badge from "../../../components/ui/Badge";
-import Button from "../../../components/ui/Button";
 import Card, { CardHeader } from "../../../components/ui/Card";
 import EmptyState from "../../../components/ui/EmptyState";
 import PageHeader from "../../../components/ui/PageHeader";
@@ -16,12 +16,13 @@ import StatCard from "../../../components/ui/StatCard";
 import { buttonClasses } from "../../../components/ui/classes";
 import { projectStatusLabel } from "../../../api/projects";
 import { useAuth } from "../../../context/AuthContext";
+import useMyProfile from "../../../hooks/useMyProfile";
 import useMyProjects from "../../../hooks/useMyProjects";
-import { downloadCsv } from "../../../utils/csv";
+import useSchoolPayments from "../../../hooks/useSchoolPayments";
+import { buildSchoolReport } from "../../../utils/reportCards";
 
 const formatINR = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 const formatDate = (iso) => new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-const today = () => new Date().toISOString().slice(0, 10);
 
 const COLUMNS = ["Project", "Category", "Priority", "Status", "Budget", "Raised", "Students", "Due", "Submitted"];
 // Where a project stands, in order; each stage always keeps the same colour.
@@ -56,6 +57,8 @@ const BeforeAfterRow = ({ title, before, beforeCaption, after, afterCaption, met
 const Reports = () => {
   const { user } = useAuth();
   const { projects, loading, error, reload } = useMyProjects();
+  const { profile } = useMyProfile();
+  const { payments, loading: paymentsLoading } = useSchoolPayments();
 
   // Every figure is counted from the school's own projects.
   const approved = projects.filter((p) => p.reviewStatus === "OPEN");
@@ -98,14 +101,8 @@ const Reports = () => {
     studentsReached: approved.filter((p) => p.status === "Completed").reduce((sum, p) => sum + p.studentsBenefited, 0),
   };
 
-  const exportCsv = () =>
-    downloadCsv(`vidyadaan-projects-${today()}.csv`, [
-      [...COLUMNS, "Location", "Rejection reason"],
-      ...projects.map((p) => [
-        p.title, p.category, p.priority, projectStatusLabel(p), p.budget, p.raised, p.studentsBenefited,
-        p.expectedCompletion, p.submittedAt.slice(0, 10), p.location, p.reviewStatus === "REJECTED" ? p.rejectionReason : "",
-      ]),
-    ]);
+  // The report card (CSV or Word): the same projects as below, plus the NGO payments for them.
+  const buildReport = () => buildSchoolReport({ profile, user, projects, payments });
 
   return (
     <DashboardLayout role="school" userName={user?.name} userSub={user?.email} title="Reports" subtitle="Your projects in numbers">
@@ -113,8 +110,8 @@ const Reports = () => {
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           <PageHeader
             title="Reports"
-            description="A summary of your school's projects, built from your own records. Download it as a spreadsheet (CSV)."
-            actions={<Button variant="secondary" icon={LuDownload} onClick={exportCsv} disabled={!ready || projects.length === 0}>Download CSV</Button>}
+            description="Your school's report card: projects, funding and NGO payments, from your own records. Download it as a spreadsheet (CSV) or a Word document."
+            actions={<ReportDownloads kind="school" buildReport={buildReport} disabled={!ready || paymentsLoading} />}
           />
 
           {error && (

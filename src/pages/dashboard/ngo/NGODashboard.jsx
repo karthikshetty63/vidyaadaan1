@@ -9,6 +9,7 @@ import NeedDetailsModal from "../../../components/dashboard/ngo/NeedDetailsModal
 import NeedsView from "../../../components/dashboard/ngo/NeedsView";
 import OverviewView from "../../../components/dashboard/ngo/OverviewView";
 import RecordPaymentModal from "../../../components/dashboard/ngo/RecordPaymentModal";
+import ReportsView from "../../../components/dashboard/ngo/ReportsView";
 import VolunteerFormModal from "../../../components/dashboard/ngo/VolunteerFormModal";
 import VolunteersView from "../../../components/dashboard/ngo/VolunteersView";
 import YourProjectsView from "../../../components/dashboard/ngo/YourProjectsView";
@@ -35,6 +36,7 @@ const VIEWS = {
   projects: "Your projects",
   funding: "Funding",
   volunteers: "Volunteers",
+  reports: "Reports",
   events: "School events",
 };
 
@@ -200,6 +202,22 @@ const NGODashboard = () => {
         onAdd={() => setVolunteerForm({ volunteer: null })}
         onEdit={(v) => setVolunteerForm({ volunteer: v })}
         onRemove={setRemovingVolunteer}
+      />
+    ),
+    reports: (
+      <ReportsView
+        profile={profile}
+        user={user}
+        funded={funded}
+        payments={payments}
+        volunteers={volunteerList.volunteers}
+        loading={commitments.loading || paymentList.loading || volunteerList.loading}
+        error={commitments.error || paymentList.error || volunteerList.error}
+        onRetry={() => {
+          commitments.reload();
+          paymentList.reload();
+          volunteerList.reload();
+        }}
       />
     ),
     events: <EventsView />,

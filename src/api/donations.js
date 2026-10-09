@@ -3,6 +3,9 @@ import { apiRequest } from "./auth";
 // Rules shared with the server (the server re-checks everything).
 export { DONATION_CURRENCY, DONATION_MAX, DONATION_MIN, validateDonationAmount } from "../../shared/donationRules.js";
 
+/** The signed-in donor's own confirmed donations, newest first, each with its need and school. */
+export const listMyDonations = () => apiRequest("/api/donations/mine");
+
 /**
  * Start a donation: the server checks the need and the amount, then creates its Razorpay order.
  * Only these two values are sent; the donor, school and amounts come from the server's records.

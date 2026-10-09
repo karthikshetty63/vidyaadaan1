@@ -30,6 +30,7 @@ const NAV = {
     { icon: LuFolderKanban, label: "Your Projects", href: "/dashboard/ngo#projects" },
     { icon: LuWallet, label: "Funding", href: "/dashboard/ngo#funding" },
     { icon: LuUsers, label: "Volunteers", href: "/dashboard/ngo#volunteers" },
+    { icon: LuFileChartColumn, label: "Reports", href: "/dashboard/ngo#reports" },
     { icon: LuCalendarDays, label: "School Events", href: "/dashboard/ngo#events" },
   ],
   // Only sections that exist on the donor page.

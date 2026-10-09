@@ -13,9 +13,8 @@ const safeCell = (value) => {
 /** rows: array of arrays (the first is the header). */
 export const toCsv = (rows) => rows.map((row) => row.map(safeCell).join(",")).join("\r\n");
 
-/** Save `rows` as a .csv file. The BOM makes Excel read it as UTF-8. */
-export const downloadCsv = (filename, rows) => {
-  const blob = new Blob(["﻿", toCsv(rows)], { type: "text/csv;charset=utf-8" });
+/** Save a file the page made (CSV, Word…) to the person's device. */
+export const downloadBlob = (blob, filename) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -25,3 +24,6 @@ export const downloadCsv = (filename, rows) => {
   link.remove();
   URL.revokeObjectURL(url);
 };
+
+/** Save `rows` as a .csv file. The BOM makes Excel read it as UTF-8. */
+export const downloadCsv = (filename, rows) => downloadBlob(new Blob(["﻿", toCsv(rows)], { type: "text/csv;charset=utf-8" }), filename);

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Donation from "../models/Donation.js";
 import Project from "../models/Project.js";
+import SchoolProfile from "../models/SchoolProfile.js";
 import { DONATION_MIN, getUnexpectedDonationFields, validateDonation } from "../../shared/donationRules.js";
 import { createRazorpayOrder, getRazorpayKeyId, isRazorpayConfigured, isValidPaymentSignature, razorpayMode, readCheckoutResult } from "../services/razorpay.js";
 import { findFundableProject } from "./approvedProjectController.js";
@@ -37,6 +38,40 @@ const toClient = (d, projectTitle) => ({
     createdAt: d.createdAt,
     verifiedAt: d.verifiedAt || null,
 });
+
+const MY_DONATIONS_LIMIT = 500;
+
+// GET /api/donations/mine — the signed-in donor's own confirmed donations, newest first, for "My donations"
+// and the donor's report. Only PAID ones: an order the donor never paid is not a donation. Each comes with
+// the need's title and the school's name and place (the donor-safe view), never other donors' details.
+export const listMyDonations = async (req, res, next) => {
+    try {
+        const donations = await Donation.find({ donor: req.user._id, status: "PAID" })
+            .sort({ verifiedAt: -1, _id: -1 })
+            .limit(MY_DONATIONS_LIMIT)
+            .lean();
+        const projects = await Project.find({ _id: { $in: [...new Set(donations.map((d) => d.project.toString()))] } })
+            .select("title school")
+            .lean();
+        const profiles = await SchoolProfile.find({ userId: { $in: [...new Set(projects.map((p) => p.school.toString()))] } })
+            .select("userId schoolName district state")
+            .lean();
+        const projectById = new Map(projects.map((p) => [p._id.toString(), p]));
+        const schoolByUser = new Map(profiles.map((s) => [s.userId.toString(), s]));
+        return res.json({
+            donations: donations.map((d) => {
+                const project = projectById.get(d.project.toString());
+                const school = project && schoolByUser.get(project.school.toString());
+                return {
+                    ...toClient(d, project?.title),
+                    school: { name: school?.schoolName || "Government school", district: school?.district || "", state: school?.state || "" },
+                };
+            }),
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
 
 /** What donors can still give to a project (lean, with its fundingParts), in whole rupees. */
 const openForDonors = async (project) => {

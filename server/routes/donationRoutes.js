@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createDonation, verifyDonation } from "../controllers/donationController.js";
+import { createDonation, listMyDonations, verifyDonation } from "../controllers/donationController.js";
 import requireAuth from "../middleware/authMiddleware.js";
 import requireRole from "../middleware/roleMiddleware.js";
 
@@ -9,6 +9,7 @@ const createDonationRouter = ({ orderLimiter }) => {
 
     router.use(requireAuth, requireRole("donor"));
 
+    router.get("/mine", listMyDonations);
     router.post("/", orderLimiter, createDonation);
     router.post("/:id/verify", verifyDonation);
 
