@@ -323,6 +323,8 @@ const deliverResetEmail = async (user, token, frontendOrigin) => {
             resetUrl: `${frontendOrigin}/reset-password/${token}`,
             expiresInMinutes: PASSWORD_RESET_TTL_MINUTES,
         });
+        // Never the address, the link or the token: only that it went out.
+        console.log("Password reset email sent (accepted by the email service).");
     } catch (error) {
         // Never log the link or token. Drop the undelivered token so the user can ask again right away.
         console.error("Password reset email could not be sent:", error.message);
@@ -358,6 +360,13 @@ export const forgotPassword = async (req, res, next) => {
                 { $set: { passwordResetToken: hashResetToken(token), passwordResetExpires: new Date(Date.now() + RESET_TTL_MS) } }
             );
             deliverResetEmail(user, token, req.app.locals.frontendOrigin);
+        } else {
+            // The visitor always sees the same message; only the server log says why nothing was sent (never the address).
+            console.log(
+                user
+                    ? "Password reset not sent: one was already sent to this account in the last minute."
+                    : "Password reset not sent: no VIDYADAAN account has that email address."
+            );
         }
         return res.status(200).json({ message: FORGOT_PASSWORD_MESSAGE });
     } catch (error) {

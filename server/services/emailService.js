@@ -5,9 +5,12 @@
 // EMAIL_FROM ("Name <address>") is the sender either way. Auth and alumni logic only call the helpers below.
 import nodemailer from "nodemailer";
 import process from "node:process";
+import { EMAIL_PATTERN } from "../../shared/registrationRules.js";
 
 const BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email";
 const BREVO_ACCOUNT_URL = "https://api.brevo.com/v3/account";
+const BREVO_SENDERS_URL = "https://api.brevo.com/v3/senders";
+const BREVO_DOMAINS_URL = "https://api.brevo.com/v3/senders/domains";
 
 let customTransport;
 let smtpTransport;
@@ -56,10 +59,36 @@ const getSmtpTransport = () => {
     return smtpTransport;
 };
 
-/** "VIDYADAAN <no-reply@example.org>" → { name: "VIDYADAAN", email: "no-reply@example.org" } */
-const parseAddress = (value = "") => {
-    const match = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(value);
-    return match ? { ...(match[1] ? { name: match[1] } : {}), email: match[2].trim() } : { email: value.trim() };
+// Quotation marks (straight or curly) that often end up around the whole value in a hosting dashboard.
+const QUOTES = "\"'“”‘’";
+const unquote = (value) => {
+    let text = value.trim();
+    while (text.length > 1 && QUOTES.includes(text[0]) && QUOTES.includes(text[text.length - 1])) text = text.slice(1, -1).trim();
+    return text;
+};
+
+/**
+ * EMAIL_FROM → { name?, email }, or null when it holds no valid address. Accepts VIDYADAAN <a@b.org>,
+ * "VIDYADAAN" <a@b.org> or a@b.org, with or without quotation marks around the whole value.
+ */
+export const parseSender = (value = "") => {
+    const text = unquote(String(value));
+    const match = /^(.*?)\s*<([^<>]+)>$/.exec(text);
+    const email = (match ? match[2] : text).trim();
+    if (!EMAIL_PATTERN.test(email) || email.length > 254) return null;
+    const name = match ? unquote(match[1]) : "";
+    // One sender only: a second <address> would end up inside the name.
+    if (/[<>]/.test(name)) return null;
+    return name ? { name, email } : { email };
+};
+
+/** The sender, or a clear error saying what EMAIL_FROM should look like (shown in the server log). */
+const requireSender = () => {
+    const parsed = parseSender(sender());
+    if (!parsed) {
+        throw new Error(`EMAIL_FROM is not a valid sender. Use the form VIDYADAAN <you@gmail.com>, without quotation marks. It is ${JSON.stringify(sender())}.`);
+    }
+    return parsed;
 };
 
 const brevoRequest = async (url, init) => {
@@ -84,24 +113,52 @@ const brevoRequest = async (url, init) => {
     return body;
 };
 
-/** Check the email settings once at startup, so a wrong key, host or password shows up in the log. */
+const describe = ({ name, email }) => (name ? `${name} <${email}>` : email);
+
+/** Brevo sends only from a sender verified in the account, or from any address on a domain verified there. */
+const checkBrevoSender = async (from) => {
+    const { senders = [] } = await brevoRequest(BREVO_SENDERS_URL, { method: "GET" });
+    const listed = senders.find((s) => String(s.email || "").toLowerCase() === from.email.toLowerCase());
+    if (listed?.active) return;
+    if (listed) {
+        throw new Error(`The sender ${from.email} is added in Brevo but not verified yet. Open Brevo's confirmation email in that inbox, or resend it: Brevo → Settings → Senders, domains, IPs → Senders.`);
+    }
+    const domain = from.email.split("@")[1].toLowerCase();
+    const { domains = [] } = await brevoRequest(BREVO_DOMAINS_URL, { method: "GET" }).catch(() => ({}));
+    const verifiedDomain = domains.some((d) => String(d.domain_name || d.domain || "").toLowerCase() === domain && (d.authenticated || d.verified));
+    if (verifiedDomain) return;
+    throw new Error(`Brevo has no verified sender ${from.email}. Add it in Brevo → Settings → Senders, domains, IPs → Senders, and confirm the email Brevo sends to it. Or change EMAIL_FROM to a sender that is verified there.`);
+};
+
+/**
+ * Check the email settings once at startup, so the log says exactly what is wrong: the sender's format, the
+ * Brevo key, whether Brevo has that sender verified, or the SMTP login. Resolves with the sender in use.
+ */
 export const verifyEmailTransport = async () => {
     const provider = emailProvider();
-    if (provider === "brevo") await brevoRequest(BREVO_ACCOUNT_URL, { method: "GET" });
-    else if (provider === "smtp") await getSmtpTransport().verify();
+    if (provider !== "brevo" && provider !== "smtp") return null;
+    const from = requireSender();
+    if (provider === "brevo") {
+        await brevoRequest(BREVO_ACCOUNT_URL, { method: "GET" });
+        await checkBrevoSender(from);
+    } else {
+        await getSmtpTransport().verify();
+    }
+    return describe(from);
 };
 
 /** One email to one address. */
-export const sendEmail = ({ to, subject, text, html }) => {
+export const sendEmail = async ({ to, subject, text, html }) => {
     const provider = emailProvider();
-    if (provider === "test") return customTransport.sendMail({ from: sender(), to, subject, text, html });
+    const from = requireSender();
+    if (provider === "test") return customTransport.sendMail({ from: describe(from), to, subject, text, html });
     if (provider === "brevo") {
         return brevoRequest(BREVO_SEND_URL, {
             method: "POST",
-            body: JSON.stringify({ sender: parseAddress(sender()), to: [{ email: to }], subject, textContent: text, htmlContent: html }),
+            body: JSON.stringify({ sender: from, to: [{ email: to }], subject, textContent: text, htmlContent: html }),
         });
     }
-    return getSmtpTransport().sendMail({ from: sender(), to, subject, text, html });
+    return getSmtpTransport().sendMail({ from: from.name ? { name: from.name, address: from.email } : from.email, to, subject, text, html });
 };
 
 const escapeHtml = (value) =>

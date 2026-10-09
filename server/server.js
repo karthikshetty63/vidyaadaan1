@@ -48,8 +48,8 @@ const startServer = async () => {
         } else {
             const via = emailProvider() === "brevo" ? "Brevo API" : "SMTP";
             verifyEmailTransport()
-                .then(() => console.log(`Email (${via}) connection verified`))
-                .catch((error) => console.warn(`Email (${via}) connection failed:`, error.message));
+                .then((from) => console.log(`Email (${via}) connection verified, sending as ${from}`))
+                .catch((error) => console.warn(`Email (${via}) is NOT working:`, error.message));
         }
         // Alumni emails that a restart left unsent.
         resumeAlumniNotifications({ frontendOrigin: app.locals.frontendOrigin })
