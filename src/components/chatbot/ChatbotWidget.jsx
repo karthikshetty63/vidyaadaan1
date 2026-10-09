@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { LuBookOpen, LuBotMessageSquare, LuCircleAlert, LuRotateCcw, LuSendHorizontal, LuSparkles, LuX } from "react-icons/lu";
+import { LuBookOpen, LuBotMessageSquare, LuChevronRight, LuCircleAlert, LuRotateCcw, LuSendHorizontal, LuShieldCheck, LuSparkles, LuX } from "react-icons/lu";
 import { useAuth } from "../../context/AuthContext";
 import { CHAT_HISTORY_ENTRY_MAX, CHAT_HISTORY_MAX, CHAT_MESSAGE_MAX, getChatbotPersona, sendChatMessage } from "../../api/chatbot";
 
 const DEFAULT_NAME = "VIDYADAAN Assistant";
+
+// What each assistant can help with, for its welcome message (the server says which assistant this is).
+const INTRO = {
+  school: "Ask me about your projects, NGO payments, alumni, reports and more.",
+  ngo: "Ask me about school needs, funding commitments, payments and volunteers.",
+  donor: "Ask me about donating, your donations and how projects are funded.",
+  admin: "Ask me about account approvals, project reviews and payment QRs.",
+  visitor: "Ask me about project emails, supporting your school or how VIDYADAAN works.",
+};
+const DEFAULT_INTRO = "Ask me anything about using VIDYADAAN.";
 
 /**
  * An answer's plain text as paragraphs and simple lists ("- item", "1. step"). Always rendered as React
@@ -42,10 +52,50 @@ const AnswerText = ({ text }) => {
   );
 };
 
-const QuestionChips = ({ label, questions, onAsk, disabled }) =>
+const BotAvatar = ({ className = "h-7 w-7 rounded-full", iconClassName = "h-3.5 w-3.5" }) => (
+  <span
+    className={`flex shrink-0 items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-sm shadow-primary-900/20 ${className}`}
+    aria-hidden="true"
+  >
+    <LuBotMessageSquare className={iconClassName} />
+  </span>
+);
+
+/** The first screen: who this assistant is, and questions to start with. */
+const Welcome = ({ name, info, onAsk, disabled }) => (
+  <div className="motion-safe:animate-view-enter">
+    <div className="flex flex-col items-center px-2 pt-3 text-center">
+      <BotAvatar className="h-14 w-14 rounded-2xl" iconClassName="h-7 w-7" />
+      <h3 className="mt-3 text-base font-bold text-slate-900">Hi! I&rsquo;m the {name}</h3>
+      <p className="mt-1 max-w-[18rem] text-sm leading-relaxed text-slate-600">{(info && INTRO[info.persona.key]) || DEFAULT_INTRO}</p>
+    </div>
+    {info?.suggestions?.length > 0 && (
+      <div className="mt-5">
+        <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Try asking</p>
+        <ul className="space-y-2">
+          {info.suggestions.map((q) => (
+            <li key={q}>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onAsk(q)}
+                className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left text-sm font-medium text-slate-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 disabled:opacity-60"
+              >
+                <span className="flex-1">{q}</span>
+                <LuChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-primary-600" aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+);
+
+const RelatedQuestions = ({ questions, onAsk, disabled }) =>
   questions?.length ? (
-    <div className="mt-3">
-      {label && <p className="mb-1.5 text-xs font-medium text-slate-500">{label}</p>}
+    <div>
+      <p className="mb-1.5 text-[11px] font-medium text-slate-500">Related questions</p>
       <div className="flex flex-wrap gap-1.5">
         {questions.map((q) => (
           <button
@@ -53,7 +103,7 @@ const QuestionChips = ({ label, questions, onAsk, disabled }) =>
             type="button"
             disabled={disabled}
             onClick={() => onAsk(q)}
-            className="rounded-full border border-primary-200 bg-white px-3 py-1.5 text-left text-xs font-medium text-primary-700 hover:bg-primary-50 disabled:opacity-60"
+            className="rounded-full border border-primary-200 bg-white px-3 py-1.5 text-left text-xs font-medium text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50 disabled:opacity-60"
           >
             {q}
           </button>
@@ -62,14 +112,31 @@ const QuestionChips = ({ label, questions, onAsk, disabled }) =>
     </div>
   ) : null;
 
-const AssistantBubble = ({ children }) => (
-  <div className="flex items-start gap-2">
-    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600" aria-hidden="true">
-      <LuBotMessageSquare className="h-4 w-4" />
-    </span>
-    <div className="min-w-0 max-w-[85%] rounded-2xl rounded-tl-md bg-slate-100 px-3.5 py-2.5 text-sm leading-relaxed text-slate-800">{children}</div>
-  </div>
-);
+/** An answer, with where it came from and follow-up questions. */
+const AssistantMessage = ({ message, onAsk, disabled }) => {
+  const ai = message.mode === "ai";
+  return (
+    <div className="flex items-start gap-2 motion-safe:animate-view-enter">
+      <BotAvatar className="mt-0.5 h-7 w-7 rounded-full" />
+      <div className="min-w-0 max-w-[85%] space-y-2.5">
+        <div className="rounded-2xl rounded-tl-md border border-slate-200/80 bg-white px-4 py-3 text-sm leading-relaxed text-slate-700 shadow-sm">
+          <AnswerText text={message.content} />
+          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-slate-100 pt-2 text-[11px] text-slate-500">
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ${ai ? "bg-primary-50 text-primary-700" : "bg-slate-100 text-slate-600"}`}>
+              {ai ? <LuSparkles className="h-3 w-3" aria-hidden="true" /> : <LuBookOpen className="h-3 w-3" aria-hidden="true" />}
+              {ai ? "AI answer" : "From VIDYADAAN's help topics"}
+            </span>
+            {ai && "Check important details"}
+          </p>
+          {ai && message.sources.length > 0 && (
+            <p className="mt-1.5 text-[11px] leading-snug text-slate-500">Based on: {message.sources.slice(0, 2).map((s) => s.question).join(" · ")}</p>
+          )}
+        </div>
+        <RelatedQuestions questions={message.related} onAsk={onAsk} disabled={disabled} />
+      </div>
+    </div>
+  );
+};
 
 /**
  * The floating help assistant, on every page. The server decides which assistant answers (School, NGO,
@@ -175,17 +242,27 @@ const ChatbotWidget = () => {
     // Inside the portals the assistant takes the dashboards' indigo colours and font (index.css). This
     // wrapper has no size: the button and the window are fixed to the screen, so the page never grows.
     <div className={pathname.startsWith("/dashboard") ? "dashboard-theme" : ""}>
-      <button
-        ref={launcherRef}
-        type="button"
-        onClick={() => (open ? close() : setOpen(true))}
-        aria-expanded={open}
-        aria-controls={panelId}
-        aria-label={open ? "Close the help assistant" : "Open the help assistant"}
-        className={`${open ? "hidden sm:flex" : "flex"} fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg shadow-primary-900/20 transition hover:bg-primary-700 focus-visible:outline-offset-4`}
-      >
-        {open ? <LuX className="h-6 w-6" aria-hidden="true" /> : <LuBotMessageSquare className="h-6 w-6" aria-hidden="true" />}
-      </button>
+      <div className={`${open ? "hidden sm:block" : ""} group fixed bottom-4 right-4 z-40 sm:bottom-6 sm:right-6`}>
+        {!open && (
+          <span
+            className="pointer-events-none absolute right-full top-1/2 mr-3 hidden -translate-y-1/2 whitespace-nowrap rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-lg transition group-focus-within:opacity-100 group-hover:opacity-100 sm:block"
+            aria-hidden="true"
+          >
+            Need help? Ask me
+          </span>
+        )}
+        <button
+          ref={launcherRef}
+          type="button"
+          onClick={() => (open ? close() : setOpen(true))}
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-label={open ? "Close the help assistant" : "Open the help assistant"}
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-900/25 ring-4 ring-white/70 transition hover:scale-105 hover:shadow-xl active:scale-95 focus-visible:outline-offset-4 motion-reduce:transition-none motion-reduce:hover:scale-100"
+        >
+          {open ? <LuX className="h-6 w-6" aria-hidden="true" /> : <LuBotMessageSquare className="h-6 w-6" aria-hidden="true" />}
+        </button>
+      </div>
 
       {/* z-50 like the site's top bar and dialogs: it comes later in the page, so the open window is above them. */}
       {open && (
@@ -199,29 +276,42 @@ const ChatbotWidget = () => {
               close();
             }
           }}
-          className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-white sm:inset-auto sm:bottom-24 sm:right-6 sm:h-[min(36rem,calc(100dvh-8rem))] sm:w-[24rem] sm:rounded-panel sm:border sm:border-slate-200 sm:shadow-2xl"
+          className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-white motion-safe:animate-chat-open sm:inset-auto sm:bottom-24 sm:right-6 sm:h-[min(38rem,calc(100dvh-8rem))] sm:w-[25rem] sm:origin-bottom-right sm:rounded-3xl sm:border sm:border-slate-200/70 sm:shadow-[0_24px_64px_-16px_rgb(15_23_42/0.35)]"
         >
-          <header className="flex items-center gap-3 border-b border-slate-200 bg-primary-600 px-4 py-3 text-white">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15" aria-hidden="true">
-              <LuBotMessageSquare className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="truncate text-sm font-bold">{name}</h2>
-              <p className="truncate text-xs text-white/80">
-                {info ? (info.aiEnabled ? "AI answers from VIDYADAAN help" : "Answers from help topics") : "VIDYADAAN help"}
-              </p>
+          <header className="relative overflow-hidden bg-gradient-to-br from-primary-600 to-primary-800 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] text-white">
+            {/* Soft circles for depth. */}
+            <span className="pointer-events-none absolute -right-10 -top-14 h-36 w-36 rounded-full bg-white/10" aria-hidden="true" />
+            <span className="pointer-events-none absolute -bottom-20 right-20 h-32 w-32 rounded-full bg-white/5" aria-hidden="true" />
+            <div className="relative flex items-center gap-3">
+              <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-primary-600 shadow-md shadow-primary-900/20" aria-hidden="true">
+                <LuBotMessageSquare className="h-6 w-6" />
+                {/* Green once the assistant is ready, amber if it couldn't be loaded. */}
+                <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-primary-700 ${personaError ? "bg-amber-400" : info ? "bg-emerald-400" : "bg-slate-300"}`} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 id={titleId} className="truncate text-[15px] font-bold leading-tight">{name}</h2>
+                <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-white/80">
+                  {info?.aiEnabled ? <LuSparkles className="h-3 w-3 shrink-0" aria-hidden="true" /> : <LuBookOpen className="h-3 w-3 shrink-0" aria-hidden="true" />}
+                  {info ? (info.aiEnabled ? "AI answers from VIDYADAAN help" : "Answers from help topics") : "VIDYADAAN help"}
+                </p>
+              </div>
+              <button type="button" onClick={clear} disabled={!messages.length || pending} aria-label="Clear chat" title="Clear chat" className="rounded-xl p-2 text-white/85 transition hover:bg-white/15 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent">
+                <LuRotateCcw className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <button type="button" onClick={close} aria-label="Close the help assistant" title="Close" className="rounded-xl p-2 text-white/85 transition hover:bg-white/15 hover:text-white">
+                <LuX className="h-5 w-5" aria-hidden="true" />
+              </button>
             </div>
-            <button type="button" onClick={clear} disabled={!messages.length || pending} aria-label="Clear chat" title="Clear chat" className="rounded-lg p-2 text-white/90 hover:bg-white/15 disabled:opacity-40">
-              <LuRotateCcw className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button type="button" onClick={close} aria-label="Close the help assistant" title="Close" className="rounded-lg p-2 text-white/90 hover:bg-white/15">
-              <LuX className="h-5 w-5" aria-hidden="true" />
-            </button>
           </header>
 
-          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4" role="log" aria-live="polite" aria-label="Conversation">
+          <div
+            className="flex-1 space-y-4 overflow-y-auto bg-slate-50 px-4 py-4 [scrollbar-color:var(--color-slate-300)_transparent] [scrollbar-width:thin]"
+            role="log"
+            aria-live="polite"
+            aria-label="Conversation"
+          >
             {personaError && (
-              <div className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <LuCircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 <span>
                   {personaError}{" "}
@@ -229,62 +319,58 @@ const ChatbotWidget = () => {
                 </span>
               </div>
             )}
-            {info && !info.aiEnabled && (
-              <p className="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                <LuBookOpen className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
-                AI answers aren&rsquo;t switched on yet, so answers come straight from VIDYADAAN&rsquo;s help topics.
-              </p>
-            )}
 
-            <AssistantBubble>
-              <p>Hi! I&rsquo;m the {name}. Ask me anything about using VIDYADAAN.</p>
-              {!messages.length && <QuestionChips label="Try asking" questions={info?.suggestions} onAsk={ask} disabled={pending} />}
-            </AssistantBubble>
+            {messages.length ? (
+              <p className="text-center text-[11px] font-medium text-slate-500">You&rsquo;re chatting with the {name}</p>
+            ) : (
+              <Welcome name={name} info={info} onAsk={ask} disabled={pending} />
+            )}
 
             {messages.map((m) =>
               m.role === "user" ? (
-                <div key={m.id} className="flex justify-end">
-                  <p className="max-w-[85%] whitespace-pre-line break-words rounded-2xl rounded-tr-md bg-primary-600 px-3.5 py-2.5 text-sm text-white">{m.content}</p>
+                <div key={m.id} className="flex justify-end motion-safe:animate-view-enter">
+                  <p className="max-w-[85%] whitespace-pre-line break-words rounded-2xl rounded-tr-md bg-gradient-to-br from-primary-500 to-primary-700 px-4 py-2.5 text-sm leading-relaxed text-white shadow-sm shadow-primary-900/15">
+                    {m.content}
+                  </p>
                 </div>
               ) : (
-                <AssistantBubble key={m.id}>
-                  <AnswerText text={m.content} />
-                  <p className="mt-2 flex items-center gap-1 text-[11px] font-medium text-slate-500">
-                    {m.mode === "ai" ? <LuSparkles className="h-3 w-3" aria-hidden="true" /> : <LuBookOpen className="h-3 w-3" aria-hidden="true" />}
-                    {m.mode === "ai" ? "AI answer: check important details" : "From VIDYADAAN's help topics"}
-                  </p>
-                  {m.mode === "ai" && m.sources.length > 0 && (
-                    <p className="mt-1 text-[11px] text-slate-500">Based on: {m.sources.slice(0, 2).map((s) => s.question).join(" · ")}</p>
-                  )}
-                  <QuestionChips label="Related questions" questions={m.related} onAsk={ask} disabled={pending} />
-                </AssistantBubble>
+                <AssistantMessage key={m.id} message={m} onAsk={ask} disabled={pending} />
               )
             )}
 
             {pending && (
-              <AssistantBubble>
-                <span className="flex items-center gap-1 py-1" aria-label="The assistant is answering">
+              <div className="flex items-start gap-2">
+                <BotAvatar className="mt-0.5 h-7 w-7 rounded-full" />
+                <span role="status" aria-label="The assistant is answering" className="flex items-center gap-1 rounded-2xl rounded-tl-md border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm">
                   {[0, 150, 300].map((delay) => (
-                    <span key={delay} className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: `${delay}ms` }} />
+                    <span key={delay} className="h-2 w-2 animate-bounce rounded-full bg-primary-400" style={{ animationDelay: `${delay}ms` }} />
                   ))}
                 </span>
-              </AssistantBubble>
+              </div>
             )}
 
             {failed && (
-              <div role="alert" className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800">
+              <div role="alert" className="ml-9 flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-800">
                 <LuCircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 <div>
                   <p>{failed.message}</p>
-                  <button type="button" onClick={retry} disabled={pending} className="mt-1 font-semibold underline underline-offset-2">Try again</button>
+                  <button
+                    type="button"
+                    onClick={retry}
+                    disabled={pending}
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-red-700 shadow-sm ring-1 ring-red-200 transition hover:bg-red-100"
+                  >
+                    <LuRotateCcw className="h-3 w-3" aria-hidden="true" />
+                    Try again
+                  </button>
                 </div>
               </div>
             )}
             <div ref={endRef} />
           </div>
 
-          <form onSubmit={onSubmit} className="border-t border-slate-200 bg-white px-3 pb-3 pt-2">
-            <div className="flex items-end gap-2">
+          <form onSubmit={onSubmit} className="border-t border-slate-200/70 bg-white px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+            <div className="flex items-end gap-2 rounded-2xl border border-slate-200 bg-slate-50 py-1.5 pl-3.5 pr-1.5 transition focus-within:border-primary-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-primary-500/10">
               <label htmlFor={`${panelId}-input`} className="sr-only">Your question</label>
               <textarea
                 id={`${panelId}-input`}
@@ -295,20 +381,22 @@ const ChatbotWidget = () => {
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={onInputKeyDown}
                 placeholder="Ask about VIDYADAAN…"
-                className="max-h-28 min-h-11 flex-1 resize-none rounded-control border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 [field-sizing:content]"
+                // The rounded box around it shows the focus.
+                className="max-h-28 min-h-9 flex-1 resize-none bg-transparent py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus-visible:outline-none [field-sizing:content]"
               />
               <button
                 type="submit"
                 disabled={!draft.trim() || pending}
                 aria-label="Send"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-sm shadow-primary-900/20 transition hover:brightness-110 disabled:from-slate-200 disabled:to-slate-200 disabled:text-slate-500 disabled:shadow-none disabled:hover:brightness-100"
               >
-                <LuSendHorizontal className="h-5 w-5" aria-hidden="true" />
+                <LuSendHorizontal className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
-            <p className="mt-1.5 flex justify-between gap-2 text-[11px] text-slate-500">
+            <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
+              <LuShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span>Never share passwords or bank details. Chats aren&rsquo;t saved.</span>
-              {draft.length > CHAT_MESSAGE_MAX - 100 && <span aria-live="polite">{draft.length}/{CHAT_MESSAGE_MAX}</span>}
+              {draft.length > CHAT_MESSAGE_MAX - 100 && <span className="font-semibold text-slate-600" aria-live="polite">{draft.length}/{CHAT_MESSAGE_MAX}</span>}
             </p>
           </form>
         </section>
