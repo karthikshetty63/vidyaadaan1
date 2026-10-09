@@ -60,8 +60,16 @@ describe("email through Brevo's HTTPS API", () => {
     test("a refused or failed request is an error that never contains the key", async () => {
         answer = () => Response.json({ code: "unauthorized", message: "Key not found" }, { status: 401 });
         await assert.rejects(sendEmail({ to: "a@example.com", subject: "s", text: "t", html: "t" }), (error) => {
-            assert.match(error.message, /HTTP 401, unauthorized/);
+            assert.equal(error.message, "Brevo refused the request (HTTP 401, unauthorized): Key not found");
             assert.ok(!error.message.includes(KEY));
+            return true;
+        });
+        // Brevo's explanation is shown (here, the IP check), but never the key, even if Brevo echoed it.
+        answer = () => Response.json({ code: "unauthorized", message: `We have detected you are using an unrecognised IP address 1.2.3.4. Key ${KEY} is blocked.` }, { status: 401 });
+        await assert.rejects(sendEmail({ to: "a@example.com", subject: "s", text: "t", html: "t" }), (error) => {
+            assert.match(error.message, /unrecognised IP address/);
+            assert.ok(!error.message.includes(KEY));
+            assert.match(error.message, /Key \[key\] is blocked/);
             return true;
         });
         answer = () => {

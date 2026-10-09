@@ -74,8 +74,13 @@ const brevoRequest = async (url, init) => {
         throw new Error(`Brevo could not be reached (${error.name})`, { cause: error });
     }
     const body = await response.json().catch(() => ({}));
-    // Only the status and Brevo's error code: never the key.
-    if (!response.ok) throw new Error(`Brevo refused the request (HTTP ${response.status}${body.code ? `, ${body.code}` : ""})`);
+    if (!response.ok) {
+        // The status, Brevo's error code and its explanation (e.g. an unrecognised IP address), so the log says
+        // what to fix. Never the key, even if Brevo's text were to include it.
+        const key = brevoKey();
+        const reason = typeof body.message === "string" ? (key ? body.message.split(key).join("[key]") : body.message).slice(0, 300) : "";
+        throw new Error(`Brevo refused the request (HTTP ${response.status}${body.code ? `, ${body.code}` : ""})${reason ? `: ${reason}` : ""}`);
+    }
     return body;
 };
 
