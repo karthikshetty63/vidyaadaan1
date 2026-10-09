@@ -3,6 +3,7 @@ import RegistrationLayout, { AgreeCheckbox, RegistrationSuccess, ReviewSummary }
 import Alert from "../../components/ui/Alert";
 import ChoiceChips from "../../components/ui/ChoiceChips";
 import FormField, { Input, Select, Textarea } from "../../components/ui/FormField";
+import PasswordInput from "../../components/ui/PasswordInput";
 import SegmentedControl from "../../components/ui/SegmentedControl";
 import useRegistrationForm from "../../hooks/useRegistrationForm";
 import { DONOR_CAUSES, DONOR_FREQUENCIES, DONOR_STATES } from "../../../shared/registrationRules.js";
@@ -18,12 +19,12 @@ const INITIAL_FORM = {
 };
 
 const DonorRegister = () => {
-  const { form, set, files, setFile, step, errors, messages, loading, handleContinue, handleSubmit, prev, uploadRules } = useRegistrationForm("donor", INITIAL_FORM);
+  const { form, set, files, setFile, step, errors, messages, loading, handleContinue, handleSubmit, prev, goTo, uploadRules } = useRegistrationForm("donor", INITIAL_FORM);
   const isLastStep = step === STEPS.length - 1;
 
   if (step === STEPS.length) {
     return (
-      <RegistrationSuccess label="Donor registration" title="Registration submitted" actionHref="/login/donor" actionLabel="Go to donor sign in">
+      <RegistrationSuccess role="donor" label="Donor registration" title="Registration submitted" actionHref="/login/donor" actionLabel="Go to donor sign in">
         Your account is <strong className="font-semibold text-slate-900">pending admin approval</strong>. Our team will check your PAN card, and you can
         sign in once your account is approved.
       </RegistrationSuccess>
@@ -76,10 +77,10 @@ const DonorRegister = () => {
 
     <div key="password" className="space-y-5">
       <FormField label="Password" required error={errors.password} hint="At least 8 characters. A mix of letters, numbers and symbols is recommended.">
-        {(f) => <Input {...f} type="password" autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min 8 characters" />}
+        {(f) => <PasswordInput {...f} showStrength autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min 8 characters" />}
       </FormField>
       <FormField label="Confirm password" required error={errors.confirm} hint={passwordsMatch ? "Passwords match." : undefined}>
-        {(f) => <Input {...f} type="password" autoComplete="new-password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} placeholder="Repeat password" />}
+        {(f) => <PasswordInput {...f} autoComplete="new-password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} placeholder="Repeat password" />}
       </FormField>
     </div>,
 
@@ -126,6 +127,7 @@ const DonorRegister = () => {
 
   return (
     <RegistrationLayout
+      role="donor"
       label="Donor registration"
       steps={STEPS}
       step={step}
@@ -135,6 +137,7 @@ const DonorRegister = () => {
       nextDisabled={isLastStep && !form.agree}
       nextLabel={isLastStep ? (loading ? "Submitting…" : "Submit registration") : "Continue"}
       onPrev={prev}
+      onGoTo={goTo}
       onNext={isLastStep ? handleSubmit : handleContinue}
       loginHref="/login/donor"
     >

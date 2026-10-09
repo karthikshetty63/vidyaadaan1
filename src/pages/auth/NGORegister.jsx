@@ -3,6 +3,7 @@ import FileUploadField from "../../components/auth/FileUploadField";
 import Alert from "../../components/ui/Alert";
 import ChoiceChips from "../../components/ui/ChoiceChips";
 import FormField, { Input, Select, Textarea } from "../../components/ui/FormField";
+import PasswordInput from "../../components/ui/PasswordInput";
 import useRegistrationForm from "../../hooks/useRegistrationForm";
 import { NGO_FOCUS_AREAS, NGO_STATES, NGO_TYPES } from "../../../shared/registrationRules.js";
 
@@ -17,12 +18,12 @@ const INITIAL_FORM = {
 };
 
 const NGORegister = () => {
-  const { form, set, files, setFile, step, errors, messages, loading, handleContinue, handleSubmit, prev, uploadRules } = useRegistrationForm("ngo", INITIAL_FORM);
+  const { form, set, files, setFile, step, errors, messages, loading, handleContinue, handleSubmit, prev, goTo, uploadRules } = useRegistrationForm("ngo", INITIAL_FORM);
   const isLastStep = step === STEPS.length - 1;
 
   if (step === STEPS.length) {
     return (
-      <RegistrationSuccess label="NGO registration" title="Registration submitted" actionHref="/login/ngo" actionLabel="Go to NGO sign in">
+      <RegistrationSuccess role="ngo" label="NGO registration" title="Registration submitted" actionHref="/login/ngo" actionLabel="Go to NGO sign in">
         Your NGO is <strong className="font-semibold text-slate-900">pending admin approval</strong>. Our compliance team will verify your organisation and activate your account.
         You can sign in once it has been approved.
       </RegistrationSuccess>
@@ -109,10 +110,10 @@ const NGORegister = () => {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <FormField label="Password" required error={errors.password} hint="At least 8 characters.">
-          {(f) => <Input {...f} type="password" autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min 8 characters" />}
+          {(f) => <PasswordInput {...f} showStrength autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min 8 characters" />}
         </FormField>
         <FormField label="Confirm password" required error={errors.confirm}>
-          {(f) => <Input {...f} type="password" autoComplete="new-password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} placeholder="Repeat password" />}
+          {(f) => <PasswordInput {...f} autoComplete="new-password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} placeholder="Repeat password" />}
         </FormField>
       </div>
       <FormField label="Alternate phone" error={errors.altPhone} hint="Optional" className="sm:max-w-xs">
@@ -142,6 +143,7 @@ const NGORegister = () => {
 
   return (
     <RegistrationLayout
+      role="ngo"
       label="NGO registration"
       steps={STEPS}
       step={step}
@@ -151,6 +153,7 @@ const NGORegister = () => {
       nextDisabled={isLastStep && !form.agree}
       nextLabel={isLastStep ? (loading ? "Submitting…" : "Submit registration") : "Continue"}
       onPrev={prev}
+      onGoTo={goTo}
       onNext={isLastStep ? handleSubmit : handleContinue}
       loginHref="/login/ngo"
     >

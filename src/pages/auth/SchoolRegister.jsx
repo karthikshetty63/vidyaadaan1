@@ -2,6 +2,7 @@ import RegistrationLayout, { AgreeCheckbox, RegistrationSuccess, ReviewSummary }
 import FileUploadField from "../../components/auth/FileUploadField";
 import Alert from "../../components/ui/Alert";
 import FormField, { Input, Select, Textarea } from "../../components/ui/FormField";
+import PasswordInput from "../../components/ui/PasswordInput";
 import useRegistrationForm from "../../hooks/useRegistrationForm";
 import { SCHOOL_STATES } from "../../../shared/registrationRules.js";
 
@@ -23,12 +24,12 @@ const FACILITIES = [
 ];
 
 const SchoolRegister = () => {
-  const { form, set, files, setFile, step, errors, messages, loading, handleContinue, handleSubmit, prev, uploadRules } = useRegistrationForm("school", INITIAL_FORM);
+  const { form, set, files, setFile, step, errors, messages, loading, handleContinue, handleSubmit, prev, goTo, uploadRules } = useRegistrationForm("school", INITIAL_FORM);
   const isLastStep = step === STEPS.length - 1;
 
   if (step === STEPS.length) {
     return (
-      <RegistrationSuccess label="School registration" title="Registration submitted" actionHref="/login/school" actionLabel="Go to school sign in">
+      <RegistrationSuccess role="school" label="School registration" title="Registration submitted" actionHref="/login/school" actionLabel="Go to school sign in">
         Your school is <strong className="font-semibold text-slate-900">pending admin approval</strong>. Our team will verify your details and activate your account.
         You can sign in once it has been approved.
       </RegistrationSuccess>
@@ -77,10 +78,10 @@ const SchoolRegister = () => {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <FormField label="Password" required error={errors.password} hint="At least 8 characters.">
-          {(f) => <Input {...f} type="password" autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min 8 characters" />}
+          {(f) => <PasswordInput {...f} showStrength autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min 8 characters" />}
         </FormField>
         <FormField label="Confirm password" required error={errors.confirm}>
-          {(f) => <Input {...f} type="password" autoComplete="new-password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} placeholder="Repeat password" />}
+          {(f) => <PasswordInput {...f} autoComplete="new-password" value={form.confirm} onChange={(e) => set("confirm", e.target.value)} placeholder="Repeat password" />}
         </FormField>
       </div>
       <div className="grid grid-cols-2 gap-5">
@@ -132,7 +133,7 @@ const SchoolRegister = () => {
           {(f) => <Input {...f} autoComplete="off" value={form.upi} onChange={(e) => set("upi", e.target.value)} placeholder="school@upi" />}
         </FormField>
       </div>
-      <Alert tone="info">Funds are released to the school account only after NGO verification of project completion.</Alert>
+      <Alert tone="info">Your bank details are shown only to NGOs that commit to one of your approved projects, so they can pay your school directly. Donors never see them.</Alert>
     </div>,
 
     <div key="review" className="space-y-5">
@@ -151,6 +152,7 @@ const SchoolRegister = () => {
 
   return (
     <RegistrationLayout
+      role="school"
       label="School registration"
       steps={STEPS}
       step={step}
@@ -160,6 +162,7 @@ const SchoolRegister = () => {
       nextDisabled={isLastStep && !form.agree}
       nextLabel={isLastStep ? (loading ? "Submitting…" : "Submit registration") : "Continue"}
       onPrev={prev}
+      onGoTo={goTo}
       onNext={isLastStep ? handleSubmit : handleContinue}
       loginHref="/login/school"
     >

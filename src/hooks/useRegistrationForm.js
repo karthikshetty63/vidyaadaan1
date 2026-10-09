@@ -122,6 +122,13 @@ const useRegistrationForm = (role, initialForm) => {
     setStep((s) => Math.max(s - 1, 0));
   };
 
+  // Back to an earlier step (from the step list). Never forward: each step is checked on the way.
+  const goTo = (target) => {
+    if (!Number.isInteger(target) || target < 0 || target >= step) return;
+    clearErrors();
+    setStep(target);
+  };
+
   const handleSubmit = async () => {
     if (submitting.current) return; // ignore double clicks
     const allSteps = schema.steps.map((_, i) => i);
@@ -167,6 +174,7 @@ const useRegistrationForm = (role, initialForm) => {
     handleContinue,
     handleSubmit,
     prev,
+    goTo,
     uploadRules,
   };
 };

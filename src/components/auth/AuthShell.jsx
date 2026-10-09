@@ -45,13 +45,13 @@ const Orbit = ({ role }) => (
 );
 
 /** A hand-drawn underline. */
-const Swoosh = ({ className }) => (
+export const Swoosh = ({ className }) => (
   <svg viewBox="0 0 220 24" fill="none" className={className} aria-hidden="true">
     <path d="M4 18C60 6 140 2 216 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
   </svg>
 );
 
-const Leaves = ({ className }) => (
+export const Leaves = ({ className }) => (
   <svg viewBox="0 0 80 100" className={className} aria-hidden="true">
     <path d="M40 98C38 70 40 45 52 20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" />
     <path d="M52 20C62 30 62 46 50 56C40 46 42 30 52 20Z" fill="currentColor" opacity="0.55" />
@@ -122,14 +122,9 @@ const BrandPanel = ({ role }) => {
   );
 };
 
-/**
- * The sign-in pages' frame: the brand side (large screens) and a white card with the form. `role`
- * (school, ngo, donor or admin) picks what the brand side says; leave it out for pages that serve
- * every account, such as password reset.
- */
-const AuthShell = ({ role, children }) => (
-  <div className="relative min-h-dvh overflow-hidden bg-[#f4f8ff] text-slate-900">
-    {/* Soft background shapes. */}
+/** The soft background shapes and the handwritten corner note, shared by every account page. */
+export const AuthBackdrop = () => (
+  <>
     <div className="pointer-events-none absolute inset-0" aria-hidden="true">
       <div className="absolute -left-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-sky-200/40 blur-3xl" />
       <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-blue-100/70" />
@@ -143,6 +138,17 @@ const AuthShell = ({ role, children }) => (
       <br />
       &nbsp;&nbsp;&nbsp;&nbsp;Build
     </p>
+  </>
+);
+
+/**
+ * The sign-in pages' frame: the brand side (large screens) and a white card with the form. `role`
+ * (school, ngo, donor or admin) picks what the brand side says; leave it out for pages that serve
+ * every account, such as password reset.
+ */
+const AuthShell = ({ role, children }) => (
+  <div className="relative min-h-dvh overflow-clip bg-[#f4f8ff] text-slate-900">
+    <AuthBackdrop />
 
     <div className="relative mx-auto grid min-h-dvh max-w-[90rem] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       <BrandPanel role={role} />

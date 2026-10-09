@@ -236,3 +236,18 @@
 .hero-heading {
   line-height: 1.05;
 }
+/* Registration forms: the sign-in pages' taller, rounder fields (checkboxes and file pickers keep theirs). */
+.auth-form :where(input:not([type="checkbox"], [type="radio"], [type="file"]), select) {
+  height: 2.75rem;
+}
+.auth-form :where(input:not([type="checkbox"], [type="radio"]), select, textarea) {
+  border-radius: 0.75rem;
+  border-color: var(--color-slate-200);
+}
+.auth-form :where(input:not([type="checkbox"], [type="radio"]), select, textarea):focus {
+  border-color: var(--color-blue-500);
+  box-shadow: 0 0 0 4px rgb(59 130 246 / 0.1);
+}
+.auth-form :where(input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"]) {
+  border-color: var(--color-red-400);
+}
