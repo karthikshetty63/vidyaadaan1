@@ -157,7 +157,7 @@ const Sidebar = ({ role = "school", userName = "Admin", userSub = "", mobileOpen
     <>
       {/* Desktop sidebar */}
       <aside
-        className={`hidden lg:flex ${collapsed ? "w-[76px]" : "w-68"} shrink-0 h-screen flex-col bg-white/80 backdrop-blur-xl border-r border-slate-200/70 transition-[width] duration-200 motion-reduce:transition-none`}
+        className={`hidden lg:flex ${collapsed ? "w-[76px]" : "w-68"} shrink-0 h-full flex-col bg-white/80 backdrop-blur-xl border-r border-slate-200/70 transition-[width] duration-200 motion-reduce:transition-none`}
       >
         <div className={`h-18 shrink-0 flex items-center ${collapsed ? "justify-center" : "justify-between px-5"} border-b border-slate-200/70`}>
           {brand(collapsed)}

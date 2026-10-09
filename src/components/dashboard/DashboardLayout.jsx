@@ -27,7 +27,10 @@ const DashboardLayout = ({
     const dismissNotice = () => navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
 
     return (
-        <div className={`dashboard-theme ${SKY_PORTALS.includes(role) ? "dashboard-sky" : ""} flex h-screen overflow-hidden`}>
+        // Exactly the visible screen (dvh: without a phone's address bar), and `relative` so that nothing inside
+        // (e.g. a hidden file picker, which is positioned absolutely) can stretch the page below the dashboard:
+        // otherwise scrolling past the end moved the whole dashboard up and showed a blank area.
+        <div className={`dashboard-theme ${SKY_PORTALS.includes(role) ? "dashboard-sky" : ""} relative flex h-dvh overflow-hidden`}>
             <Sidebar role={role} userName={userName} userSub={userSub} mobileOpen={navOpen} onClose={() => setNavOpen(false)} />
 
             <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
