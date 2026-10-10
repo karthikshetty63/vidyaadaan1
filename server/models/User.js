@@ -22,6 +22,8 @@ const userSchema = new mongoose.Schema(
         statusChangedAt: { type: Date },
         statusChangedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         rejectionReason: { type: String, trim: true, maxlength: 500 },
+        // When the account last opened its Notifications page: anything newer counts as unread on the bell.
+        notificationsSeenAt: { type: Date },
         // Forgot-password: only the SHA-256 hash of the emailed token is stored, never the token itself.
         passwordResetToken: { type: String, select: false },
         passwordResetExpires: { type: Date, select: false },

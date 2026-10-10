@@ -207,6 +207,56 @@ export const sendPasswordResetEmail = ({ to, name, resetUrl, expiresInMinutes })
     return sendEmail({ to, subject: "Reset your VIDYADAAN password", text, html });
 };
 
+/**
+ * A short update about the recipient's own account or records: a review decision, a payment decision,
+ * or a school's answer to an offer of help. `lines` are plain sentences; `quote` ({ label, text }) is
+ * for words someone else wrote, such as a reason; `action` ({ label, url }) is the one button.
+ */
+export const sendUpdateEmail = ({ to, name, subject, heading, lines = [], quote, action }) => {
+    const footer = "You're receiving this because it is about your own VIDYADAAN account. You can also see it under Notifications when you sign in.";
+    const text = [
+        `Hello ${name},`,
+        "",
+        heading,
+        "",
+        ...lines,
+        ...(quote ? ["", `${quote.label.toUpperCase()}: ${quote.text}`] : []),
+        ...(action ? ["", `${action.label}: ${action.url}`] : []),
+        "",
+        "VIDYADAAN",
+        "Transparent Education Development Platform",
+        "",
+        footer,
+    ].join("\n");
+
+    const body = "margin:0;font-size:14px;line-height:22px;color:#334155;";
+    const muted = "margin:0;font-size:12px;line-height:18px;color:#64748b;";
+    const url = action ? escapeHtml(action.url) : "";
+    const html = `<!doctype html>
+<html lang="en">
+<body style="margin:0;padding:24px 12px;background:#f8fafc;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">
+      <tr><td style="padding:32px;">
+        <p style="margin:0 0 24px;font-size:15px;font-weight:700;letter-spacing:0.04em;color:#0b192c;">VIDYADAAN</p>
+        <p style="${body}margin-bottom:8px;">Hello ${escapeHtml(name)},</p>
+        <h1 style="margin:0 0 16px;font-size:20px;line-height:28px;font-weight:600;color:#0f172a;">${escapeHtml(heading)}</h1>
+        ${lines.map((line) => `<p style="${body}margin-bottom:12px;">${escapeHtml(line)}</p>`).join("\n        ")}
+        ${quote ? `<div style="margin:16px 0;padding:12px 16px;background:#f8fafc;border-left:3px solid #2563eb;border-radius:4px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">${escapeHtml(quote.label)}</p><p style="${body}white-space:pre-line;">${escapeHtml(quote.text)}</p></div>` : ""}
+        ${action ? `<a href="${url}" style="display:inline-block;margin-top:8px;background:#2563eb;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 20px;border-radius:8px;">${escapeHtml(action.label)}</a>` : ""}
+        <p style="${body}margin-top:24px;font-weight:600;color:#0f172a;">VIDYADAAN</p>
+        <p style="${muted}">Transparent Education Development Platform</p>
+        <p style="${muted}margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;">${escapeHtml(footer)}</p>
+        ${action ? `<p style="${muted}margin-top:8px;">If the button doesn't work, paste this link into your browser:<br><a href="${url}" style="color:#1d4ed8;word-break:break-all;">${url}</a></p>` : ""}
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body>
+</html>`;
+
+    return sendEmail({ to, subject, text, html });
+};
+
 const formatRupees = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 const formatDay = (date) => new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import SchoolEvent from "../models/SchoolEvent.js";
 import { logActivity } from "../services/activityLog.js";
 import { toSchoolViews } from "../services/eventViews.js";
+import { emailOfferAnswered } from "../services/notificationEmails.js";
 import {
     EVENTS_PER_SCHOOL_MAX, EVENT_FIELDS_AFTER_APPROVAL, getUnexpectedEventFields, todayUTC, validateEvent, validateOfferDecision,
 } from "../../shared/eventRules.js";
@@ -151,6 +152,8 @@ export const respondToOffer = async (req, res, next) => {
             target: eventTarget(event),
             details: { supporterRole: offer.role, kinds: offer.kinds },
         });
+        // Whoever offered is told by email, in the background.
+        emailOfferAnswered(req.app.locals.frontendOrigin, event, offer);
         const [view] = await toSchoolViews([event]);
         return res.json({ message: values.decision === "ACCEPTED" ? "Offer accepted. Contact them to arrange the details." : "Offer declined.", event: view });
     } catch (error) {

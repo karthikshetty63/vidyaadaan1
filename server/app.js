@@ -16,6 +16,7 @@ import createDonationRouter from "./routes/donationRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import ngoRoutes from "./routes/ngoRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import createPublicProjectRouter from "./routes/publicProjectRoutes.js";
 import schoolAlumniRoutes from "./routes/schoolAlumniRoutes.js";
@@ -135,6 +136,7 @@ export const createApp = ({ corsOrigin: configuredOrigin = "http://localhost:517
     app.use("/api/admin/monitor", adminMonitorRoutes);
     app.use("/api/admin", adminRoutes);
     app.use("/api/profile", profileRoutes);
+    app.use("/api/notifications", notificationRoutes);
     app.use("/api/files", fileRoutes);
     app.use("/api/school/projects", schoolProjectRoutes);
     app.use("/api/school/photos", schoolPhotoRoutes);

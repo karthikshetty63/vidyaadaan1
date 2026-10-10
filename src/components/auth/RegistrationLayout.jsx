@@ -195,7 +195,7 @@ export const RegistrationSuccess = ({ role, label, title, children, actionHref, 
   const theme = ROLES[role];
   const next = [
     "Our team checks your details and documents.",
-    "We don't send an email when your account is approved, so try signing in after a while: the sign-in page says if it's still pending.",
+    "We email you when your account is approved. If the email doesn't arrive, check your spam folder or try signing in: the sign-in page says if it's still pending.",
     theme?.next || "Once approved, sign in to your dashboard.",
   ];
   return (

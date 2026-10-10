@@ -3,6 +3,7 @@ import SchoolEvent from "../models/SchoolEvent.js";
 import User from "../models/User.js";
 import { logActivity } from "../services/activityLog.js";
 import { toAdminView } from "../services/eventViews.js";
+import { emailEventDecision } from "../services/notificationEmails.js";
 import { EVENT_REVIEW_STATUSES, validateEventRejectionReason } from "../../shared/eventRules.js";
 import { eventTarget } from "./eventController.js";
 import { schoolSummaries } from "./projectReviewController.js";
@@ -73,6 +74,8 @@ export const approveEvent = async (req, res, next) => {
         );
         if (!updated) return notWaiting(res, await SchoolEvent.findById(event._id).lean());
         logActivity(req, { action: "event.approved", target: eventTarget(updated), details: { schoolId: updated.school } });
+        // The school is told by email, in the background.
+        emailEventDecision(req.app.locals.frontendOrigin, updated, { approved: true });
         const schools = await schoolSummaries([updated.school]);
         return res.json({ message: "Event approved. NGOs and donors can now see it and offer help.", event: toAdminView(updated, schools.get(updated.school.toString())) });
     } catch (error) {
@@ -94,6 +97,7 @@ export const rejectEvent = async (req, res, next) => {
         );
         if (!updated) return notWaiting(res, await SchoolEvent.findById(event._id).lean());
         logActivity(req, { action: "event.rejected", target: eventTarget(updated), details: { schoolId: updated.school, reason } });
+        emailEventDecision(req.app.locals.frontendOrigin, updated, { approved: false, reason });
         const schools = await schoolSummaries([updated.school]);
         return res.json({ message: "Event rejected. The school can see the reason and resubmit.", event: toAdminView(updated, schools.get(updated.school.toString())) });
     } catch (rejectError) {

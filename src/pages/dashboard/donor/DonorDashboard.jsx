@@ -16,7 +16,6 @@ import useApprovedProjects from "../../../hooks/useApprovedProjects";
 import useMyDonations from "../../../hooks/useMyDonations";
 import useMyProfile from "../../../hooks/useMyProfile";
 import useSupporterEvents from "../../../hooks/useSupporterEvents";
-import { formatINR } from "../../../utils/format";
 
 // Each sidebar item opens its own view of the portal, like a separate page. The URL hash (#needs,
 // #donations…) says which, so a view can be bookmarked and the back button moves between views.
@@ -29,30 +28,6 @@ const VIEWS = {
   profile: "Profile",
   settings: "Settings",
 };
-
-/** What has happened on the donor's donations and offers of help, from their own records. */
-const buildNotifications = ({ donations, offers }) => [
-  ...donations.map((d) => ({
-    id: `donation-${d.id}`,
-    at: d.verifiedAt || d.createdAt,
-    tone: "success",
-    title: "Donation confirmed",
-    text: `${formatINR(d.amount)} to ${d.project.title} · ${d.school.name}`,
-    detail: d.mode === "test" ? "Razorpay test mode: no real money was charged." : undefined,
-    to: "#donations",
-  })),
-  ...offers
-    .filter((e) => e.myOffer.status !== "OFFERED")
-    .map((e) => ({
-      id: `offer-${e.id}`,
-      at: e.myOffer.respondedAt,
-      tone: e.myOffer.status === "ACCEPTED" ? "success" : "info",
-      title: e.myOffer.status === "ACCEPTED" ? "A school accepted your offer of help" : "A school declined your offer of help",
-      text: `${e.title} · ${e.school.name}`,
-      detail: e.myOffer.note ? `School's note: ${e.myOffer.note}` : undefined,
-      to: "#events",
-    })),
-];
 
 /* ─── DONOR DASHBOARD ─────────────────────────────────────── */
 const DonorDashboard = () => {
@@ -151,14 +126,8 @@ const DonorDashboard = () => {
     ),
     notifications: (
       <NotificationsView
+        canHaveActions={false}
         description="Your confirmed donations, and schools' answers to your offers of help."
-        items={buildNotifications({ donations, offers: eventList.mine })}
-        loading={myDonations.loading || eventList.loading}
-        error={myDonations.error || eventList.error}
-        onRetry={() => {
-          myDonations.reload();
-          eventList.reload();
-        }}
         emptyText="Nothing has happened yet. When a donation is confirmed or a school answers an offer, it shows here."
       />
     ),

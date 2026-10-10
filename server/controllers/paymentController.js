@@ -6,6 +6,7 @@ import SchoolProfile from "../models/SchoolProfile.js";
 import { ONLINE_PAYMENT_METHOD, PAYMENT_PROOF_RULE, validateOnlinePayment, validatePaymentDetails, validateRejectionReason } from "../../shared/paymentRules.js";
 import { createRazorpayOrder, getRazorpayKeyId, isRazorpayConfigured, isValidPaymentSignature, razorpayMode, readCheckoutResult } from "../services/razorpay.js";
 import { logActivity, maskReference } from "../services/activityLog.js";
+import { emailPaymentDecision } from "../services/notificationEmails.js";
 import { deleteUploadedFiles, fileSummary, storeUploads, validateUploads } from "../services/uploadService.js";
 import { toPartnerViews } from "./approvedProjectController.js";
 import { projectToClient } from "./projectController.js";
@@ -411,6 +412,8 @@ export const acceptPayment = async (req, res, next) => {
             target: paymentTarget(payment, project.title),
             details: { projectId: project._id, projectTitle: project.title, ngoId: payment.ngo, channel: "DIRECT", parts: payment.parts, amount: payment.amount },
         });
+        // The NGO is told by email, in the background.
+        emailPaymentDecision(req.app.locals.frontendOrigin, payment, { accepted: true });
         return reviewedReply(res, payment._id, `Payment of ${formatINR(payment.amount)} accepted and added to “Raised so far”.`, project);
     } catch (error) {
         return next(error);
@@ -441,6 +444,7 @@ export const rejectPayment = async (req, res, next) => {
             target: paymentTarget(payment, project?.title),
             details: { projectId: payment.project, projectTitle: project?.title, ngoId: payment.ngo, channel: "DIRECT", parts: payment.parts, amount: payment.amount, reason },
         });
+        emailPaymentDecision(req.app.locals.frontendOrigin, payment, { accepted: false, reason });
         return reviewedReply(res, payment._id, "Payment rejected. The NGO will see your reason and can send it again.", project);
     } catch (err) {
         return next(err);

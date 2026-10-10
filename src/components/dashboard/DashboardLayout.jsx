@@ -17,7 +17,6 @@ const DashboardLayout = ({
     userSub = "",
     title = "Dashboard",
     subtitle = "",
-    notifications = [],
     children,
 }) => {
     const [navOpen, setNavOpen] = useState(false);
@@ -39,7 +38,6 @@ const DashboardLayout = ({
                     role={role}
                     title={title}
                     subtitle={subtitle}
-                    notifications={notifications}
                     onMenuClick={() => setNavOpen(true)}
                     menuOpen={navOpen}
                 />

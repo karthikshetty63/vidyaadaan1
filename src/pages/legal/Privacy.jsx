@@ -62,7 +62,11 @@ const Privacy = () => (
         <li>To verify accounts before they can sign in.</li>
         <li>To run VIDYADAAN: listing needs and events, recording NGO funding, online payments, donations and offers of help, and showing how much each need has raised.</li>
         <li>To show a school&rsquo;s payment details to the NGOs that pay it.</li>
-        <li>To send you emails you ask for, such as password reset links.</li>
+        <li>
+          To send you emails about your own account: password reset links you ask for, and updates such as a decision on your registration,
+          project, event or payment, or a school&rsquo;s answer to your offer of help. We send no newsletters or advertising.
+        </li>
+        <li>To show you notifications, we record when you last opened your Notifications page.</li>
         <li>To keep VIDYADAAN secure and to meet legal requirements.</li>
       </ul>
       <p>We do not sell your information, show advertising or use analytics or tracking tools.</p>
@@ -88,7 +92,7 @@ const Privacy = () => (
         <li>Google, if you choose to sign in with Google;</li>
         <li>MongoDB Atlas, where our database is hosted;</li>
         <li>Anthropic, for the help assistant&rsquo;s AI answers (when they are switched on);</li>
-        <li>our email provider, to send emails such as password reset links.</li>
+        <li>our email provider, to send emails such as password reset links and updates about your account.</li>
       </ul>
     </LegalSection>
 

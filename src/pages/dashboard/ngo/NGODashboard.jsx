@@ -44,35 +44,6 @@ const VIEWS = {
   settings: "Settings",
 };
 
-/** What has happened on the NGO's payments, commitments and offers of help, from its own records. */
-const buildNotifications = ({ payments, funded, offers }) => [
-  ...payments.map((p) => {
-    const text = `${formatINR(p.amount)} for ${p.project.title}`;
-    const base = { id: `payment-${p.id}`, text, to: "#funding" };
-    if (p.status === "ACCEPTED") return { ...base, at: p.reviewedAt, tone: "success", title: p.channel === "ONLINE" ? "Online payment confirmed" : "The school accepted your payment" };
-    if (p.status === "REJECTED") return { ...base, at: p.reviewedAt, tone: "danger", title: "The school rejected your payment", detail: p.rejectionReason ? `Reason: ${p.rejectionReason}` : undefined };
-    if (p.status === "REFUND_DUE") return { ...base, at: p.reviewedAt, tone: "danger", title: "An online payment will be refunded", detail: "Its parts had already been paid another way. Email VIDYADAAN support with the payment ID." };
-    return { ...base, at: p.submittedAt, tone: "warning", title: "Payment sent: waiting for the school to check it" };
-  }),
-  ...funded.flatMap((need) => {
-    const unpaid = unpaidParts(need);
-    if (!unpaid.length) return [];
-    const since = unpaid.reduce((earliest, part) => (!earliest || part.committedAt < earliest ? part.committedAt : earliest), null);
-    return [{ id: `unpaid-${need.id}`, at: since, tone: "warning", title: "Parts waiting for your payment", text: `${formatINR(sumAmounts(unpaid))} for ${need.title}`, to: "#funding" }];
-  }),
-  ...offers
-    .filter((e) => e.myOffer.status !== "OFFERED")
-    .map((e) => ({
-      id: `offer-${e.id}`,
-      at: e.myOffer.respondedAt,
-      tone: e.myOffer.status === "ACCEPTED" ? "success" : "info",
-      title: e.myOffer.status === "ACCEPTED" ? "A school accepted your offer of help" : "A school declined your offer of help",
-      text: `${e.title} · ${e.school.name}`,
-      detail: e.myOffer.note ? `School's note: ${e.myOffer.note}` : undefined,
-      to: "#events",
-    })),
-];
-
 const NGODashboard = () => {
   const location = useLocation();
   const requested = location.hash.slice(1);
@@ -273,15 +244,7 @@ const NGODashboard = () => {
     ),
     notifications: (
       <NotificationsView
-        description="Decisions on your payments, parts waiting for payment, and schools' answers to your offers of help."
-        items={buildNotifications({ payments, funded, offers: eventList.mine })}
-        loading={commitments.loading || paymentList.loading || eventList.loading}
-        error={commitments.error || paymentList.error || eventList.error}
-        onRetry={() => {
-          commitments.reload();
-          paymentList.reload();
-          eventList.reload();
-        }}
+        description="Parts waiting for your payment, then schools' decisions on your payments and their answers to your offers of help."
         emptyText="Nothing has happened yet. When a school decides on a payment or answers an offer, it shows here."
       />
     ),

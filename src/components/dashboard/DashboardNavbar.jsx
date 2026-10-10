@@ -1,12 +1,17 @@
 import { Link } from "react-router-dom";
 import { LuBell, LuMenu } from "react-icons/lu";
+import { useNotificationCount } from "../../hooks/useNotifications";
 
 // Only portals that actually have a notifications page show the bell.
 const NOTIFICATION_PAGES = { school: "/dashboard/school/notifications", ngo: "/dashboard/ngo#notifications", donor: "/dashboard/donor#notifications" };
 
-const DashboardNavbar = ({ role = "school", title = "Dashboard", subtitle = "", notifications = [], onMenuClick, menuOpen = false }) => {
+const DashboardNavbar = ({ role = "school", title = "Dashboard", subtitle = "", onMenuClick, menuOpen = false }) => {
   const notificationsHref = NOTIFICATION_PAGES[role];
-  const unread = notifications.length;
+  // `unread`: new since the account last opened Notifications. `waiting`: things that still need its action.
+  const { unread, waiting } = useNotificationCount(Boolean(notificationsHref));
+  let bellLabel = "Notifications";
+  if (unread) bellLabel = `Notifications, ${unread} new`;
+  else if (waiting) bellLabel = `Notifications, ${waiting} ${waiting === 1 ? "thing needs" : "things need"} your action`;
 
   return (
     <header className="sticky top-0 z-30 h-16 sm:h-18 shrink-0 flex items-center gap-3 px-4 sm:px-6 lg:px-8 bg-white/70 backdrop-blur-md border-b border-slate-200/70">
@@ -29,11 +34,19 @@ const DashboardNavbar = ({ role = "school", title = "Dashboard", subtitle = "", 
       {notificationsHref && (
         <Link
           to={notificationsHref}
-          aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+          aria-label={bellLabel}
+          title={bellLabel}
           className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-500 shadow-xs transition-colors duration-150 hover:text-slate-900 hover:border-slate-300"
         >
           <LuBell className="w-[18px] h-[18px]" aria-hidden="true" />
-          {unread > 0 && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" aria-hidden="true" />}
+          {unread > 0 ? (
+            <span data-bell-count className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-bold leading-none text-white ring-2 ring-white" aria-hidden="true">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          ) : (
+            // Nothing new, but something is still waiting for this account.
+            waiting > 0 && <span data-bell-waiting className="absolute top-2 right-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" aria-hidden="true" />
+          )}
         </Link>
       )}
     </header>

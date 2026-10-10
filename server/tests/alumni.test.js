@@ -8,12 +8,16 @@ const { MAX_FAILURES_IN_A_ROW, queueProjectApprovalEmails, resumeAlumniNotificat
     "../services/alumniNotifications.js"
 );
 
-// In-memory stand-in for the SMTP server: every "sent" email lands in the outbox.
+// In-memory stand-in for the SMTP server: every alumni email "sent" lands in the outbox.
 const outbox = [];
 let attempts = 0;
 let failSending = false;
+const ALUMNI_SUBJECT = "A new school project needs your support";
 const testTransport = {
     sendMail: async (message) => {
+        // The school's own "project approved / changes requested" email is another feature
+        // (notifications.test.js): it is accepted here and not counted.
+        if (!message.subject.startsWith(ALUMNI_SUBJECT)) return { messageId: "school-update" };
         attempts += 1;
         if (failSending) throw new Error("SMTP unavailable (simulated)");
         outbox.push(message);
@@ -264,7 +268,7 @@ describe("approved project → alumni emails", () => {
         assert.equal((await recordsFor(project.id)).length, 0);
     });
 
-    test("(10) rejecting a project sends no email; approving it after the school resubmits does", async () => {
+    test("(10) rejecting a project sends no alumni email; approving it after the school resubmits does", async () => {
         const { c } = await signedInSchool();
         const alum = await addAlum(c);
         const project = await createProject(c);
