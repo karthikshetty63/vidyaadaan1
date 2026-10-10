@@ -4,9 +4,11 @@ import {
   LuBadgeCheck, LuCalendarDays, LuCalendarPlus, LuCircleCheck, LuClock, LuFileChartColumn, LuFilePen, LuFolderKanban,
   LuGraduationCap, LuHandCoins, LuHeartHandshake, LuMapPin, LuPencil, LuPlus, LuSchool, LuTrendingUp, LuUsers,
 } from "react-icons/lu";
-import DashboardHero, { HeroChip, HeroTile } from "../../../components/dashboard/DashboardHero";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import ProjectStatusBadge from "../../../components/dashboard/ProjectStatusBadge";
+import {
+  FundingCard, HeroFact, MetricCard, PipelineBar, QuickActionTile, ROW, RowArrow, SchoolHero, Skeleton,
+} from "../../../components/dashboard/school/HomeWidgets";
 import PaymentQrCard from "../../../components/dashboard/school/PaymentQrCard";
 import ProjectFormModal from "../../../components/dashboard/school/ProjectFormModal";
 import { groupCommitments, groupStatus } from "../../../components/dashboard/school/commitments";
@@ -17,7 +19,6 @@ import Card, { CardHeader } from "../../../components/ui/Card";
 import EmptyState from "../../../components/ui/EmptyState";
 import ProgressBar from "../../../components/ui/ProgressBar";
 import ProtectedImage from "../../../components/ui/ProtectedImage";
-import StatCard from "../../../components/ui/StatCard";
 import { buttonClasses } from "../../../components/ui/classes";
 import CategoryIcon from "../../../components/ui/CategoryIcon";
 import { useAuth } from "../../../context/AuthContext";
@@ -28,7 +29,7 @@ import useSchoolCommitments from "../../../hooks/useSchoolCommitments";
 import useSchoolPayments from "../../../hooks/useSchoolPayments";
 import { FUNDING_PARTS } from "../../../api/projects";
 import { getFundingPercentage } from "../../../utils/funding";
-import { partsOf } from "../../../utils/format";
+import { formatINR, partsOf } from "../../../utils/format";
 
 // Shown until the school's profile has loaded, so no sample school ever appears.
 const NO_PROFILE = { name: "", udise: "", district: "", studentsCount: "—", teachersCount: "—", principalName: "", photo: null };
@@ -41,12 +42,27 @@ const REVIEW_UPDATES = {
 };
 
 const ViewAll = ({ to, children = "View all" }) => (
-  <Link to={to} className="text-sm font-medium text-primary-700 hover:underline">{children}</Link>
+  <Link to={to} className="rounded-md text-sm font-medium text-primary-700 hover:underline">{children}</Link>
 );
 
-const formatINR = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 const formatDate = (iso) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const formatWhen = (iso) => new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
+/** Placeholder rows while a list loads. */
+const RowSkeletons = ({ rows = 3, label }) => (
+  <div className="divide-y divide-surface-divider" role="status">
+    <span className="sr-only">{label}</span>
+    {Array.from({ length: rows }, (_, i) => (
+      <div key={i} className="flex gap-4 px-5 py-4">
+        <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -60,32 +76,31 @@ const Dashboard = () => {
   const [isNeedModalOpen, setIsNeedModalOpen] = useState(false);
   const alumniSummary = useAlumniSummary();
 
-  // Every figure below is counted from the school's own projects. Only approved projects count
-  // towards students and funds; donations, NGOs and events have no records yet, so they show none.
+  // Every figure below is counted from the school's own records. Only approved projects count
+  // towards students and funding.
   const approved = projects.filter((p) => p.reviewStatus === "OPEN");
+  const rejected = projects.filter((p) => p.reviewStatus === "REJECTED");
   const stats = {
     total: projects.length,
     pending: projects.filter((p) => p.reviewStatus === "PENDING_REVIEW").length,
     approved: approved.length,
-    rejected: projects.filter((p) => p.reviewStatus === "REJECTED").length,
-    inProgress: approved.filter((p) => p.status === "In Progress").length,
-    completed: approved.filter((p) => p.status === "Completed").length,
-    critical: projects.filter((p) => p.priority === "Critical").length,
+    rejected: rejected.length,
     students: approved.reduce((sum, p) => sum + p.studentsBenefited, 0),
     raised: approved.reduce((sum, p) => sum + p.raised, 0),
     needed: approved.reduce((sum, p) => sum + p.budget, 0),
   };
+  const committed = commitments.reduce((sum, c) => sum + c.amount, 0);
   const ready = !loading && !error;
+  const shown = (value) => (error ? "—" : value);
 
-  const summaryCards = [
-    { label: "Total projects", value: stats.total, icon: LuFolderKanban, tone: "indigo", hint: stats.critical ? `${stats.critical} critical priority` : undefined },
-    { label: "Waiting for review", value: stats.pending, icon: LuClock, tone: "amber" },
-    { label: "Approved", value: stats.approved, icon: LuBadgeCheck, tone: "emerald" },
-    { label: "Changes requested", value: stats.rejected, icon: LuFilePen, tone: "rose", hint: stats.rejected ? "Edit and resubmit" : undefined },
-    { label: "In progress", value: stats.inProgress, icon: LuTrendingUp, tone: "sky" },
-    { label: "Completed", value: stats.completed, icon: LuCircleCheck, tone: "emerald" },
-    { label: "Students benefited", value: stats.students.toLocaleString("en-IN"), icon: LuGraduationCap, tone: "violet", hint: "Across approved projects" },
-    { label: "Funds raised", value: formatINR(stats.raised), icon: LuHandCoins, tone: "indigo", hint: stats.needed ? `of ${formatINR(stats.needed)} needed` : undefined },
+  // From submission to completion. Approved projects are split by the work status the school sets.
+  const stages = [
+    { key: "pending", label: "Waiting for review", count: stats.pending, color: "bg-amber-400" },
+    { key: "rejected", label: "Changes requested", count: stats.rejected, color: "bg-red-400" },
+    { key: "open", label: "Open for support", count: approved.filter((p) => p.status === "Open").length, color: "bg-primary-300" },
+    { key: "progress", label: "In progress", count: approved.filter((p) => p.status === "In Progress").length, color: "bg-primary-600" },
+    { key: "hold", label: "On hold", count: approved.filter((p) => p.status === "On Hold").length, color: "bg-slate-300" },
+    { key: "done", label: "Completed", count: approved.filter((p) => p.status === "Completed").length, color: "bg-emerald-500" },
   ];
 
   const recentProjects = projects.slice(0, 3);
@@ -121,43 +136,42 @@ const Dashboard = () => {
       subtitle={[profile.name, profile.district].filter(Boolean).join(" · ")}
     >
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-          <DashboardHero
-            leading={
-              <HeroTile>
+        <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+          <SchoolHero
+            userName={user?.name}
+            schoolName={profile.name}
+            loading={profileLoading}
+            summary={summary}
+            tile={
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1 ring-inset ring-primary-100 sm:h-16 sm:w-16">
                 <ProtectedImage
                   fileId={profile.photo?.id}
                   alt={`${profile.name} photograph`}
-                  className="w-full h-full object-cover"
-                  fallback={<LuSchool className="w-6 h-6 text-sky-600" aria-hidden="true" />}
+                  className="h-full w-full object-cover"
+                  fallback={<LuSchool className="h-7 w-7 text-primary-600" aria-hidden="true" />}
                 />
-              </HeroTile>
+              </span>
             }
-            eyebrow="School portal"
-            title={profile.name || "Your school"}
-            description={summary}
-            meta={
+            facts={
               <>
                 {/* Only accounts the admin has approved can sign in, so this is always true here. */}
-                <HeroChip icon={LuCircleCheck}>Verified school</HeroChip>
-                {profile.udise && <HeroChip>UDISE {profile.udise}</HeroChip>}
-                {profile.district && <HeroChip icon={LuMapPin}>{profile.district}</HeroChip>}
+                <HeroFact icon={LuCircleCheck}>Verified school</HeroFact>
+                {profile.udise && <HeroFact>UDISE {profile.udise}</HeroFact>}
+                {profile.district && <HeroFact icon={LuMapPin}>{profile.district}</HeroFact>}
                 {(myProfile?.students != null || myProfile?.teachers != null) && (
-                  <HeroChip icon={LuUsers}>{profile.studentsCount} students · {profile.teachersCount} teachers</HeroChip>
+                  <HeroFact icon={LuUsers}>{profile.studentsCount} students · {profile.teachersCount} teachers</HeroFact>
                 )}
                 {alumniSummary && (
-                  <Link to="/dashboard/school/alumni" className="rounded-full transition-opacity hover:opacity-80">
-                    <HeroChip icon={LuGraduationCap}>
-                      {alumniSummary.active === 1 ? "1 active alum" : `${alumniSummary.active.toLocaleString("en-IN")} active alumni`}
-                    </HeroChip>
-                  </Link>
+                  <HeroFact icon={LuGraduationCap} to="/dashboard/school/alumni">
+                    {alumniSummary.active === 1 ? "1 active alum" : `${alumniSummary.active.toLocaleString("en-IN")} active alumni`}
+                  </HeroFact>
                 )}
               </>
             }
             actions={
               <>
                 <Link to="/dashboard/school/profile" className={buttonClasses({ variant: "secondary" })}>
-                  <LuPencil className="w-4 h-4" aria-hidden="true" /> Edit profile
+                  <LuPencil className="h-4 w-4" aria-hidden="true" /> Edit profile
                 </Link>
                 {newProjectButton}
               </>
@@ -170,64 +184,80 @@ const Dashboard = () => {
               <button type="button" onClick={reload} className="font-medium underline underline-offset-2">Try again</button>
             </Alert>
           )}
-          {paymentsToCheck.length > 0 && (
-            <Alert tone="warning" title={`${paymentsToCheck.length} ${paymentsToCheck.length === 1 ? "payment is" : "payments are"} waiting for you to check`}>
-              NGOs have paid your school and sent proof. Check your bank account, then accept or reject each payment.{" "}
-              <Link to="/dashboard/school/donations" className="font-medium underline underline-offset-2">Check payments</Link>
-            </Alert>
-          )}
 
+          {/* The main figure gets the most room; the others sit beside it. */}
           <section aria-labelledby="overview-heading">
             <h2 id="overview-heading" className="sr-only">Overview</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {summaryCards.map((card) => (
-                <StatCard
-                  key={card.label}
-                  label={card.label}
-                  value={ready ? card.value : "–"}
-                  icon={card.icon}
-                  tone={card.tone}
-                  hint={ready ? card.hint : undefined}
-                />
-              ))}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              <FundingCard
+                className="col-span-2 lg:row-span-2"
+                loading={loading}
+                failed={Boolean(error)}
+                raised={stats.raised}
+                goal={stats.needed}
+                committed={commitmentsError ? null : committed}
+                committedLoading={commitmentsLoading}
+                paymentsToCheck={paymentsToCheck.length}
+              />
+              <MetricCard label="Waiting for review" value={shown(stats.pending)} icon={LuClock} tone="amber" loading={loading} hint="With the VIDYADAAN team" />
+              <MetricCard label="Approved" value={shown(stats.approved)} icon={LuBadgeCheck} tone="green" loading={loading} hint="Open to NGOs and donors" />
+              <MetricCard
+                label="Changes requested"
+                value={shown(stats.rejected)}
+                icon={LuFilePen}
+                tone="red"
+                loading={loading}
+                hint={ready ? (stats.rejected ? "Edit and resubmit" : "Nothing to fix") : undefined}
+                // With a project to fix, the box opens it.
+                to={ready && rejected.length ? `/dashboard/school/progress?project=${rejected[0].id}` : undefined}
+              />
+              <MetricCard label="Students benefiting" value={shown(stats.students.toLocaleString("en-IN"))} icon={LuGraduationCap} tone="blue" loading={loading} hint="Across approved projects" />
             </div>
           </section>
 
           <Card>
-            <CardHeader title="Quick actions" />
-            <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-px bg-surface-divider rounded-b-2xl overflow-hidden">
-              {quickActions.map(({ icon: Icon, label, desc, onClick, to }) => {
-                const content = (
-                  <>
-                    <span className="w-9 h-9 rounded-xl bg-primary-50 text-primary-600 ring-1 ring-inset ring-primary-100 flex items-center justify-center shrink-0 transition-colors duration-150 group-hover:bg-primary-100">
-                      <Icon className="w-[18px] h-[18px]" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-slate-900">{label}</span>
-                      <span className="block text-xs text-slate-500">{desc}</span>
-                    </span>
-                  </>
-                );
-                // The list clips its corners, so the focus ring is drawn inside each cell.
-                const cls =
-                  "group flex items-center gap-3 w-full h-full px-5 py-4 bg-surface text-left transition-colors duration-150 hover:bg-surface-muted focus-visible:outline-offset-[-2px]";
-                return (
-                  <li key={label}>
-                    {to ? <Link to={to} className={cls}>{content}</Link> : <button type="button" onClick={onClick} className={cls}>{content}</button>}
-                  </li>
-                );
-              })}
-            </ul>
+            <CardHeader
+              title="Project pipeline"
+              description={ready ? `${stats.total} ${stats.total === 1 ? "project" : "projects"}, from review to completion` : undefined}
+              actions={ready && stats.total > 0 && <ViewAll to="/dashboard/school/projects">Manage projects</ViewAll>}
+            />
+            <div className="px-5 py-5">
+              {!ready && !error && (
+                <div role="status">
+                  <span className="sr-only">Loading your projects…</span>
+                  <Skeleton className="h-3 w-full rounded-full" />
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+                    {stages.map((s) => <Skeleton key={s.key} className="h-4" />)}
+                  </div>
+                </div>
+              )}
+              {error && <p className="text-sm text-slate-500">Your projects couldn&rsquo;t be loaded.</p>}
+              {ready && stats.total > 0 && <PipelineBar stages={stages} total={stats.total} />}
+              {ready && stats.total === 0 && (
+                <p className="text-sm text-slate-500">No projects yet. Create your school&rsquo;s first project to start.</p>
+              )}
+            </div>
           </Card>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <Card className="xl:col-span-2">
+          <section aria-labelledby="actions-heading">
+            <h2 id="actions-heading" className="mb-3 text-[15px] font-bold tracking-tight text-slate-900">Quick actions</h2>
+            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {quickActions.map((action) => (
+                <li key={action.label}>
+                  <QuickActionTile {...action} />
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <Card className="overflow-hidden xl:col-span-2">
               <CardHeader
                 title="Recent infrastructure projects"
                 description={ready ? `${stats.total} ${stats.total === 1 ? "project" : "projects"} in total` : undefined}
                 actions={ready && stats.total > 0 && <ViewAll to="/dashboard/school/projects" />}
               />
-              {loading && <p className="px-5 py-4 text-sm text-slate-500" role="status">Loading your projects…</p>}
+              {loading && <RowSkeletons label="Loading your projects…" />}
               {!loading && error && projects.length === 0 && (
                 <p className="px-5 py-4 text-sm text-slate-500">Your projects couldn&rsquo;t be loaded.</p>
               )}
@@ -240,18 +270,18 @@ const Dashboard = () => {
                 />
               )}
               {recentProjects.length > 0 && (
-                <ul className="divide-y divide-slate-200">
+                <ul className="divide-y divide-surface-divider">
                   {recentProjects.map((proj) => {
                     const funded = getFundingPercentage(proj.budget, proj.raised);
                     return (
                       <li key={proj.id}>
-                        <Link to={`/dashboard/school/progress?project=${proj.id}`} className="flex gap-4 px-5 py-4 hover:bg-surface-muted transition-colors">
-                          <span className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
-                            <CategoryIcon category={proj.category} className="w-6 h-6" />
+                        <Link to={`/dashboard/school/progress?project=${proj.id}`} className={ROW}>
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 ring-1 ring-inset ring-primary-100">
+                            <CategoryIcon category={proj.category} className="h-5 w-5" />
                           </span>
-                          <div className="flex-1 min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-start justify-between gap-2">
-                              <p className="text-sm font-medium text-slate-900">{proj.title}</p>
+                              <p className="text-sm font-semibold text-slate-900 group-hover:text-primary-700">{proj.title}</p>
                               <div className="flex gap-1.5">
                                 <ProjectStatusBadge project={proj} />
                                 <StatusBadge status={proj.priority} />
@@ -261,13 +291,14 @@ const Dashboard = () => {
                               {proj.category} · {proj.studentsBenefited.toLocaleString("en-IN")} students · Due {formatDate(proj.expectedCompletion)}
                             </p>
                             {proj.reviewStatus === "REJECTED" && proj.rejectionReason && (
-                              <p className="mt-1 text-xs font-medium text-red-700 line-clamp-1">Changes requested: {proj.rejectionReason}</p>
+                              <p className="mt-1 line-clamp-1 text-xs font-medium text-red-700">Changes requested: {proj.rejectionReason}</p>
                             )}
                             <div className="mt-2.5 flex items-center gap-3">
                               <ProgressBar value={funded} label={`${proj.title} funding`} />
-                              <span className="text-xs text-slate-600 tabular-nums shrink-0">{formatINR(proj.raised)} of {formatINR(proj.budget)}</span>
+                              <span className="shrink-0 text-xs tabular-nums text-slate-600">{formatINR(proj.raised)} of {formatINR(proj.budget)}</span>
                             </div>
                           </div>
+                          <RowArrow />
                         </Link>
                       </li>
                     );
@@ -276,12 +307,13 @@ const Dashboard = () => {
               )}
             </Card>
 
-            <Card>
+            <Card className="overflow-hidden">
               <CardHeader
                 title="Review updates"
                 description={ready ? (stats.pending ? `${stats.pending} waiting for review` : "From the VIDYADAAN team") : undefined}
                 actions={<ViewAll to="/dashboard/school/notifications" />}
               />
+              {loading && <RowSkeletons rows={2} label="Loading review updates…" />}
               {ready && reviewUpdates.length === 0 && (
                 <EmptyState
                   icon={LuClock}
@@ -291,21 +323,22 @@ const Dashboard = () => {
                 />
               )}
               {reviewUpdates.length > 0 && (
-                <ul className="divide-y divide-slate-200">
+                <ul className="divide-y divide-surface-divider">
                   {reviewUpdates.map(({ project, at }) => {
                     const update = REVIEW_UPDATES[project.reviewStatus];
                     return (
                       <li key={project.id}>
-                        <Link to={`/dashboard/school/progress?project=${project.id}`} className="flex gap-3 px-5 py-3.5 hover:bg-surface-muted transition-colors">
-                          <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${update.dot}`} aria-hidden="true" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900">{update.label}</p>
-                            <p className="mt-0.5 text-xs text-slate-600 truncate">{project.title}</p>
+                        <Link to={`/dashboard/school/progress?project=${project.id}`} className={`${ROW} gap-3 py-3.5`}>
+                          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${update.dot}`} aria-hidden="true" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-900">{update.label}</p>
+                            <p className="mt-0.5 truncate text-xs text-slate-600">{project.title}</p>
                             {project.reviewStatus === "REJECTED" && project.rejectionReason && (
-                              <p className="mt-0.5 text-xs text-red-700 line-clamp-2">{project.rejectionReason}</p>
+                              <p className="mt-0.5 line-clamp-2 text-xs text-red-700">{project.rejectionReason}</p>
                             )}
                             <p className="mt-1 text-xs text-slate-500">{formatWhen(at)}</p>
                           </div>
+                          <RowArrow />
                         </Link>
                       </li>
                     );
@@ -315,16 +348,6 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader title="School events" />
-            <EmptyState
-              icon={LuCalendarDays}
-              title="No school events yet"
-              description="Planning events and asking for support is coming soon. Your events will appear here."
-              className="py-8"
-            />
-          </Card>
-
           <PaymentQrCard
             paymentQr={myProfile?.paymentQr || null}
             verifiedUpiId={myProfile?.upi || ""}
@@ -332,24 +355,13 @@ const Dashboard = () => {
             onChange={(paymentQr) => setProfile((p) => (p ? { ...p, paymentQr } : p))}
           />
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader title="Latest donations" />
-              {/* Donor donations are counted in "Funds raised", but there is no list of them to show yet. */}
-              <EmptyState
-                icon={LuHandCoins}
-                title="Donation list coming soon"
-                description="Confirmed donor donations are already counted in “Funds raised” above. A list of them will appear here."
-                className="py-8"
-              />
-            </Card>
-
-            <Card>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <Card className="overflow-hidden xl:col-span-2">
               <CardHeader
                 title="NGO activity"
-                description={ngoActivity.length ? `${formatINR(commitments.reduce((sum, c) => sum + c.amount, 0))} committed by NGOs` : undefined}
+                description={ngoActivity.length ? `${formatINR(committed)} promised by NGOs` : undefined}
               />
-              {commitmentsLoading && <p className="px-5 py-4 text-sm text-slate-500" role="status">Loading NGO activity…</p>}
+              {commitmentsLoading && <RowSkeletons rows={2} label="Loading NGO activity…" />}
               {!commitmentsLoading && commitmentsError && <p className="px-5 py-4 text-sm text-slate-500">{commitmentsError}</p>}
               {!commitmentsLoading && !commitmentsError && ngoActivity.length === 0 && (
                 <EmptyState
@@ -360,26 +372,51 @@ const Dashboard = () => {
                 />
               )}
               {ngoActivity.length > 0 && (
-                <ul className="divide-y divide-slate-200">
+                <ul className="divide-y divide-surface-divider">
                   {ngoActivity.slice(0, 4).map((a) => (
                     <li key={a.key}>
-                      <Link to={`/dashboard/school/progress?project=${a.projectId}`} className="flex gap-3 px-5 py-3.5 hover:bg-surface-muted transition-colors">
-                        <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${a.received === a.parts.length ? "bg-emerald-500" : a.toCheck ? "bg-amber-500" : "bg-primary-500"}`} aria-hidden="true" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900">{a.ngo.name} committed {formatINR(a.amount)}</p>
-                          <p className="mt-0.5 text-xs text-slate-600 truncate">
+                      <Link to={`/dashboard/school/progress?project=${a.projectId}`} className={`${ROW} gap-3 py-3.5`}>
+                        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${a.received === a.parts.length ? "bg-emerald-500" : a.toCheck ? "bg-amber-500" : "bg-primary-500"}`} aria-hidden="true" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-slate-900">{a.ngo.name} committed {formatINR(a.amount)}</p>
+                          <p className="mt-0.5 truncate text-xs text-slate-600">
                             {a.projectTitle} · {partsOf(a.parts, FUNDING_PARTS).toLowerCase()}
                           </p>
                           <p className="mt-1 text-xs text-slate-500">
-                            {formatWhen(a.committedAt)} ·{" "}
-                            {groupStatus(a)}
+                            {formatWhen(a.committedAt)} · {groupStatus(a)}
                           </p>
                         </div>
+                        <RowArrow />
                       </Link>
                     </li>
                   ))}
                 </ul>
               )}
+            </Card>
+
+            {/* Features that aren't built yet: one small note each, instead of large empty boxes. */}
+            <Card>
+              <CardHeader title="Coming soon" />
+              <ul className="divide-y divide-surface-divider">
+                <li className="flex gap-3 px-5 py-4">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500" aria-hidden="true">
+                    <LuCalendarDays className="h-[18px] w-[18px]" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">School events</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Plan events and ask NGOs and donors to support them.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3 px-5 py-4">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500" aria-hidden="true">
+                    <LuHandCoins className="h-[18px] w-[18px]" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">List of donor donations</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Confirmed donations already count in Funding above.</p>
+                  </div>
+                </li>
+              </ul>
             </Card>
           </div>
         </div>

@@ -57,6 +57,9 @@
   --color-surface-line: oklch(92.9% 0.013 255.508 / 0.8);   /* slate-200 at 80%: box border */
   --color-surface-divider: oklch(96.8% 0.007 247.896);      /* slate-100: lines inside a box */
 
+  /* The far end of progress bars' gradient (portal themes may change it). */
+  --color-progress-end: oklch(60.6% 0.25 292.717); /* violet-500 */
+
   --radius-control: 0.625rem;
   --radius-panel: 1.25rem;
 
@@ -156,6 +159,47 @@
   /* Grey helper text (slate-500) a touch darker, so it keeps 4.5:1 contrast on sky blue
      (Tailwind's value is 55.4% lightness and reads at only 4.47:1 here). */
   --color-slate-500: oklch(52% 0.046 257.417);
+}
+
+/*
+ * Brand-blue portal theme (the school portal; the NGO and donor portals will follow)
+ * ───────────────────────
+ * The sign-in pages' blue (#2563EB / #3B82F6), white boxes with a #E6EDF7 hairline on a calm
+ * #F4F8FF page, 20px box corners (rounded-2xl), and a hover shadow tinted blue. Set by
+ * DashboardLayout in place of dashboard-sky, after .dashboard-theme so these values win.
+ */
+.dashboard-blue {
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-progress-end: #2563eb;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f9fe;
+  --color-surface-line: #e6edf7;
+  --color-surface-divider: #eef3f9;
+
+  --radius-2xl: 1.25rem;
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.03);
+  --shadow-card-hover: 0 4px 8px -2px rgb(15 23 42 / 0.06), 0 14px 28px -12px rgb(37 99 235 / 0.25);
+
+  background-color: #f4f8ff;
+  background-image: none;
+}
+.dashboard-blue .dialog-head {
+  background-image: linear-gradient(135deg, #f8fbff 0%, #eef5ff 100%);
+  border-bottom-color: var(--color-surface-line);
+}
+.dashboard-blue .dialog-foot {
+  background-color: #f8fbff;
+  border-top-color: var(--color-surface-line);
 }
 
 /* Dialogs (Modal) in those portals: the welcome banner's sky gradient on the header and a sky

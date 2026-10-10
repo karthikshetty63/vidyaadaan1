@@ -45,6 +45,10 @@ const NAV = {
   ],
 };
 
+// Portals with the light menu: the current page is a soft blue row with a thin blue bar, instead of a
+// solid filled one (the school portal first; the others will follow).
+const LIGHT_NAV_ROLES = ["school"];
+
 const PORTAL_LABELS = { school: "School portal", ngo: "NGO portal", donor: "Donor portal", admin: "Admin console" };
 
 /**
@@ -61,6 +65,11 @@ const Sidebar = ({ role = "school", userName = "Admin", userSub = "", mobileOpen
   useDialogFocus(drawerRef, mobileOpen, onClose);
 
   const links = NAV[role] || NAV.school;
+  const lightNav = LIGHT_NAV_ROLES.includes(role);
+  const activeLink = lightNav
+    ? "relative bg-primary-50 text-primary-700 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-full before:bg-primary-600"
+    : "bg-primary-600 text-white shadow-sm shadow-primary-600/25";
+  const activeIcon = lightNav ? "text-primary-600" : "text-white";
   // Hash-based portals (NGO / donor) start on their first section.
   const currentHash = location.hash || (links[0].href.includes("#") ? `#${links[0].href.split("#")[1]}` : "");
 
@@ -100,13 +109,11 @@ const Sidebar = ({ role = "school", userName = "Admin", userSub = "", mobileOpen
                   aria-current={active ? "page" : undefined}
                   title={compact ? label : undefined}
                   className={`group flex items-center ${compact ? "justify-center px-0" : "gap-3 px-3"} h-10 rounded-xl text-sm font-medium transition-colors duration-150 ${
-                    active
-                      ? "bg-primary-600 text-white shadow-sm shadow-primary-600/25"
-                      : "text-slate-600 hover:bg-slate-900/[0.04] hover:text-slate-900"
+                    active ? activeLink : "text-slate-600 hover:bg-slate-900/[0.04] hover:text-slate-900"
                   }`}
                 >
                   <Icon
-                    className={`w-[18px] h-[18px] shrink-0 transition-colors duration-150 ${active ? "text-white" : "text-slate-400 group-hover:text-slate-600"}`}
+                    className={`w-[18px] h-[18px] shrink-0 transition-colors duration-150 ${active ? activeIcon : "text-slate-400 group-hover:text-slate-600"}`}
                     aria-hidden="true"
                   />
                   {compact ? <span className="sr-only">{label}</span> : <span className="truncate">{label}</span>}

@@ -239,9 +239,10 @@ const ChatbotWidget = () => {
   };
 
   return (
-    // Inside the portals the assistant takes the dashboards' indigo colours and font (index.css). This
-    // wrapper has no size: the button and the window are fixed to the screen, so the page never grows.
-    <div className={pathname.startsWith("/dashboard") ? "dashboard-theme" : ""}>
+    // Inside the portals the assistant takes the dashboards' colours and font (index.css): the brand blue
+    // in the school portal, indigo in the others. This wrapper has no size: the button and the window are
+    // fixed to the screen, so the page never grows.
+    <div className={pathname.startsWith("/dashboard/school") ? "dashboard-theme dashboard-blue" : pathname.startsWith("/dashboard") ? "dashboard-theme" : ""}>
       <div className={`${open ? "hidden sm:block" : ""} group fixed bottom-4 right-4 z-40 sm:bottom-6 sm:right-6`}>
         {!open && (
           <span

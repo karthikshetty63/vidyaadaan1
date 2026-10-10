@@ -6,9 +6,10 @@ import Alert from "../ui/Alert";
 
 // Shell for every dashboard page: sidebar (drawer below 1024px) + top bar + scrolling content.
 // `dashboard-theme` (index.css) gives every portal the indigo brand colour, its font and the soft
-// background wash — dialogs opened from a page are inside it too. `dashboard-sky` fills the boxes
-// with sky blue in the donor, NGO and school portals; the admin portal keeps white boxes.
-const SKY_PORTALS = ["donor", "ngo", "school"];
+// background wash — dialogs opened from a page are inside it too. Each portal then adds its theme:
+// `dashboard-blue` (the sign-in pages' brand blue, white boxes; the school portal first) or
+// `dashboard-sky` (sky-blue boxes, donor and NGO). The admin portal keeps white boxes.
+const PORTAL_THEMES = { school: "dashboard-blue", ngo: "dashboard-sky", donor: "dashboard-sky" };
 
 const DashboardLayout = ({
     role = "school",
@@ -30,7 +31,7 @@ const DashboardLayout = ({
         // Exactly the visible screen (dvh: without a phone's address bar), and `relative` so that nothing inside
         // (e.g. a hidden file picker, which is positioned absolutely) can stretch the page below the dashboard:
         // otherwise scrolling past the end moved the whole dashboard up and showed a blank area.
-        <div className={`dashboard-theme ${SKY_PORTALS.includes(role) ? "dashboard-sky" : ""} relative flex h-dvh overflow-hidden`}>
+        <div className={`dashboard-theme ${PORTAL_THEMES[role] || ""} relative flex h-dvh overflow-hidden`}>
             <Sidebar role={role} userName={userName} userSub={userSub} mobileOpen={navOpen} onClose={() => setNavOpen(false)} />
 
             <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
