@@ -26,3 +26,9 @@ export const removeMapLocation = () => apiRequest("/api/profile/map-location", {
 
 /** Only the fields in `changes` are updated (see SCHOOL_PROFILE_EDITABLE). */
 export const updateSchoolProfile = (changes) => apiRequest("/api/profile/school", { method: "PATCH", body: changes });
+
+/** An NGO's own profile: only the fields in `changes` (see NGO_PROFILE_EDITABLE). */
+export const updateNgoProfile = (changes) => apiRequest("/api/profile/ngo", { method: "PATCH", body: changes });
+
+/** A donor's own profile: only the fields in `changes` (see DONOR_PROFILE_EDITABLE). */
+export const updateDonorProfile = (changes) => apiRequest("/api/profile/donor", { method: "PATCH", body: changes });

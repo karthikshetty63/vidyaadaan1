@@ -9,9 +9,10 @@ import { schoolPlace } from "./ngo/format";
 /**
  * An approved school need on the donor dashboard (the donor view from GET /api/projects).
  * need: { id, title, category, priority, status, budget, raised, school: { name, district, state } }
- * Projects have no cover photo, so none is shown. `onDonate(need)` opens the donation window.
+ * Projects have no cover photo, so none is shown. `onDonate(need)` opens the donation window, and
+ * `onDetails(need)` (optional) the need's full description.
  */
-const NeedCard = ({ need, onDonate }) => {
+const NeedCard = ({ need, onDonate, onDetails }) => {
   const place = schoolPlace(need.school);
   const funded = getFundingPercentage(need.budget, need.raised);
   const fullyFunded = need.raised >= need.budget;
@@ -52,15 +53,22 @@ const NeedCard = ({ need, onDonate }) => {
             </span>
           </div>
           <ProgressBar value={funded} size="md" label={`${need.title} funding`} className="mt-3" />
-          {fullyFunded ? (
-            <p className="mt-4 flex h-10 items-center justify-center gap-1.5 rounded-control bg-emerald-50 text-sm font-semibold text-emerald-700">
-              <LuCircleCheck className="h-4 w-4" aria-hidden="true" /> Fully funded
-            </p>
-          ) : (
-            <Button variant="brand" icon={LuHeart} className="mt-4" fullWidth onClick={() => onDonate(need)} aria-label={`Donate to ${need.title}`}>
-              Donate
-            </Button>
-          )}
+          <div className="mt-4 flex gap-2">
+            {fullyFunded ? (
+              <p className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-control bg-emerald-50 text-sm font-semibold text-emerald-700">
+                <LuCircleCheck className="h-4 w-4" aria-hidden="true" /> Fully funded
+              </p>
+            ) : (
+              <Button variant="brand" icon={LuHeart} className="flex-1" onClick={() => onDonate(need)} aria-label={`Donate to ${need.title}`}>
+                Donate
+              </Button>
+            )}
+            {onDetails && (
+              <Button variant="secondary" onClick={() => onDetails(need)} aria-label={`Details of ${need.title}`}>
+                Details
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </article>

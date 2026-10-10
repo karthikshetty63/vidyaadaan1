@@ -1,235 +1,194 @@
-import { useState } from "react";
-import { LuBadgeCheck, LuCalendarDays, LuCircleCheck, LuClipboardList, LuHandCoins, LuIndianRupee, LuLock } from "react-icons/lu";
-import DashboardHero from "../../../components/dashboard/DashboardHero";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
-import NeedCard from "../../../components/dashboard/NeedCard";
-import ReportDownloads from "../../../components/dashboard/ReportDownloads";
+import AccountSettingsView from "../../../components/dashboard/account/AccountSettingsView";
+import NotificationsView from "../../../components/dashboard/account/NotificationsView";
+import PartnerProfileView from "../../../components/dashboard/account/PartnerProfileView";
+import DonorDonationsView from "../../../components/dashboard/donor/DonorDonationsView";
+import DonorNeedDetailsModal from "../../../components/dashboard/donor/DonorNeedDetailsModal";
+import DonorNeedsView from "../../../components/dashboard/donor/DonorNeedsView";
+import DonorOverview from "../../../components/dashboard/donor/DonorOverview";
+import SupporterEvents from "../../../components/events/SupporterEvents";
 import PaymentFlowModal from "../../../components/payment/PaymentFlowModal";
 import Alert from "../../../components/ui/Alert";
-import Button from "../../../components/ui/Button";
-import Card, { CardHeader } from "../../../components/ui/Card";
-import EmptyState from "../../../components/ui/EmptyState";
-import SectionHeader from "../../../components/ui/SectionHeader";
-import SegmentedControl from "../../../components/ui/SegmentedControl";
-import StatCard from "../../../components/ui/StatCard";
 import { useAuth } from "../../../context/AuthContext";
 import useApprovedProjects from "../../../hooks/useApprovedProjects";
 import useMyDonations from "../../../hooks/useMyDonations";
+import useMyProfile from "../../../hooks/useMyProfile";
+import useSupporterEvents from "../../../hooks/useSupporterEvents";
 import { formatINR } from "../../../utils/format";
-import { displayValue } from "../../../utils/report";
-import { buildDonorReport } from "../../../utils/reportCards";
 
-const scrollToSection = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+// Each sidebar item opens its own view of the portal, like a separate page. The URL hash (#needs,
+// #donations…) says which, so a view can be bookmarked and the back button moves between views.
+const VIEWS = {
+  overview: "Dashboard",
+  needs: "School needs",
+  donations: "My donations",
+  events: "School events",
+  notifications: "Notifications",
+  profile: "Profile",
+  settings: "Settings",
+};
 
-// What happens to a donation, as the server actually handles it (see donationController).
-const HOW_DONATIONS_WORK = [
-  { icon: LuBadgeCheck, title: "Only approved needs", text: "Every need here was checked and approved by the VIDYADAAN team before it was listed." },
-  { icon: LuLock, title: "Secure payment", text: "Razorpay handles the payment. VIDYADAAN never sees or stores your card, UPI or bank details." },
-  { icon: LuCircleCheck, title: "Counted once confirmed", text: "A need's funding goes up only after Razorpay confirms your payment, and only once." },
+/** What has happened on the donor's donations and offers of help, from their own records. */
+const buildNotifications = ({ donations, offers }) => [
+  ...donations.map((d) => ({
+    id: `donation-${d.id}`,
+    at: d.verifiedAt || d.createdAt,
+    tone: "success",
+    title: "Donation confirmed",
+    text: `${formatINR(d.amount)} to ${d.project.title} · ${d.school.name}`,
+    detail: d.mode === "test" ? "Razorpay test mode: no real money was charged." : undefined,
+    to: "#donations",
+  })),
+  ...offers
+    .filter((e) => e.myOffer.status !== "OFFERED")
+    .map((e) => ({
+      id: `offer-${e.id}`,
+      at: e.myOffer.respondedAt,
+      tone: e.myOffer.status === "ACCEPTED" ? "success" : "info",
+      title: e.myOffer.status === "ACCEPTED" ? "A school accepted your offer of help" : "A school declined your offer of help",
+      text: `${e.title} · ${e.school.name}`,
+      detail: e.myOffer.note ? `School's note: ${e.myOffer.note}` : undefined,
+      to: "#events",
+    })),
 ];
 
 /* ─── DONOR DASHBOARD ─────────────────────────────────────── */
 const DonorDashboard = () => {
-  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const requested = location.hash.slice(1);
+  const view = Object.hasOwn(VIEWS, requested) ? requested : "overview";
+
+  const { user, logout } = useAuth();
+  const { profile, loading: profileLoading, error: profileError, setProfile, reload: reloadProfile } = useMyProfile();
   // Approved school needs from the server (the donor view).
   const { projects: needs, loading: needsLoading, error: needsError, reload: reloadNeeds, refresh: refreshNeeds } = useApprovedProjects();
-  // The need being donated to. After a confirmed donation its funding is reloaded from the server.
-  const [donatingTo, setDonatingTo] = useState(null);
-  const [needCategory, setNeedCategory] = useState("All");
-  // The donor's own confirmed donations ("My donations" and the report card).
+  // The donor's own confirmed donations ("My donations", the report card and the figures).
   const myDonations = useMyDonations();
   const donations = myDonations.donations;
-  const givenTotal = donations.reduce((sum, d) => sum + d.amount, 0);
+  const eventList = useSupporterEvents();
+
+  // The need being donated to, and the one being read. After a confirmed donation the figures reload.
+  const [donatingTo, setDonatingTo] = useState(null);
+  const [viewing, setViewing] = useState(null);
+  const [signingOut, setSigningOut] = useState(false);
+  // A success message for the view it happened on; it disappears once you move to another view.
+  const [notice, setNotice] = useState(null); // { key: location.key, message }
+  const say = (message) => setNotice({ key: location.key, message });
+  const noticeHere = notice?.key === location.key && <Alert tone="success">{notice.message}</Alert>;
+
+  // A new view starts at the top, and focus moves to its heading, as it would on a new page.
+  const mainRef = useRef(null);
+  const viewRef = useRef(null);
+  const shownView = useRef(view);
+  useEffect(() => {
+    if (shownView.current === view) return;
+    shownView.current = view;
+    mainRef.current?.scrollTo({ top: 0 });
+    const heading = viewRef.current?.querySelector("h1");
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+  }, [view]);
+
   const afterDonation = () => {
     refreshNeeds();
     myDonations.refresh();
   };
+  const donate = (need) => {
+    setViewing(null);
+    setDonatingTo(need);
+  };
+  const signOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await logout();
+    } catch {
+      // AuthContext already cleared the local user; still leave the dashboard.
+    }
+    navigate("/login/donor", { replace: true });
+  };
 
-  // Every figure is counted from the approved needs above — nothing is estimated.
-  const ready = !needsLoading && !needsError;
-  const open = needs.filter((n) => n.raised < n.budget);
-  const openSchools = new Set(open.map((n) => `${n.school.name}|${n.school.district}|${n.school.state}`)).size;
-  const stillNeeded = open.reduce((sum, n) => sum + n.budget - n.raised, 0);
-  const raised = needs.reduce((sum, n) => sum + n.raised, 0);
-  const target = needs.reduce((sum, n) => sum + n.budget, 0);
-  const fullyFunded = needs.length - open.length;
-  const stats = [
-    { label: "Open school needs", value: open.length, icon: LuClipboardList, tone: "indigo", hint: open.length ? `In ${plural(openSchools, "school", "schools")}` : undefined },
-    { label: "Still needed", value: formatINR(stillNeeded), icon: LuIndianRupee, tone: "amber", hint: open.length ? "To fully fund the open needs" : undefined },
-    { label: "Raised so far", value: formatINR(raised), icon: LuHandCoins, tone: "emerald", hint: needs.length ? `of ${formatINR(target)}, from NGOs and donors` : undefined },
-    { label: "Fully funded", value: fullyFunded, icon: LuCircleCheck, tone: "rose", hint: needs.length ? `of ${plural(needs.length, "approved need", "approved needs")}` : undefined },
-  ];
-
-  const firstName = (user?.name || "").trim().split(/\s+/)[0];
-  let summary = "Fund verified needs in government schools and follow how close each one is to its target.";
-  if (ready && open.length) {
-    summary = `${plural(open.length, "approved need", "approved needs")} in ${plural(openSchools, "government school", "government schools")} ${open.length === 1 ? "is" : "are"} waiting for support.`;
-  } else if (ready) {
-    summary = "No school needs are open right now. New ones appear here as soon as the VIDYADAAN team approves them.";
-  }
-
-  // Only categories that actually have a need are offered.
-  const needCategories = [...new Set(needs.map((n) => n.category))].sort();
-  const filteredNeeds = needs.filter((n) => needCategory === "All" || n.category === needCategory);
+  const content = {
+    overview: (
+      <DonorOverview
+        user={user}
+        profile={profile}
+        profileLoading={profileLoading}
+        needs={needs}
+        needsLoading={needsLoading}
+        needsError={needsError}
+        onRetry={reloadNeeds}
+        donations={donations}
+        donationsLoading={myDonations.loading}
+        upcomingEvents={eventList.error ? "—" : eventList.open.length}
+        eventsLoading={eventList.loading}
+        notice={noticeHere}
+        onDonate={donate}
+        onDetails={setViewing}
+      />
+    ),
+    needs: <DonorNeedsView needs={needs} loading={needsLoading} error={needsError} onRetry={reloadNeeds} notice={noticeHere} onDonate={donate} onDetails={setViewing} />,
+    donations: <DonorDonationsView user={user} donations={donations} loading={myDonations.loading} error={myDonations.error} onRetry={myDonations.reload} notice={noticeHere} />,
+    events: (
+      <SupporterEvents
+        role="donor"
+        open={eventList.open}
+        mine={eventList.mine}
+        loading={eventList.loading}
+        error={eventList.error}
+        onRetry={eventList.reload}
+        onChanged={async (message) => {
+          await eventList.refresh();
+          say(message);
+        }}
+        notice={noticeHere}
+      />
+    ),
+    notifications: (
+      <NotificationsView
+        description="Your confirmed donations, and schools' answers to your offers of help."
+        items={buildNotifications({ donations, offers: eventList.mine })}
+        loading={myDonations.loading || eventList.loading}
+        error={myDonations.error || eventList.error}
+        onRetry={() => {
+          myDonations.reload();
+          eventList.reload();
+        }}
+        emptyText="Nothing has happened yet. When a donation is confirmed or a school answers an offer, it shows here."
+      />
+    ),
+    profile: (
+      <PartnerProfileView
+        role="donor"
+        profile={profile}
+        loading={profileLoading}
+        error={profileError}
+        onRetry={reloadProfile}
+        notice={noticeHere}
+        onSaved={(saved) => {
+          setProfile(saved);
+          say("Your profile has been updated.");
+        }}
+      />
+    ),
+    settings: <AccountSettingsView accountType="Donor" onSignOut={signOut} signingOut={signingOut} />,
+  }[view];
 
   return (
-    <DashboardLayout
-      role="donor"
-      userName={user?.name || "Donor"}
-      userSub={user?.email || "Individual donor"}
-      title="Donor dashboard"
-      subtitle={`Signed in as ${user?.email || "donor"}`}
-    >
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-10">
-          <section id="overview" aria-label="Overview" className="scroll-mt-6 space-y-6">
-            <DashboardHero
-              eyebrow="Donor portal"
-              title={firstName ? `Welcome back, ${firstName}` : "Welcome back"}
-              description={summary}
-              actions={<Button icon={LuClipboardList} onClick={() => scrollToSection("needs")}>Browse school needs</Button>}
-            />
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-              {stats.map((card) => (
-                <StatCard key={card.label} label={card.label} value={ready ? card.value : "–"} icon={card.icon} tone={card.tone} hint={ready ? card.hint : undefined} />
-              ))}
-            </div>
-          </section>
-
-          <section id="needs" aria-labelledby="needs-heading" className="scroll-mt-6 space-y-4">
-            <SectionHeader
-              id="needs-heading"
-              title="School infrastructure needs"
-              description="Requests from government schools that the VIDYADAAN team has checked and approved."
-              actions={
-                needs.length > 0 && (
-                  <SegmentedControl
-                    label="Filter needs by category"
-                    value={needCategory}
-                    onChange={setNeedCategory}
-                    options={["All", ...needCategories].map((c) => ({ value: c, label: c }))}
-                  />
-                )
-              }
-            />
-            {needsError && (
-              <Alert tone="danger">
-                {needsError}{" "}
-                <button type="button" onClick={reloadNeeds} className="font-medium underline underline-offset-2">Try again</button>
-              </Alert>
-            )}
-            {needsLoading && <Card><p className="px-5 py-4 text-sm text-slate-500" role="status">Loading school needs…</p></Card>}
-            {!needsLoading && !needsError && needs.length === 0 && (
-              <Card>
-                <EmptyState
-                  icon={LuClipboardList}
-                  title="No approved school needs yet."
-                  description="When the VIDYADAAN team approves a school's request, it will appear here."
-                />
-              </Card>
-            )}
-            {!needsLoading && needs.length > 0 && (
-              filteredNeeds.length ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-                  {filteredNeeds.map((need) => (
-                    <NeedCard key={need.id} need={need} onDonate={setDonatingTo} />
-                  ))}
-                </div>
-              ) : (
-                <Card><EmptyState title="No needs in this category" description="Try another category." /></Card>
-              )
-            )}
-          </section>
-
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <Card as="section" id="donations" aria-labelledby="donations-heading" className="xl:col-span-2 scroll-mt-6 overflow-hidden">
-              <CardHeader
-                title={<span id="donations-heading">My donations</span>}
-                description={
-                  donations.length
-                    ? `${formatINR(givenTotal)} given in ${plural(donations.length, "donation", "donations")}, confirmed by Razorpay`
-                    : "Your confirmed donations and their receipts"
-                }
-                actions={donations.length > 0 && <ReportDownloads kind="donor" buildReport={() => buildDonorReport({ user, donations })} />}
-              />
-              {myDonations.loading && <p className="px-5 py-4 text-sm text-slate-500" role="status">Loading your donations…</p>}
-              {!myDonations.loading && myDonations.error && (
-                <p className="px-5 py-4 text-sm text-slate-600">
-                  {myDonations.error}{" "}
-                  <button type="button" onClick={myDonations.reload} className="font-medium text-primary-700 underline underline-offset-2">Try again</button>
-                </p>
-              )}
-              {!myDonations.loading && !myDonations.error && donations.length === 0 && (
-                <EmptyState
-                  icon={LuHandCoins}
-                  title="No donations yet"
-                  description="When you donate to a school need, it appears here once Razorpay confirms the payment, with its payment ID as your receipt."
-                  action={<Button variant="secondary" onClick={() => scrollToSection("needs")}>Browse school needs</Button>}
-                />
-              )}
-              {donations.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200 bg-surface-muted text-left">
-                        {["Date", "School need", "School", "Amount", "Payment ID"].map((h) => (
-                          <th key={h} scope="col" className={`whitespace-nowrap px-5 py-2.5 text-xs font-medium text-slate-500 ${h === "Amount" ? "text-right" : ""}`}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {donations.map((d) => (
-                        <tr key={d.id}>
-                          <td className="whitespace-nowrap px-5 py-3 text-slate-600">{displayValue(d.verifiedAt || d.createdAt, "date")}</td>
-                          <td className="min-w-44 px-5 py-3 font-medium text-slate-900">{d.project.title}</td>
-                          <td className="min-w-40 px-5 py-3 text-slate-600">
-                            {d.school.name}
-                            {(d.school.district || d.school.state) && <span className="block text-xs text-slate-500">{[d.school.district, d.school.state].filter(Boolean).join(", ")}</span>}
-                          </td>
-                          <td className="whitespace-nowrap px-5 py-3 text-right font-medium tabular-nums text-slate-900">{formatINR(d.amount)}</td>
-                          <td className="whitespace-nowrap px-5 py-3 font-mono text-xs text-slate-600">
-                            {d.paymentId}
-                            {d.mode === "test" && <span className="ml-2 rounded-full bg-amber-50 px-1.5 py-0.5 font-sans text-[11px] font-medium text-amber-800 ring-1 ring-inset ring-amber-200">Test</span>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Card>
-
-            <Card as="section" aria-labelledby="how-heading">
-              <CardHeader title={<span id="how-heading">How your donation is handled</span>} />
-              <ul className="space-y-4 p-5">
-                {HOW_DONATIONS_WORK.map(({ icon: Icon, title, text }) => (
-                  <li key={title} className="flex gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 ring-1 ring-inset ring-primary-100">
-                      <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-slate-900">{title}</span>
-                      <span className="mt-0.5 block text-sm text-slate-600">{text}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-
-          <Card as="section" id="events" aria-labelledby="events-heading" className="scroll-mt-6">
-            <CardHeader title={<span id="events-heading">School events</span>} />
-            <EmptyState
-              icon={LuCalendarDays}
-              title="No school events yet"
-              description="Sponsoring school events is coming soon. Events that schools ask donors to support will appear here."
-              className="py-10"
-            />
-          </Card>
+    <DashboardLayout role="donor" userName={user?.name || "Donor"} userSub={user?.email || "Individual donor"} title={VIEWS[view]} subtitle={`Signed in as ${user?.email || "donor"}`}>
+      <main ref={mainRef} className="flex-1 overflow-y-auto">
+        {/* The fade-in moves only the inner box, so the view's own top edge (which the sidebar scrolls to) stays put. */}
+        <div key={view} ref={viewRef} id={view} className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="space-y-6 animate-view-enter motion-reduce:animate-none">{content}</div>
         </div>
       </main>
 
+      {viewing && <DonorNeedDetailsModal need={viewing} onClose={() => setViewing(null)} onDonate={donate} />}
       {/* After a confirmed donation the needs and "My donations" reload from the server; when the need has changed, the needs do. */}
       {donatingTo && <PaymentFlowModal need={donatingTo} onClose={() => setDonatingTo(null)} onConfirmed={afterDonation} onNeedChanged={refreshNeeds} />}
     </DashboardLayout>

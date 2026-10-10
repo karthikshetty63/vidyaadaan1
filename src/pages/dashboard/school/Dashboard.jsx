@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  LuBadgeCheck, LuCalendarDays, LuCalendarPlus, LuCircleCheck, LuClock, LuFileChartColumn, LuFilePen, LuFolderKanban,
+  LuBadgeCheck, LuCalendarPlus, LuCircleCheck, LuClock, LuFileChartColumn, LuFilePen, LuFolderKanban,
   LuGraduationCap, LuHandCoins, LuHeartHandshake, LuMapPin, LuPencil, LuPlus, LuSchool, LuTrendingUp, LuUsers,
 } from "react-icons/lu";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import ProjectStatusBadge from "../../../components/dashboard/ProjectStatusBadge";
-import {
-  FundingCard, HeroFact, MetricCard, PipelineBar, QuickActionTile, ROW, RowArrow, SchoolHero, Skeleton,
-} from "../../../components/dashboard/school/HomeWidgets";
+import { HeroFact, HeroIconTile, MetricCard, PortalHero, QuickActions, ROW, RowArrow, RowSkeletons, Skeleton } from "../../../components/dashboard/PortalWidgets";
+import { FundingCard, PipelineBar } from "../../../components/dashboard/school/HomeWidgets";
 import PaymentQrCard from "../../../components/dashboard/school/PaymentQrCard";
 import ProjectFormModal from "../../../components/dashboard/school/ProjectFormModal";
 import { groupCommitments, groupStatus } from "../../../components/dashboard/school/commitments";
@@ -26,6 +25,8 @@ import useMyProfile, { toSchoolDisplayProfile } from "../../../hooks/useMyProfil
 import useMyProjects from "../../../hooks/useMyProjects";
 import { useAlumniSummary } from "../../../hooks/useSchoolAlumni";
 import useSchoolCommitments from "../../../hooks/useSchoolCommitments";
+import useSchoolDonations from "../../../hooks/useSchoolDonations";
+import useSchoolEvents from "../../../hooks/useSchoolEvents";
 import useSchoolPayments from "../../../hooks/useSchoolPayments";
 import { FUNDING_PARTS } from "../../../api/projects";
 import { getFundingPercentage } from "../../../utils/funding";
@@ -48,22 +49,6 @@ const ViewAll = ({ to, children = "View all" }) => (
 const formatDate = (iso) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const formatWhen = (iso) => new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
-/** Placeholder rows while a list loads. */
-const RowSkeletons = ({ rows = 3, label }) => (
-  <div className="divide-y divide-surface-divider" role="status">
-    <span className="sr-only">{label}</span>
-    {Array.from({ length: rows }, (_, i) => (
-      <div key={i} className="flex gap-4 px-5 py-4">
-        <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-2/3" />
-          <Skeleton className="h-3 w-1/2" />
-        </div>
-      </div>
-    ))}
-  </div>
-);
-
 const Dashboard = () => {
   const { user } = useAuth();
   const { profile: myProfile, loading: profileLoading, setProfile } = useMyProfile();
@@ -75,6 +60,11 @@ const Dashboard = () => {
   const paymentsToCheck = payments.filter((p) => p.status === "SUBMITTED");
   const [isNeedModalOpen, setIsNeedModalOpen] = useState(false);
   const alumniSummary = useAlumniSummary();
+  const donationList = useSchoolDonations();
+  const donations = donationList.donations;
+  // Offers of help on the school's events that it hasn't answered yet.
+  const { events } = useSchoolEvents();
+  const offersWaiting = events.reduce((count, e) => count + e.offers.filter((o) => o.status === "OFFERED").length, 0);
 
   // Every figure below is counted from the school's own records. Only approved projects count
   // towards students and funding.
@@ -111,7 +101,7 @@ const Dashboard = () => {
 
   const quickActions = [
     { icon: LuPlus, label: "New infrastructure project", desc: "Create a need request", onClick: () => setIsNeedModalOpen(true) },
-    { icon: LuCalendarPlus, label: "School events", desc: "Plan an event and request support", to: "/dashboard/school/events" },
+    { icon: LuCalendarPlus, label: "School events", desc: "Post an event and answer offers of help", to: "/dashboard/school/events" },
     { icon: LuTrendingUp, label: "Project progress", desc: "Details and updates for each project", to: "/dashboard/school/progress" },
     { icon: LuSchool, label: "School profile", desc: "Update school details", to: "/dashboard/school/profile" },
     { icon: LuFileChartColumn, label: "Reports", desc: "Donation and impact reports", to: "/dashboard/school/reports" },
@@ -137,20 +127,21 @@ const Dashboard = () => {
     >
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-          <SchoolHero
+          <PortalHero
             userName={user?.name}
-            schoolName={profile.name}
+            title={profile.name}
+            fallbackTitle="Your school"
             loading={profileLoading}
             summary={summary}
             tile={
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1 ring-inset ring-primary-100 sm:h-16 sm:w-16">
+              <HeroIconTile>
                 <ProtectedImage
                   fileId={profile.photo?.id}
                   alt={`${profile.name} photograph`}
                   className="h-full w-full object-cover"
                   fallback={<LuSchool className="h-7 w-7 text-primary-600" aria-hidden="true" />}
                 />
-              </span>
+              </HeroIconTile>
             }
             facts={
               <>
@@ -182,6 +173,13 @@ const Dashboard = () => {
             <Alert tone="danger">
               {error}{" "}
               <button type="button" onClick={reload} className="font-medium underline underline-offset-2">Try again</button>
+            </Alert>
+          )}
+
+          {offersWaiting > 0 && (
+            <Alert tone="info" title={`${offersWaiting} ${offersWaiting === 1 ? "offer of help is" : "offers of help are"} waiting for your answer`}>
+              NGOs or donors have offered to help with your school events.{" "}
+              <Link to="/dashboard/school/events" className="font-medium underline underline-offset-2">Open school events</Link>
             </Alert>
           )}
 
@@ -239,16 +237,7 @@ const Dashboard = () => {
             </div>
           </Card>
 
-          <section aria-labelledby="actions-heading">
-            <h2 id="actions-heading" className="mb-3 text-[15px] font-bold tracking-tight text-slate-900">Quick actions</h2>
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {quickActions.map((action) => (
-                <li key={action.label}>
-                  <QuickActionTile {...action} />
-                </li>
-              ))}
-            </ul>
-          </section>
+          <QuickActions actions={quickActions} />
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
             <Card className="overflow-hidden xl:col-span-2">
@@ -394,29 +383,39 @@ const Dashboard = () => {
               )}
             </Card>
 
-            {/* Features that aren't built yet: one small note each, instead of large empty boxes. */}
-            <Card>
-              <CardHeader title="Coming soon" />
-              <ul className="divide-y divide-surface-divider">
-                <li className="flex gap-3 px-5 py-4">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500" aria-hidden="true">
-                    <LuCalendarDays className="h-[18px] w-[18px]" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">School events</p>
-                    <p className="mt-0.5 text-xs text-slate-500">Plan events and ask NGOs and donors to support them.</p>
-                  </div>
-                </li>
-                <li className="flex gap-3 px-5 py-4">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500" aria-hidden="true">
-                    <LuHandCoins className="h-[18px] w-[18px]" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">List of donor donations</p>
-                    <p className="mt-0.5 text-xs text-slate-500">Confirmed donations already count in Funding above.</p>
-                  </div>
-                </li>
-              </ul>
+            {/* Confirmed donor donations: amounts and dates only (a school never sees who its donors are). */}
+            <Card className="overflow-hidden">
+              <CardHeader
+                title="Latest donations"
+                description={donations.length ? `${formatINR(donations.reduce((sum, d) => sum + d.amount, 0))} from ${donations.length} ${donations.length === 1 ? "donation" : "donations"}` : "From donors, confirmed by Razorpay"}
+                actions={donations.length > 0 && <ViewAll to="/dashboard/school/donations" />}
+              />
+              {donationList.loading && <RowSkeletons rows={2} label="Loading donations…" />}
+              {!donationList.loading && donationList.error && <p className="px-5 py-4 text-sm text-slate-500">{donationList.error}</p>}
+              {!donationList.loading && !donationList.error && donations.length === 0 && (
+                <EmptyState
+                  icon={LuHandCoins}
+                  title="No donations yet"
+                  description="When a donor gives to one of your approved projects, it appears here once Razorpay confirms it."
+                  className="py-8"
+                />
+              )}
+              {donations.length > 0 && (
+                <ul className="divide-y divide-surface-divider">
+                  {donations.slice(0, 4).map((d) => (
+                    <li key={d.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900">{d.project.title}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {formatWhen(d.verifiedAt)}
+                          {d.mode === "test" ? " · test mode" : ""}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-sm font-bold tabular-nums text-emerald-700">{formatINR(d.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Card>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import {
-  LuBadgeCheck, LuChevronRight, LuCircleCheck, LuFolderKanban, LuHandCoins, LuHeartHandshake, LuQrCode, LuSchool, LuScale, LuShieldAlert,
+  LuBadgeCheck, LuCalendarDays, LuChevronRight, LuCircleCheck, LuFolderKanban, LuHandCoins, LuHeartHandshake, LuQrCode, LuSchool, LuScale, LuShieldAlert,
   LuTriangleAlert, LuUserCheck, LuUsers, LuWallet,
 } from "react-icons/lu";
 import Alert from "../../ui/Alert";
@@ -149,6 +149,7 @@ const OverviewSection = ({ onOpenFinance }) => {
             <ul className="divide-y divide-slate-100">
               <QueueRow icon={LuUserCheck} label="Registrations to approve" count={o.queues.accounts.count} oldest={o.queues.accounts.oldest} to="/dashboard/admin" />
               <QueueRow icon={LuFolderKanban} label="Projects to review" count={o.queues.projects.count} oldest={o.queues.projects.oldest} to="/dashboard/admin?tab=projects" />
+              <QueueRow icon={LuCalendarDays} label="Events to review" count={o.queues.events.count} oldest={o.queues.events.oldest} to="/dashboard/admin?tab=events" />
               <QueueRow icon={LuQrCode} label="Payment QRs to review" count={o.queues.paymentQrs.count} oldest={o.queues.paymentQrs.oldest} to="/dashboard/admin?tab=qrs" />
               <QueueRow
                 icon={LuWallet}

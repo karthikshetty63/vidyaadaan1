@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LuBell, LuBuilding2, LuCalendarDays, LuChevronsLeft, LuChevronsRight, LuClipboardList,
+  LuBell, LuBuilding2, LuCalendarDays, LuChevronsLeft, LuChevronsRight, LuCircleUserRound, LuClipboardList,
   LuFileChartColumn, LuFolderKanban, LuGraduationCap, LuHandCoins, LuImages, LuLayoutDashboard, LuLogOut, LuSchool, LuSettings,
   LuRadar, LuTrendingUp, LuUserCheck, LuUsers, LuWallet, LuX,
 } from "react-icons/lu";
@@ -30,15 +30,20 @@ const NAV = {
     { icon: LuFolderKanban, label: "Your Projects", href: "/dashboard/ngo#projects" },
     { icon: LuWallet, label: "Funding", href: "/dashboard/ngo#funding" },
     { icon: LuUsers, label: "Volunteers", href: "/dashboard/ngo#volunteers" },
-    { icon: LuFileChartColumn, label: "Reports", href: "/dashboard/ngo#reports" },
     { icon: LuCalendarDays, label: "School Events", href: "/dashboard/ngo#events" },
+    { icon: LuFileChartColumn, label: "Reports", href: "/dashboard/ngo#reports" },
+    { icon: LuBell, label: "Notifications", href: "/dashboard/ngo#notifications" },
+    { icon: LuCircleUserRound, label: "Profile", href: "/dashboard/ngo#profile" },
+    { icon: LuSettings, label: "Settings", href: "/dashboard/ngo#settings" },
   ],
-  // Only sections that exist on the donor page.
   donor: [
     { icon: LuLayoutDashboard, label: "Dashboard", href: "/dashboard/donor#overview" },
     { icon: LuClipboardList, label: "School Needs", href: "/dashboard/donor#needs" },
     { icon: LuHandCoins, label: "My Donations", href: "/dashboard/donor#donations" },
     { icon: LuCalendarDays, label: "School Events", href: "/dashboard/donor#events" },
+    { icon: LuBell, label: "Notifications", href: "/dashboard/donor#notifications" },
+    { icon: LuCircleUserRound, label: "Profile", href: "/dashboard/donor#profile" },
+    { icon: LuSettings, label: "Settings", href: "/dashboard/donor#settings" },
   ],
   admin: [
     { icon: LuUserCheck, label: "Account Approvals", href: "/dashboard/admin" },
@@ -47,8 +52,8 @@ const NAV = {
 };
 
 // Portals with the light menu: the current page is a soft blue row with a thin blue bar, instead of a
-// solid filled one (the school portal first; the others will follow).
-const LIGHT_NAV_ROLES = ["school"];
+// solid filled one (the admin console keeps the solid one).
+const LIGHT_NAV_ROLES = ["school", "ngo", "donor"];
 
 const PORTAL_LABELS = { school: "School portal", ngo: "NGO portal", donor: "Donor portal", admin: "Admin console" };
 

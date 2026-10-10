@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LuExternalLink, LuHandHeart, LuHeartHandshake, LuSchool } from "react-icons/lu";
 import PaymentQrReviewSection from "../../../components/admin/PaymentQrReviewSection";
+import EventReviewSection from "../../../components/admin/EventReviewSection";
 import ProjectReviewSection from "../../../components/admin/ProjectReviewSection";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
 import Alert from "../../../components/ui/Alert";
@@ -351,6 +352,11 @@ const SECTIONS = {
     subtitle: "Approve schools' projects",
     description: "A school's project becomes visible to NGOs and donors only after it is approved.",
   },
+  events: {
+    title: "Event reviews",
+    subtitle: "Approve schools' events",
+    description: "A school's event becomes visible to NGOs and donors, who can then offer help, only after it is approved.",
+  },
   qrs: {
     title: "Payment QR reviews",
     subtitle: "Check schools' UPI QRs",
@@ -377,11 +383,12 @@ const AdminDashboard = () => {
                 label="Admin section"
                 value={tab}
                 onChange={(v) => setSearchParams(v === "accounts" ? {} : { tab: v }, { replace: true })}
-                options={[{ value: "accounts", label: "Accounts" }, { value: "projects", label: "Projects" }, { value: "qrs", label: "Payment QRs" }]}
+                options={[{ value: "accounts", label: "Accounts" }, { value: "projects", label: "Projects" }, { value: "events", label: "Events" }, { value: "qrs", label: "Payment QRs" }]}
               />
             }
           />
           {tab === "projects" && <ProjectReviewSection />}
+          {tab === "events" && <EventReviewSection />}
           {tab === "qrs" && <PaymentQrReviewSection />}
           {tab === "accounts" && <AccountApprovals />}
         </div>

@@ -5,6 +5,8 @@ import { useAuth } from "../../context/AuthContext";
 import { CHAT_HISTORY_ENTRY_MAX, CHAT_HISTORY_MAX, CHAT_MESSAGE_MAX, getChatbotPersona, sendChatMessage } from "../../api/chatbot";
 
 const DEFAULT_NAME = "VIDYADAAN Assistant";
+// The portals that use the brand-blue theme (the admin console keeps indigo).
+const BLUE_PORTALS = ["/dashboard/school", "/dashboard/ngo", "/dashboard/donor"];
 
 // What each assistant can help with, for its welcome message (the server says which assistant this is).
 const INTRO = {
@@ -240,9 +242,9 @@ const ChatbotWidget = () => {
 
   return (
     // Inside the portals the assistant takes the dashboards' colours and font (index.css): the brand blue
-    // in the school portal, indigo in the others. This wrapper has no size: the button and the window are
-    // fixed to the screen, so the page never grows.
-    <div className={pathname.startsWith("/dashboard/school") ? "dashboard-theme dashboard-blue" : pathname.startsWith("/dashboard") ? "dashboard-theme" : ""}>
+    // in the school, NGO and donor portals, indigo in the admin console. This wrapper has no size: the
+    // button and the window are fixed to the screen, so the page never grows.
+    <div className={BLUE_PORTALS.some((portal) => pathname.startsWith(portal)) ? "dashboard-theme dashboard-blue" : pathname.startsWith("/dashboard") ? "dashboard-theme" : ""}>
       <div className={`${open ? "hidden sm:block" : ""} group fixed bottom-4 right-4 z-40 sm:bottom-6 sm:right-6`}>
         {!open && (
           <span

@@ -6,10 +6,10 @@ import Alert from "../ui/Alert";
 
 // Shell for every dashboard page: sidebar (drawer below 1024px) + top bar + scrolling content.
 // `dashboard-theme` (index.css) gives every portal the indigo brand colour, its font and the soft
-// background wash — dialogs opened from a page are inside it too. Each portal then adds its theme:
-// `dashboard-blue` (the sign-in pages' brand blue, white boxes; the school portal first) or
-// `dashboard-sky` (sky-blue boxes, donor and NGO). The admin portal keeps white boxes.
-const PORTAL_THEMES = { school: "dashboard-blue", ngo: "dashboard-sky", donor: "dashboard-sky" };
+// background wash — dialogs opened from a page are inside it too. The school, NGO and donor portals
+// then add `dashboard-blue` (the sign-in pages' brand blue, white boxes on a calm page). The admin
+// portal keeps the indigo colours.
+const PORTAL_THEMES = { school: "dashboard-blue", ngo: "dashboard-blue", donor: "dashboard-blue" };
 
 const DashboardLayout = ({
     role = "school",

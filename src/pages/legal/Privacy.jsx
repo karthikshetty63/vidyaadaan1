@@ -28,6 +28,16 @@ const Privacy = () => (
         approved, and we keep a record of each email sent.
       </p>
       <p>
+        <span className="font-medium text-zinc-950">School events:</span> the events a school posts (name, date, venue, description and the help it
+        would like), and the offers of help NGOs and donors make for them, with any message and the school&rsquo;s answer. No payment is made or
+        recorded for events.
+      </p>
+      <p>
+        <span className="font-medium text-zinc-950">Activity records:</span> a record of actions taken in an account, such as signing in, submitting
+        a project, recording a payment or answering an offer, with the time and the account. It never includes passwords, and a failed sign-in is
+        recorded without what was typed. Only administrators can see it; it is used to keep VIDYADAAN secure and to look into problems.
+      </p>
+      <p>
         <span className="font-medium text-zinc-950">NGOs:</span> the organisation&rsquo;s name, type, year, website, mission, focus areas,
         registration number and date, PAN and address; the contact person&rsquo;s details; registration documents; funding commitments,
         payments made directly to schools with their proofs; and the details of volunteers the NGO adds.
@@ -50,7 +60,7 @@ const Privacy = () => (
     <LegalSection title="2. Why we use it">
       <ul>
         <li>To verify accounts before they can sign in.</li>
-        <li>To run VIDYADAAN: listing needs, recording NGO funding, online payments and donations, and showing how much each need has raised.</li>
+        <li>To run VIDYADAAN: listing needs and events, recording NGO funding, online payments, donations and offers of help, and showing how much each need has raised.</li>
         <li>To show a school&rsquo;s payment details to the NGOs that pay it.</li>
         <li>To send you emails you ask for, such as password reset links.</li>
         <li>To keep VIDYADAAN secure and to meet legal requirements.</li>
@@ -66,6 +76,8 @@ const Privacy = () => (
         <li>An NGO&rsquo;s payment proof is seen only by that NGO, the school it paid and administrators. A school sees the NGO payments made for its needs, online or direct.</li>
         <li>A school&rsquo;s location on the map is seen only by that school and administrators.</li>
         <li>A school&rsquo;s alumni list is seen only by that school. Each alumni email is sent to one person, so no alum sees another&rsquo;s name or address.</li>
+        <li>Signed-in NGOs and donors see approved school events: the event, and the school&rsquo;s name, district and state. They never see other supporters&rsquo; offers.</li>
+        <li>When an NGO offers help for an event, that school sees the NGO&rsquo;s name, contact person, email address and phone number. A donor who offers help first agrees that the school may see their name and email address. Otherwise schools never see who their donors are: they see donations as amounts and dates only.</li>
       </ul>
     </LegalSection>
 
@@ -97,7 +109,7 @@ const Privacy = () => (
 
     <LegalSection title="7. Your choices">
       <ul>
-        <li>Schools can update their editable profile details in their dashboard. To correct anything else, email us.</li>
+        <li>Schools, NGOs and donors can update their contact details and preferences in their dashboard. Details that were verified at registration are locked: to correct those, email us.</li>
         <li>You can ask for a copy of your information, or ask us to delete your account. We will delete it, except for records we must keep by law.</li>
       </ul>
       <p>Send these requests from your registered email address to <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>.</p>

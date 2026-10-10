@@ -13,6 +13,7 @@ import PageHeader from "../../../components/ui/PageHeader";
 import ProgressBar from "../../../components/ui/ProgressBar";
 import { useAuth } from "../../../context/AuthContext";
 import useMyProjects from "../../../hooks/useMyProjects";
+import useSchoolDonations from "../../../hooks/useSchoolDonations";
 import useSchoolPayments from "../../../hooks/useSchoolPayments";
 import { formatDate, formatINR, partsLabel } from "../../../utils/format";
 import { getFundingPercentage } from "../../../utils/funding";
@@ -24,6 +25,9 @@ const DonationHistory = () => {
   const { user } = useAuth();
   const { projects, loading, error, reload, upsert } = useMyProjects();
   const paymentList = useSchoolPayments();
+  // Confirmed donor donations: amounts and dates only (a school never sees who its donors are).
+  const donationList = useSchoolDonations();
+  const donations = donationList.donations;
   const [viewing, setViewing] = useState(null);
   const [notice, setNotice] = useState("");
   // Only approved projects can receive money.
@@ -43,7 +47,7 @@ const DonationHistory = () => {
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           <PageHeader
             title="Donation history"
-            description="Money NGOs have sent for your projects. Check each payment against your bank account before you accept it."
+            description="Money NGOs have sent for your projects, and donations donors have made online. Check each NGO payment against your bank account before you accept it."
           />
 
           {(error || paymentList.error) && (
@@ -164,6 +168,53 @@ const DonationHistory = () => {
                   );
                 })}
               </ul>
+            )}
+          </Card>
+
+          <Card className="overflow-hidden">
+            <CardHeader
+              title="Donations from donors"
+              description={
+                donations.length
+                  ? `${formatINR(donations.reduce((sum, d) => sum + d.amount, 0))} in ${donations.length} ${donations.length === 1 ? "donation" : "donations"}, paid online and confirmed by Razorpay. Donors' names are not shown.`
+                  : "Paid online through Razorpay. They count as raised as soon as Razorpay confirms them."
+              }
+            />
+            {donationList.loading && <p className="px-5 py-4 text-sm text-slate-500" role="status">Loading donations…</p>}
+            {!donationList.loading && donationList.error && (
+              <p className="px-5 py-4 text-sm text-slate-600">
+                {donationList.error}{" "}
+                <button type="button" onClick={donationList.reload} className="font-medium text-primary-700 underline underline-offset-2">Try again</button>
+              </p>
+            )}
+            {!donationList.loading && !donationList.error && donations.length === 0 && (
+              <EmptyState icon={LuHandCoins} title="No donations yet" description="When a donor gives to one of your approved projects, it appears here once Razorpay confirms the payment." className="py-8" />
+            )}
+            {donations.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <caption className="sr-only">Confirmed donations from donors, newest first</caption>
+                  <thead>
+                    <tr className="border-b border-surface-divider bg-surface-muted text-left">
+                      <th scope="col" className={th}>Date</th>
+                      <th scope="col" className={th}>Project</th>
+                      <th scope="col" className={`${th} text-right`}>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-divider">
+                    {donations.map((d) => (
+                      <tr key={d.id}>
+                        <td className="whitespace-nowrap px-5 py-3 text-slate-600">{formatDate(String(d.verifiedAt).slice(0, 10))}</td>
+                        <td className="px-5 py-3 font-medium text-slate-900">
+                          {d.project.title}
+                          {d.mode === "test" && <Badge tone="warning" className="ml-2">Test</Badge>}
+                        </td>
+                        <td className="whitespace-nowrap px-5 py-3 text-right font-semibold tabular-nums text-emerald-700">{formatINR(d.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </Card>
         </div>

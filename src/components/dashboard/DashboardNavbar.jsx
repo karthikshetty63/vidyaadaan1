@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { LuBell, LuMenu } from "react-icons/lu";
 
 // Only portals that actually have a notifications page show the bell.
-const NOTIFICATION_PAGES = { school: "/dashboard/school/notifications" };
+const NOTIFICATION_PAGES = { school: "/dashboard/school/notifications", ngo: "/dashboard/ngo#notifications", donor: "/dashboard/donor#notifications" };
 
 const DashboardNavbar = ({ role = "school", title = "Dashboard", subtitle = "", notifications = [], onMenuClick, menuOpen = false }) => {
   const notificationsHref = NOTIFICATION_PAGES[role];

@@ -22,3 +22,6 @@ export const verifyDonation = (donationId, { razorpay_order_id, razorpay_payment
     method: "POST",
     body: { razorpay_order_id, razorpay_payment_id, razorpay_signature },
   });
+
+/** Confirmed donor donations to the signed-in school's projects (amounts and dates; never who gave). */
+export const listSchoolDonations = () => apiRequest("/api/school/donations");

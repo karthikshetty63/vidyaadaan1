@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { LuCalendarDays } from "react-icons/lu";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../../components/dashboard/DashboardLayout";
+import AccountSettingsView from "../../../components/dashboard/account/AccountSettingsView";
+import NotificationsView from "../../../components/dashboard/account/NotificationsView";
+import PartnerProfileView from "../../../components/dashboard/account/PartnerProfileView";
 import ProofModal from "../../../components/dashboard/ProofModal";
 import FundNeedModal from "../../../components/dashboard/ngo/FundNeedModal";
 import FundingView from "../../../components/dashboard/ngo/FundingView";
@@ -14,11 +16,9 @@ import VolunteerFormModal from "../../../components/dashboard/ngo/VolunteerFormM
 import VolunteersView from "../../../components/dashboard/ngo/VolunteersView";
 import YourProjectsView from "../../../components/dashboard/ngo/YourProjectsView";
 import { formatINR, partsLabel, sumAmounts, unpaidParts } from "../../../components/dashboard/ngo/format";
+import SupporterEvents from "../../../components/events/SupporterEvents";
 import Alert from "../../../components/ui/Alert";
-import Card from "../../../components/ui/Card";
 import ConfirmModal from "../../../components/ui/ConfirmModal";
-import EmptyState from "../../../components/ui/EmptyState";
-import PageHeader from "../../../components/ui/PageHeader";
 import { withdrawFunding } from "../../../api/projects";
 import { deleteVolunteer } from "../../../api/volunteers";
 import { useAuth } from "../../../context/AuthContext";
@@ -26,6 +26,7 @@ import useApprovedProjects from "../../../hooks/useApprovedProjects";
 import useMyCommitments from "../../../hooks/useMyCommitments";
 import useMyPayments from "../../../hooks/useMyPayments";
 import useMyProfile from "../../../hooks/useMyProfile";
+import useSupporterEvents from "../../../hooks/useSupporterEvents";
 import useVolunteers from "../../../hooks/useVolunteers";
 
 // Each sidebar item opens its own view of the portal, like a separate page. The URL hash (#needs,
@@ -36,30 +37,52 @@ const VIEWS = {
   projects: "Your projects",
   funding: "Funding",
   volunteers: "Volunteers",
-  reports: "Reports",
   events: "School events",
+  reports: "Reports",
+  notifications: "Notifications",
+  profile: "Profile",
+  settings: "Settings",
 };
 
-const EventsView = () => (
-  <>
-    <PageHeader title="School events" description="Events that schools ask NGOs to partner on." />
-    <Card>
-      <EmptyState
-        icon={LuCalendarDays}
-        title="No event requests yet"
-        description="Schools will soon be able to ask NGOs to partner on events. Their requests will appear here."
-      />
-    </Card>
-  </>
-);
+/** What has happened on the NGO's payments, commitments and offers of help, from its own records. */
+const buildNotifications = ({ payments, funded, offers }) => [
+  ...payments.map((p) => {
+    const text = `${formatINR(p.amount)} for ${p.project.title}`;
+    const base = { id: `payment-${p.id}`, text, to: "#funding" };
+    if (p.status === "ACCEPTED") return { ...base, at: p.reviewedAt, tone: "success", title: p.channel === "ONLINE" ? "Online payment confirmed" : "The school accepted your payment" };
+    if (p.status === "REJECTED") return { ...base, at: p.reviewedAt, tone: "danger", title: "The school rejected your payment", detail: p.rejectionReason ? `Reason: ${p.rejectionReason}` : undefined };
+    if (p.status === "REFUND_DUE") return { ...base, at: p.reviewedAt, tone: "danger", title: "An online payment will be refunded", detail: "Its parts had already been paid another way. Email VIDYADAAN support with the payment ID." };
+    return { ...base, at: p.submittedAt, tone: "warning", title: "Payment sent: waiting for the school to check it" };
+  }),
+  ...funded.flatMap((need) => {
+    const unpaid = unpaidParts(need);
+    if (!unpaid.length) return [];
+    const since = unpaid.reduce((earliest, part) => (!earliest || part.committedAt < earliest ? part.committedAt : earliest), null);
+    return [{ id: `unpaid-${need.id}`, at: since, tone: "warning", title: "Parts waiting for your payment", text: `${formatINR(sumAmounts(unpaid))} for ${need.title}`, to: "#funding" }];
+  }),
+  ...offers
+    .filter((e) => e.myOffer.status !== "OFFERED")
+    .map((e) => ({
+      id: `offer-${e.id}`,
+      at: e.myOffer.respondedAt,
+      tone: e.myOffer.status === "ACCEPTED" ? "success" : "info",
+      title: e.myOffer.status === "ACCEPTED" ? "A school accepted your offer of help" : "A school declined your offer of help",
+      text: `${e.title} · ${e.school.name}`,
+      detail: e.myOffer.note ? `School's note: ${e.myOffer.note}` : undefined,
+      to: "#events",
+    })),
+];
 
 const NGODashboard = () => {
   const location = useLocation();
   const requested = location.hash.slice(1);
   const view = Object.hasOwn(VIEWS, requested) ? requested : "overview";
 
-  const { user } = useAuth();
-  const { profile } = useMyProfile();
+  const navigate = useNavigate();
+  const { user, logout, refreshUser } = useAuth();
+  const { profile, loading: profileLoading, error: profileError, setProfile, reload: reloadProfile } = useMyProfile();
+  const eventList = useSupporterEvents();
+  const [signingOut, setSigningOut] = useState(false);
   const needsList = useApprovedProjects();
   const commitments = useMyCommitments();
   const paymentList = useMyPayments();
@@ -152,17 +175,30 @@ const NGODashboard = () => {
     needsList.reload();
     commitments.reload();
   };
+  const signOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await logout();
+    } catch {
+      // AuthContext already cleared the local user; still leave the dashboard.
+    }
+    navigate("/login/ngo", { replace: true });
+  };
 
   const content = {
     overview: (
       <OverviewView
         profile={profile}
+        profileLoading={profileLoading}
         userName={user?.name}
         needs={needs}
         needsLoading={needsList.loading}
         funded={funded}
         fundedLoading={commitments.loading}
         loadError={needsList.error || commitments.error}
+        upcomingEvents={eventList.error ? "—" : eventList.open.length}
+        eventsLoading={eventList.loading}
         notice={noticeHere}
         onRetry={retry}
         onViewNeed={openDetails}
@@ -220,7 +256,52 @@ const NGODashboard = () => {
         }}
       />
     ),
-    events: <EventsView />,
+    events: (
+      <SupporterEvents
+        role="ngo"
+        open={eventList.open}
+        mine={eventList.mine}
+        loading={eventList.loading}
+        error={eventList.error}
+        onRetry={eventList.reload}
+        onChanged={async (message) => {
+          await eventList.refresh();
+          say(message);
+        }}
+        notice={noticeHere}
+      />
+    ),
+    notifications: (
+      <NotificationsView
+        description="Decisions on your payments, parts waiting for payment, and schools' answers to your offers of help."
+        items={buildNotifications({ payments, funded, offers: eventList.mine })}
+        loading={commitments.loading || paymentList.loading || eventList.loading}
+        error={commitments.error || paymentList.error || eventList.error}
+        onRetry={() => {
+          commitments.reload();
+          paymentList.reload();
+          eventList.reload();
+        }}
+        emptyText="Nothing has happened yet. When a school decides on a payment or answers an offer, it shows here."
+      />
+    ),
+    profile: (
+      <PartnerProfileView
+        role="ngo"
+        profile={profile}
+        loading={profileLoading}
+        error={profileError}
+        onRetry={reloadProfile}
+        notice={noticeHere}
+        onSaved={(saved, changes) => {
+          setProfile(saved);
+          // The contact person is also the account name shown in the menu.
+          if ("contactName" in changes) refreshUser();
+          say("Your profile has been updated.");
+        }}
+      />
+    ),
+    settings: <AccountSettingsView accountType="NGO" onSignOut={signOut} signingOut={signingOut} />,
   }[view];
 
   return (
