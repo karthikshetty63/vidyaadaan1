@@ -5,6 +5,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import createApp from "./app.js";
 import connectDB from "./config/db.js";
+import { importActivityHistory } from "./services/activityHistory.js";
 import { resumeAlumniNotifications } from "./services/alumniNotifications.js";
 import { emailProvider, isEmailConfigured, verifyEmailTransport } from "./services/emailService.js";
 import { isGoogleSignInConfigured } from "./services/googleAuth.js";
@@ -51,6 +52,13 @@ const startServer = async () => {
                 .then((from) => console.log(`Email (${via}) connection verified, sending as ${from}`))
                 .catch((error) => console.warn(`Email (${via}) is NOT working:`, error.message));
         }
+        // The admin Control Tower's activity log: on the first start with the log, import what the records
+        // already show about the past (once; it does nothing after that).
+        importActivityHistory()
+            .then(({ imported, skipped }) => {
+                if (!skipped) console.log(`Activity log started: ${imported} earlier event(s) imported from existing records.`);
+            })
+            .catch((error) => console.warn("Could not import earlier activity:", error.message));
         // Alumni emails that a restart left unsent.
         resumeAlumniNotifications({ frontendOrigin: app.locals.frontendOrigin })
             .then(({ projects, interrupted }) => {

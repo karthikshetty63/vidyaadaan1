@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Project, { PENDING_REVIEW_FILTER } from "../models/Project.js";
 import SchoolProfile from "../models/SchoolProfile.js";
 import User from "../models/User.js";
+import { logActivity, projectTarget } from "../services/activityLog.js";
 import { queueProjectApprovalEmails } from "../services/alumniNotifications.js";
 import { PROJECT_REJECTION_REASON_MAX, PROJECT_REJECTION_REASON_MIN, PROJECT_REVIEW_STATUSES } from "../../shared/projectRules.js";
 import { projectToClient } from "./projectController.js";
@@ -109,6 +110,7 @@ export const approveProject = async (req, res, next) => {
 
         // Only this request moved the project to OPEN, so only it tells the school's alumni.
         const alumniEmails = await notifyAlumni(updated, req.app.locals.frontendOrigin);
+        logActivity(req, { action: "project.approved", target: projectTarget(updated), details: { schoolId: updated.school, budget: updated.budget, alumniEmails: alumniEmails.status, alumniQueued: alumniEmails.queued || 0 } });
         return res.json({
             message: `Project approved. It is now open. ${alumniEmails.message}`,
             project: projectToClient(updated),
@@ -155,6 +157,7 @@ export const rejectProject = async (req, res, next) => {
             { returnDocument: "after" }
         );
         if (!updated) return notWaiting(res, await Project.findById(project._id).lean());
+        logActivity(req, { action: "project.rejected", target: projectTarget(updated), details: { schoolId: updated.school, reason } });
         return res.json({ message: "Project rejected. The school can see the reason and resubmit.", project: projectToClient(updated) });
     } catch (error) {
         return next(error);

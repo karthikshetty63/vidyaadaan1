@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LuBell, LuBuilding2, LuCalendarDays, LuChevronsLeft, LuChevronsRight, LuClipboardList,
   LuFileChartColumn, LuFolderKanban, LuGraduationCap, LuHandCoins, LuImages, LuLayoutDashboard, LuLogOut, LuSchool, LuSettings,
-  LuTrendingUp, LuUserCheck, LuUsers, LuWallet, LuX,
+  LuRadar, LuTrendingUp, LuUserCheck, LuUsers, LuWallet, LuX,
 } from "react-icons/lu";
 import { useAuth } from "../../context/AuthContext";
 import useDialogFocus from "../../hooks/useDialogFocus";
@@ -42,6 +42,7 @@ const NAV = {
   ],
   admin: [
     { icon: LuUserCheck, label: "Account Approvals", href: "/dashboard/admin" },
+    { icon: LuRadar, label: "Control Tower", href: "/dashboard/admin/control-tower" },
   ],
 };
 

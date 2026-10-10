@@ -5,6 +5,7 @@ import Project from "../models/Project.js";
 import SchoolProfile from "../models/SchoolProfile.js";
 import { ONLINE_PAYMENT_METHOD, PAYMENT_PROOF_RULE, validateOnlinePayment, validatePaymentDetails, validateRejectionReason } from "../../shared/paymentRules.js";
 import { createRazorpayOrder, getRazorpayKeyId, isRazorpayConfigured, isValidPaymentSignature, razorpayMode, readCheckoutResult } from "../services/razorpay.js";
+import { logActivity, maskReference } from "../services/activityLog.js";
 import { deleteUploadedFiles, fileSummary, storeUploads, validateUploads } from "../services/uploadService.js";
 import { toPartnerViews } from "./approvedProjectController.js";
 import { projectToClient } from "./projectController.js";
@@ -173,6 +174,11 @@ export const submitPayment = async (req, res, next) => {
             throw error;
         }
 
+        logActivity(req, {
+            action: "payment.submitted",
+            target: paymentTarget(payment, project.title),
+            details: { projectId: project._id, projectTitle: project.title, schoolId: project.school, channel: "DIRECT", parts: values.parts, amount: payment.amount, method: values.method, reference: maskReference(values.reference) },
+        });
         const [updated] = await toPartnerViews([await Project.findById(project._id).lean()], req.user._id, { activeOnly: false });
         const [view] = await withNames([{ ...payment.toObject(), proof: stored[PROOF_FIELD] }], { forSchool: false });
         return res.status(201).json({
@@ -247,6 +253,12 @@ export const startOnlinePayment = async (req, res, next) => {
             status: "CREATED",
             submittedAt: now,
         });
+        logActivity(req, {
+            action: "payment.online_started",
+            result: "info",
+            target: paymentTarget({ _id: paymentId, amount }, project.title),
+            details: { projectId: project._id, projectTitle: project.title, schoolId: project.school, channel: "ONLINE", parts: values.parts, amount, mode: razorpayMode() },
+        });
         const which = values.parts.length === 1 ? `part ${values.parts[0]}` : `parts ${values.parts.join(", ")}`;
         return res.status(201).json({
             message: "Payment started. It counts only once the payment has been verified.",
@@ -283,6 +295,7 @@ export const verifyOnlinePayment = async (req, res, next) => {
         if (checkout.orderId !== payment.orderId) return res.status(400).json({ message: "These payment details are for a different payment." });
         // The proof that Razorpay took the payment: only Razorpay (and this server) can make this signature.
         if (!isValidPaymentSignature({ orderId: payment.orderId, paymentId: checkout.paymentId, signature: checkout.signature })) {
+            logActivity(req, { action: "payment.verification_failed", result: "failure", target: paymentTarget(payment), details: { projectId: payment.project, channel: "ONLINE", amount: payment.amount } });
             return res.status(400).json({ message: "We couldn't verify this payment, so nothing was recorded. If money left your account, contact VIDYADAAN support with your payment ID." });
         }
 
@@ -297,8 +310,9 @@ export const verifyOnlinePayment = async (req, res, next) => {
             );
             // A repeat request (or a retry after a failure just here) finds the parts already marked with this payment.
             const ours = applied.modifiedCount === 1 || Boolean(await Project.exists({ _id: payment.project, ...partsCondition(payment.parts, payment.ngo, { payment: payment._id }) }));
+            let transition;
             try {
-                await FundingPayment.updateOne(
+                transition = await FundingPayment.updateOne(
                     { _id: payment._id, status: "CREATED" },
                     { $set: { status: ours ? "ACCEPTED" : "REFUND_DUE", razorpayPaymentId: checkout.paymentId, reference: checkout.paymentId, paidOn: now, reviewedAt: now } }
                 );
@@ -308,6 +322,15 @@ export const verifyOnlinePayment = async (req, res, next) => {
                 throw error;
             }
             payment = await FundingPayment.findById(payment._id).lean();
+            // Only the request that moved it out of CREATED records it.
+            if (transition?.modifiedCount) {
+                logActivity(req, {
+                    action: payment.status === "ACCEPTED" ? "payment.online_verified" : "payment.refund_due",
+                    result: payment.status === "ACCEPTED" ? "success" : "failure",
+                    target: paymentTarget(payment),
+                    details: { projectId: payment.project, schoolId: payment.school, channel: "ONLINE", parts: payment.parts, amount: payment.amount, mode: payment.mode, status: payment.status },
+                });
+            }
         }
         if (payment.razorpayPaymentId !== checkout.paymentId) {
             return res.status(409).json({ message: "This payment has already been made with a different Razorpay payment." });
@@ -330,6 +353,9 @@ export const verifyOnlinePayment = async (req, res, next) => {
         return next(error);
     }
 };
+
+/** How a payment appears in the activity log. */
+const paymentTarget = (payment, projectTitle) => ({ type: "payment", id: payment._id, label: `${formatINR(payment.amount)}${projectTitle ? ` · ${projectTitle}` : ""}` });
 
 // ─── School ──────────────────────────────────────────────────────────────────
 
@@ -380,6 +406,11 @@ export const acceptPayment = async (req, res, next) => {
             await FundingPayment.updateOne({ _id: payment._id }, { $set: { status: "SUBMITTED" }, $unset: { reviewedAt: "" } });
             return res.status(409).json({ message: "This payment's parts have changed. Reload the page and try again." });
         }
+        logActivity(req, {
+            action: "payment.accepted",
+            target: paymentTarget(payment, project.title),
+            details: { projectId: project._id, projectTitle: project.title, ngoId: payment.ngo, channel: "DIRECT", parts: payment.parts, amount: payment.amount },
+        });
         return reviewedReply(res, payment._id, `Payment of ${formatINR(payment.amount)} accepted and added to “Raised so far”.`, project);
     } catch (error) {
         return next(error);
@@ -405,6 +436,11 @@ export const rejectPayment = async (req, res, next) => {
             { $unset: { "fundingParts.$[p].payment": "" } },
             { arrayFilters: [{ "p.payment": payment._id, "p.receivedAt": null }], returnDocument: "after" }
         ).lean();
+        logActivity(req, {
+            action: "payment.rejected",
+            target: paymentTarget(payment, project?.title),
+            details: { projectId: payment.project, projectTitle: project?.title, ngoId: payment.ngo, channel: "DIRECT", parts: payment.parts, amount: payment.amount, reason },
+        });
         return reviewedReply(res, payment._id, "Payment rejected. The NGO will see your reason and can send it again.", project);
     } catch (err) {
         return next(err);

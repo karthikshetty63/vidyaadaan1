@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import UploadedFile from "../models/UploadedFile.js";
 import { SCHOOL_FACILITY_FIELDS, UPLOAD_RULES, validateSchoolProfileUpdate } from "../../shared/registrationRules.js";
+import { logActivity } from "../services/activityLog.js";
 import { PROFILE_MODELS } from "../services/profileModels.js";
 import { mapLocationToClient } from "./mapLocationController.js";
 import { paymentQrToClient } from "./paymentQrController.js";
@@ -68,6 +69,8 @@ export const updateSchoolProfile = async (req, res, next) => {
         if (!profile) return res.status(404).json({ message: "School profile not found." });
         // The principal's name is also the account name shown when signed in.
         if (values.principalName) await User.updateOne({ _id: req.user._id }, { $set: { name: values.principalName } });
+        // Which fields changed, never their values (phone numbers and addresses stay out of the log).
+        logActivity(req, { action: "profile.updated", target: { type: "profile", id: req.user._id, label: "School profile" }, details: { fields: [...Object.keys(values), ...cleared] } });
         return res.json({ message: "Profile updated.", profile: await profileToClient(req.user, profile) });
     } catch (error) {
         return next(error);

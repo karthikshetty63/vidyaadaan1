@@ -35,6 +35,7 @@ import AdminLogin from "./pages/auth/AdminLogin";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
+import ControlTower from "./pages/dashboard/admin/ControlTower";
 
 function App() {
   return (
@@ -98,6 +99,7 @@ function App() {
           {/* Platform admin — approves school & NGO registrations */}
           <Route element={<ProtectedRoute role="admin" />}>
             <Route path="/dashboard/admin" element={<AdminDashboard />} />
+            <Route path="/dashboard/admin/control-tower" element={<ControlTower />} />
           </Route>
         </Routes>
         {/* The help assistant's button, on every page (signed in or not). */}

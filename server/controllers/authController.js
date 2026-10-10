@@ -22,6 +22,7 @@ import {
     pickProfileValues,
     validateRegistration,
 } from "../../shared/registrationRules.js";
+import { accountTarget, actorOf, logActivity, recordActivity } from "../services/activityLog.js";
 import { isEmailConfigured, sendPasswordResetEmail } from "../services/emailService.js";
 import { GoogleTokenError, isGoogleSignInConfigured, verifyGoogleIdToken } from "../services/googleAuth.js";
 import { PROFILE_MODELS, duplicateKeyError, toProfileDocument } from "../services/profileModels.js";
@@ -117,6 +118,7 @@ export const register = async (req, res, next) => {
         }
         await PROFILE_MODELS[role].create(profile);
 
+        logActivity(req, { actor: actorOf(user), action: "account.registered", target: accountTarget(user), details: { role } });
         return res.status(201).json({
             message: "Registration submitted. Your account is pending admin approval.",
             user: safeUser(user),
@@ -171,6 +173,11 @@ const refuseSignIn = (res, user, portalRole) => {
     return null;
 };
 
+const refusalReason = (user, portalRole) =>
+    portalRole && user.role !== portalRole ? "wrong_portal" : user.accountStatus === "pending" ? "account_pending" : "account_rejected";
+const logRefusedSignIn = (req, user, portalRole, method) =>
+    logActivity(req, { actor: actorOf(user), action: "auth.sign_in_failed", result: "failure", details: { portal: portalRole || "", method, reason: refusalReason(user, portalRole) } });
+
 export const login = async (req, res, next) => {
     const body = req.body && typeof req.body === "object" ? req.body : {};
     const identifier = normalizeEmail(body.email);
@@ -197,14 +204,25 @@ export const login = async (req, res, next) => {
             await bcrypt.compare(password.slice(0, PASSWORD_MAX_BYTES), await getDummyHash());
         }
         if (!user || !passwordOk) {
+            // Never the address or code that was typed: an unknown account is just "unknown_account".
+            logActivity(req, {
+                actor: actorOf(user || null),
+                action: "auth.sign_in_failed",
+                result: "failure",
+                details: { portal: portalRole || "", method: "password", reason: user ? "wrong_password" : "unknown_account" },
+            });
             return res.status(401).json({ code: "INVALID_CREDENTIALS", message: "Invalid email or password." });
         }
 
         // The password was correct, so it is safe to explain why login cannot continue.
         const refused = refuseSignIn(res, user, portalRole);
-        if (refused) return refused;
+        if (refused) {
+            logRefusedSignIn(req, user, portalRole, "password");
+            return refused;
+        }
 
         setAuthCookie(res, user, body.remember === true);
+        logActivity(req, { actor: actorOf(user), action: "auth.signed_in", details: { portal: portalRole || user.role, method: "password", remember: body.remember === true } });
         return res.status(200).json({ message: "Login successful.", user: safeUser(user) });
     } catch (error) {
         return next(error);
@@ -229,6 +247,7 @@ export const logout = async (req, res, next) => {
             await User.updateOne({ _id: payload.userId }, { $inc: { tokenVersion: 1 } });
         }
         clearAuthCookie(res);
+        if (payload?.userId) recordActivity({ action: "auth.signed_out", actor: { id: payload.userId, role: payload.role } });
         return res.status(200).json({ message: "Logged out successfully." });
     } catch (error) {
         clearAuthCookie(res);
@@ -268,6 +287,7 @@ export const googleLogin = async (req, res, next) => {
             (await User.findOne({ email: google.email }).select("+password"));
 
         if (!user) {
+            logActivity(req, { actor: actorOf(null), action: "auth.sign_in_failed", result: "failure", details: { portal: portalRole || "", method: "google", reason: "no_account" } });
             return res.status(404).json({
                 code: "GOOGLE_NO_ACCOUNT",
                 message: `There's no ${ROLE_LABELS[portalRole]} account for ${google.email}. Register first, or sign in with your email and password.`,
@@ -275,13 +295,17 @@ export const googleLogin = async (req, res, next) => {
         }
 
         if (user.googleId && user.googleId !== google.googleId) {
+            logActivity(req, { actor: actorOf(user), action: "auth.sign_in_failed", result: "failure", details: { portal: portalRole || "", method: "google", reason: "google_mismatch" } });
             return res.status(409).json({
                 code: "GOOGLE_ACCOUNT_MISMATCH",
                 message: "This VIDYADAAN account is linked to a different Google account. Sign in with that Google account instead.",
             });
         }
         const refused = refuseSignIn(res, user, portalRole);
-        if (refused) return refused;
+        if (refused) {
+            logRefusedSignIn(req, user, portalRole, "google");
+            return refused;
+        }
 
         // First Google sign-in for an existing account: link it. Registration never proved that whoever set
         // the password owned this email, so that password is removed and every other session is signed out.
@@ -293,9 +317,11 @@ export const googleLogin = async (req, res, next) => {
                 user.tokenVersion = (user.tokenVersion ?? 0) + 1;
             }
             await user.save();
+            logActivity(req, { actor: actorOf(user), action: "auth.google_linked", target: accountTarget(user) });
         }
 
         setAuthCookie(res, user, body.remember === true);
+        logActivity(req, { actor: actorOf(user), action: "auth.signed_in", details: { portal: portalRole || user.role, method: "google", remember: body.remember === true } });
         return res.status(200).json({ message: "Login successful.", user: safeUser(user), linked });
     } catch (error) {
         return next(error);
@@ -360,6 +386,7 @@ export const forgotPassword = async (req, res, next) => {
                 { $set: { passwordResetToken: hashResetToken(token), passwordResetExpires: new Date(Date.now() + RESET_TTL_MS) } }
             );
             deliverResetEmail(user, token, req.app.locals.frontendOrigin);
+            logActivity(req, { actor: actorOf(user), action: "auth.password_reset_requested", target: accountTarget(user) });
         } else {
             // The visitor always sees the same message; only the server log says why nothing was sent (never the address).
             console.log(
@@ -406,6 +433,7 @@ export const resetPassword = async (req, res, next) => {
         user.tokenVersion = (user.tokenVersion ?? 0) + 1;
         await user.save();
 
+        logActivity(req, { actor: actorOf(user), action: "auth.password_reset", target: accountTarget(user) });
         return res.status(200).json({ message: "Your password has been reset. You can now sign in with your new password." });
     } catch (error) {
         return next(error);

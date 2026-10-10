@@ -3,6 +3,7 @@ import Donation from "../models/Donation.js";
 import Project from "../models/Project.js";
 import SchoolProfile from "../models/SchoolProfile.js";
 import { DONATION_MIN, getUnexpectedDonationFields, validateDonation } from "../../shared/donationRules.js";
+import { logActivity } from "../services/activityLog.js";
 import { createRazorpayOrder, getRazorpayKeyId, isRazorpayConfigured, isValidPaymentSignature, razorpayMode, readCheckoutResult } from "../services/razorpay.js";
 import { findFundableProject } from "./approvedProjectController.js";
 
@@ -84,6 +85,9 @@ const openForDonors = async (project) => {
 };
 
 // POST /api/donations  { projectId, amount, currency? } — start a donation: create its Razorpay order.
+/** How a donation appears in the activity log. */
+const donationTarget = (donation, projectTitle) => ({ type: "donation", id: donation._id, label: `${formatINR(donation.amount)}${projectTitle ? ` · ${projectTitle}` : ""}` });
+
 export const createDonation = async (req, res, next) => {
     if (!isRazorpayConfigured()) return unavailable(res);
     const body = req.body;
@@ -132,6 +136,12 @@ export const createDonation = async (req, res, next) => {
             mode: razorpayMode(),
             orderId: order.id,
         });
+        logActivity(req, {
+            action: "donation.started",
+            result: "info",
+            target: donationTarget(donation, project.title),
+            details: { projectId: project._id, projectTitle: project.title, schoolId: project.school, amount: donation.amount, mode: donation.mode },
+        });
         return res.status(201).json({
             message: "Donation started. It is confirmed only once the payment has been verified.",
             donation: toClient(donation, project.title),
@@ -166,10 +176,12 @@ export const verifyDonation = async (req, res, next) => {
         if (orderId !== donation.orderId) return badRequest(res, "These payment details are for a different donation.");
         // The proof that Razorpay took the payment: only Razorpay (and this server) can make this signature.
         if (!isValidPaymentSignature({ orderId: donation.orderId, paymentId, signature })) {
+            logActivity(req, { action: "donation.verification_failed", result: "failure", target: donationTarget(donation), details: { projectId: donation.project, amount: donation.amount } });
             return badRequest(res, "We couldn't verify this payment, so no donation was recorded. If money left your account, contact VIDYADAAN support with your payment ID.");
         }
 
         // Claim it: CREATED → PAID happens once, however many requests arrive at the same moment.
+        let justVerified = false;
         if (donation.status === "CREATED") {
             try {
                 const claimed = await Donation.findOneAndUpdate(
@@ -177,6 +189,7 @@ export const verifyDonation = async (req, res, next) => {
                     { $set: { status: "PAID", paymentId, verifiedAt: new Date() } },
                     { returnDocument: "after" }
                 ).lean();
+                justVerified = Boolean(claimed);
                 donation = claimed || (await Donation.findById(donation._id).lean());
             } catch (error) {
                 // The unique index on paymentId: this payment already belongs to another donation.
@@ -197,6 +210,14 @@ export const verifyDonation = async (req, res, next) => {
         );
 
         const project = await Project.findById(donation.project).select("title").lean();
+        // Only the request that verified it records it (repeat requests change nothing).
+        if (justVerified) {
+            logActivity(req, {
+                action: "donation.verified",
+                target: donationTarget(donation, project?.title),
+                details: { projectId: donation.project, projectTitle: project?.title, schoolId: donation.school, amount: donation.amount, mode: donation.mode, paymentId: donation.paymentId },
+            });
+        }
         return res.json({
             message: `Your donation of ${formatINR(donation.amount)} is confirmed. Thank you!`,
             donation: toClient(donation, project?.title),

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import SchoolProfile from "../models/SchoolProfile.js";
 import User from "../models/User.js";
+import { logActivity } from "../services/activityLog.js";
 import { UPI_QR_STATUSES, parseUpiQr, sameUpiId, validateUpiQrRejectionReason } from "../../shared/upiQrRules.js";
 
 // A school's UPI payment QR (rules: shared/upiQrRules.js). The school saves or removes it; an admin
@@ -25,6 +26,9 @@ export const paymentQrToClient = (qr) =>
 
 // ─── School ──────────────────────────────────────────────────────────────────
 
+/** A school's payment QR in the activity log: the school's account is the record it belongs to. */
+const qrTarget = (schoolId) => ({ type: "qr", id: schoolId, label: "School payment QR" });
+
 // PUT /api/profile/payment-qr  { link } — the text the browser read from the school's QR image
 // (the image itself is never uploaded).
 export const savePaymentQr = async (req, res, next) => {
@@ -42,6 +46,7 @@ export const savePaymentQr = async (req, res, next) => {
         const verified = sameUpiId(value.upiId, profile.upi);
         const paymentQr = { ...value, status: verified ? "ACTIVE" : "PENDING", submittedAt: new Date() };
         const updated = await SchoolProfile.findOneAndUpdate({ userId: req.user._id }, { $set: { paymentQr } }, { returnDocument: "after" }).lean();
+        logActivity(req, { action: "qr.submitted", target: qrTarget(req.user._id), details: { status: paymentQr.status, upiId: value.upiId, matchesVerifiedUpi: verified } });
         return res.json({
             message: verified
                 ? "QR saved. NGOs paying your school can scan it now."
@@ -58,6 +63,7 @@ export const removePaymentQr = async (req, res, next) => {
     try {
         const updated = await SchoolProfile.findOneAndUpdate({ userId: req.user._id }, { $unset: { paymentQr: "" } }, { returnDocument: "after" });
         if (!updated) return res.status(404).json({ message: "School profile not found." });
+        logActivity(req, { action: "qr.removed", target: qrTarget(req.user._id) });
         return res.json({ message: "QR removed. NGOs will see only your bank details and UPI ID.", paymentQr: null });
     } catch (removeError) {
         return next(removeError);
@@ -150,6 +156,7 @@ export const approvePaymentQr = async (req, res, next) => {
             { returnDocument: "after" }
         ).lean();
         if (!updated) return notDecidable(res, decision.schoolId, decision.link);
+        logActivity(req, { action: "qr.approved", target: qrTarget(decision.schoolId), details: { schoolId: decision.schoolId, upiId: updated.paymentQr.upiId } });
         return res.json({ message: "QR approved. NGOs paying this school can scan it now.", paymentQr: paymentQrToClient(updated.paymentQr) });
     } catch (approveError) {
         return next(approveError);
@@ -169,6 +176,7 @@ export const rejectPaymentQr = async (req, res, next) => {
             { returnDocument: "after" }
         ).lean();
         if (!updated) return notDecidable(res, decision.schoolId, decision.link);
+        logActivity(req, { action: "qr.rejected", target: qrTarget(decision.schoolId), details: { schoolId: decision.schoolId, upiId: updated.paymentQr.upiId, reason } });
         return res.json({ message: "QR rejected. The school can see the reason and upload another.", paymentQr: paymentQrToClient(updated.paymentQr) });
     } catch (rejectError) {
         return next(rejectError);

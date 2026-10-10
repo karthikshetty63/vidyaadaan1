@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Alumni from "../models/Alumni.js";
+import { logActivity } from "../services/activityLog.js";
 import { ALUMNI_MAX, ALUMNI_STATUSES, getUnexpectedAlumniFields, validateAlumni } from "../../shared/alumniRules.js";
 
 // A school's own alumni list. Every query is scoped to the signed-in school (req.user._id): another
@@ -101,6 +102,7 @@ export const createAlumni = async (req, res, next) => {
         }
         if (await rejectDuplicate(res, req.user._id, values)) return undefined;
         const alum = await Alumni.create({ ...values, school: req.user._id, status: "ACTIVE" });
+        logActivity(req, { action: "alumni.added", target: { type: "alumni", id: alum._id, label: "Alumni record" } });
         return res.status(201).json({ message: `${alum.name} added to your alumni.`, alum: toClient(alum) });
     } catch (error) {
         if (duplicateKeyResponse(res, error, values)) return undefined;
@@ -119,6 +121,7 @@ export const updateAlumni = async (req, res, next) => {
         if (await rejectDuplicate(res, req.user._id, values, alum._id)) return undefined;
         alum.set(values);
         await alum.save();
+        logActivity(req, { action: "alumni.updated", target: { type: "alumni", id: alum._id, label: "Alumni record" }, details: { fields: Object.keys(values) } });
         return res.json({ message: `${alum.name}’s details saved.`, alum: toClient(alum) });
     } catch (error) {
         if (duplicateKeyResponse(res, error, values)) return undefined;
@@ -139,6 +142,7 @@ export const setAlumniStatus = async (req, res, next) => {
         alum.status = status;
         await alum.save();
         const message = status === "ACTIVE" ? `${alum.name} is active again and will get emails about new approved projects.` : `${alum.name} is now inactive and won’t get project emails.`;
+        logActivity(req, { action: "alumni.status_changed", target: { type: "alumni", id: alum._id, label: "Alumni record" }, details: { status } });
         return res.json({ message, alum: toClient(alum) });
     } catch (error) {
         return next(error);

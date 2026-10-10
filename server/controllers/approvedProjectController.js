@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Project from "../models/Project.js";
 import SchoolProfile from "../models/SchoolProfile.js";
 import User from "../models/User.js";
+import { logActivity, projectTarget } from "../services/activityLog.js";
 import { splitIntoParts, validateFundingParts } from "../../shared/projectRules.js";
 
 // Enough for the dashboard; a real browse page would paginate.
@@ -164,6 +165,7 @@ export const commitFunding = async (req, res, next) => {
         }
 
         const total = parts.reduce((sum, part) => sum + amounts[part - 1].amount, 0);
+        logActivity(req, { action: "commitment.created", target: projectTarget(updated), details: { parts, amount: total, schoolId: updated.school } });
         const [view] = await toPartnerViews([updated], req.user._id, { activeOnly: false });
         return res.status(201).json({ message: `You've committed ${formatINR(total)} to “${updated.title}”.`, project: view });
     } catch (err) {
@@ -183,6 +185,7 @@ export const withdrawFunding = async (req, res, next) => {
             { returnDocument: "after" }
         ).lean();
         if (!updated) return res.status(404).json({ message: "You have no unpaid parts on this need to withdraw." });
+        logActivity(req, { action: "commitment.withdrawn", target: projectTarget(updated), details: { schoolId: updated.school } });
         const [view] = await toPartnerViews([updated], req.user._id, { activeOnly: false });
         return res.json({ message: "Your commitment has been withdrawn.", project: view });
     } catch (error) {

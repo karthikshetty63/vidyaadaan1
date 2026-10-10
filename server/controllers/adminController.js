@@ -4,6 +4,7 @@ import NGOProfile from "../models/NGOProfile.js";
 import SchoolProfile from "../models/SchoolProfile.js";
 import UploadedFile from "../models/UploadedFile.js";
 import User from "../models/User.js";
+import { accountTarget, logActivity } from "../services/activityLog.js";
 import { ACCOUNT_STATUSES, APPROVAL_ROLES } from "../../shared/registrationRules.js";
 import { fileSummary } from "../services/uploadService.js";
 
@@ -115,6 +116,7 @@ export const approveAccount = async (req, res, next) => {
         );
         if (!updated) return res.status(409).json({ message: "This account is already active." });
 
+        logActivity(req, { action: "account.approved", target: accountTarget(updated), details: { role: updated.role, previousStatus: user.accountStatus } });
         return res.json({ message: "Account approved. The user can now log in.", account: accountSummary(updated) });
     } catch (error) {
         return next(error);
@@ -143,6 +145,7 @@ export const rejectAccount = async (req, res, next) => {
         );
         if (!updated) return res.status(409).json({ message: "This account is already rejected." });
 
+        logActivity(req, { action: "account.rejected", target: accountTarget(updated), details: { role: updated.role, previousStatus: user.accountStatus, reason } });
         return res.json({ message: "Account rejected.", account: accountSummary(updated) });
     } catch (error) {
         return next(error);

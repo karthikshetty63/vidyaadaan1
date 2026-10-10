@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Project from "../models/Project.js";
 import SchoolProfile from "../models/SchoolProfile.js";
+import { logActivity, projectTarget } from "../services/activityLog.js";
 import { getUnexpectedProjectFields, validateProject } from "../../shared/projectRules.js";
 
 // Plenty for any real school; stops a runaway script from filling the database.
@@ -88,6 +89,7 @@ export const createProject = async (req, res, next) => {
         }
         // Every new project waits for an admin before anyone else can see it.
         const project = await Project.create({ ...values, school: req.user._id, reviewStatus: "PENDING_REVIEW", submittedAt: new Date() });
+        logActivity(req, { action: "project.submitted", target: projectTarget(project), details: { budget: project.budget, category: project.category, priority: project.priority } });
         return res.status(201).json({ message: "Project submitted for review.", project: toClient(project) });
     } catch (error) {
         return next(error);
@@ -139,6 +141,7 @@ export const updateMyProject = async (req, res, next) => {
             project.reviewedAt = undefined;
         }
         await project.save();
+        logActivity(req, { action: resubmitted ? "project.resubmitted" : "project.updated", target: projectTarget(project), details: { fields: Object.keys(values), reviewStatus: reviewStatus } });
         return res.json({ message: resubmitted ? "Project resubmitted for review." : "Project updated.", project: toClient(project) });
     } catch (error) {
         if (error instanceof mongoose.Error.DocumentNotFoundError) {

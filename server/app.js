@@ -7,6 +7,7 @@ import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import path from "node:path";
 import { apiNotFound, errorHandler } from "./middleware/errorHandler.js";
+import adminMonitorRoutes from "./routes/adminMonitorRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import createApprovedProjectRouter from "./routes/approvedProjectRoutes.js";
 import createAuthRouter from "./routes/authRoutes.js";
@@ -127,6 +128,8 @@ export const createApp = ({ corsOrigin: configuredOrigin = "http://localhost:517
         forgotPasswordLimiter: makeLimiter(limits.forgotPassword, "Too many password reset requests. Please wait 15 minutes and try again."),
         resetPasswordLimiter: makeLimiter(limits.resetPassword, "Too many password reset attempts. Please wait 15 minutes and try again."),
     }));
+    // The admin Control Tower (read-only, admin-only; its router checks the session and role itself).
+    app.use("/api/admin/monitor", adminMonitorRoutes);
     app.use("/api/admin", adminRoutes);
     app.use("/api/profile", profileRoutes);
     app.use("/api/files", fileRoutes);

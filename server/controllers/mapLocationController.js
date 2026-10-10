@@ -1,5 +1,6 @@
 import SchoolProfile from "../models/SchoolProfile.js";
 import { MAP_LOCATION_FIELDS, MAP_LOCATION_SOURCES, checkDeviceLocation } from "../../shared/mapLocationRules.js";
+import { logActivity } from "../services/activityLog.js";
 import { MapLinkError, resolveMapLink } from "../services/mapLinks.js";
 
 // The signed-in school's own location on the map. Always the school's own profile (from the session),
@@ -56,6 +57,8 @@ export const saveMapLocation = async (req, res, next) => {
             .select("mapLocation")
             .lean();
         if (!updated) return noProfile(res);
+        // How it was set, never the coordinates (they stay between the school and the admin's map view).
+        logActivity(req, { action: "map_location.saved", target: { type: "profile", id: req.user._id, label: "School map location" }, details: { source: body.source } });
         return res.json({ message: "Your school's location on the map is saved.", mapLocation: mapLocationToClient(updated.mapLocation) });
     } catch (error) {
         return next(error);
@@ -69,6 +72,7 @@ export const removeMapLocation = async (req, res, next) => {
             .select("_id")
             .lean();
         if (!updated) return noProfile(res);
+        logActivity(req, { action: "map_location.removed", target: { type: "profile", id: req.user._id, label: "School map location" } });
         return res.json({ message: "Your school's location on the map was removed.", mapLocation: null });
     } catch (error) {
         return next(error);
