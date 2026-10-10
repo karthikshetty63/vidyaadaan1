@@ -13,6 +13,7 @@ import DonorProfile from "../models/DonorProfile.js";
 import FundingPayment from "../models/FundingPayment.js";
 import NGOProfile from "../models/NGOProfile.js";
 import Project, { PENDING_REVIEW_FILTER } from "../models/Project.js";
+import SchoolEvent from "../models/SchoolEvent.js";
 import SchoolProfile from "../models/SchoolProfile.js";
 import User from "../models/User.js";
 import Volunteer from "../models/Volunteer.js";
@@ -112,6 +113,15 @@ export const getOverview = async () => {
             ActivityEvent.findOne({ key: HISTORY_MARKER_KEY }).select("at details").lean(),
         ]);
 
+    // School events: by review state, the review queue, and the offers of help made so far.
+    const [eventCounts, pendingEvents, eventOffers] = await Promise.all([
+        SchoolEvent.aggregate([{ $group: { _id: "$reviewStatus", count: { $sum: 1 } } }]),
+        SchoolEvent.aggregate([{ $match: { reviewStatus: "PENDING_REVIEW" } }, { $group: { _id: null, count: { $sum: 1 }, oldest: { $min: "$submittedAt" } } }]),
+        SchoolEvent.aggregate([{ $unwind: "$offers" }, { $group: { _id: "$offers.status", count: { $sum: 1 } } }]),
+    ]);
+    const eventCount = (status) => eventCounts.find((r) => r._id === status)?.count || 0;
+    const offerCount = (status) => eventOffers.find((r) => r._id === status)?.count || 0;
+
     const byRole = {};
     for (const { _id, count } of accounts) {
         byRole[_id.role] ||= { pending: 0, active: 0, rejected: 0, total: 0 };
@@ -167,6 +177,14 @@ export const getOverview = async () => {
         },
         ngoPayments,
         donations: donationStats,
+        // Offers of help are promises, never money.
+        events: {
+            total: eventCounts.reduce((sum, r) => sum + r.count, 0),
+            pendingReview: eventCount("PENDING_REVIEW"),
+            approved: eventCount("OPEN"),
+            rejected: eventCount("REJECTED"),
+            offers: { waiting: offerCount("OFFERED"), accepted: offerCount("ACCEPTED"), declined: offerCount("DECLINED") },
+        },
         funding: {
             raisedOnProjects: projectStats.raised,
             confirmedNgoPayments: confirmedNgo,
@@ -177,6 +195,7 @@ export const getOverview = async () => {
         queues: {
             accounts: { count: pendingAccounts.reduce((s, r) => s + r.count, 0), byRole: pendingByRole, oldest: pendingAccounts.reduce((o, r) => (!o || r.oldest < o ? r.oldest : o), null) },
             projects: queue(pendingProjects),
+            events: queue(pendingEvents),
             paymentQrs: queue(pendingQrs),
             // Checked by the schools, not by admins: shown so admins can see payments waiting too long.
             schoolPaymentChecks: queue(paymentsToCheck),

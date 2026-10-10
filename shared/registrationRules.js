@@ -274,22 +274,30 @@ export const getAccountName = (role, values) => ({ donor: values.name, school: v
 export const SCHOOL_PROFILE_EDITABLE = ["principalName", "phone", "address", "students", "teachers", "hasToilets", "hasLibrary", "hasComputers", "hasDrinkingWater"];
 export const SCHOOL_FACILITY_FIELDS = ["hasToilets", "hasLibrary", "hasComputers", "hasDrinkingWater"];
 
+// What an NGO may change itself: how to reach it and what it does. Its identity (name, type,
+// registration number and date, PAN, district, state, email) was verified by the admin, so it stays locked.
+export const NGO_PROFILE_EDITABLE = ["contactName", "phone", "altPhone", "website", "mission", "focus", "address"];
+// What a donor may change: contact details and preferences. Name, email, date of birth and PAN stay locked.
+export const DONOR_PROFILE_EDITABLE = ["phone", "address", "city", "state", "pin", "causes", "frequency", "anonymous"];
+export const PROFILE_EDITABLE = { school: SCHOOL_PROFILE_EDITABLE, ngo: NGO_PROFILE_EDITABLE, donor: DONOR_PROFILE_EDITABLE };
+
 /**
- * Validate a school's profile edit (only the fields sent), with the registration rules.
+ * Validate an account's own profile edit (only the fields sent), with the registration rules.
  * @returns {{ errors: Record<string,string>, values: Record<string,unknown>, cleared: string[] }}
  *   `cleared` = optional fields sent empty, to be removed.
  */
-export const validateSchoolProfileUpdate = (data) => {
+export const validateProfileUpdate = (role, data) => {
   const input = data && typeof data === "object" && !Array.isArray(data) ? data : {};
-  const fields = REGISTRATION_SCHEMAS.school.fields;
+  const fields = REGISTRATION_SCHEMAS[role].fields;
+  const editable = PROFILE_EDITABLE[role];
   const errors = {};
   const values = {};
   const cleared = [];
 
   for (const key of Object.keys(input)) {
-    if (!SCHOOL_PROFILE_EDITABLE.includes(key)) errors[key] = "This field can't be changed here.";
+    if (!editable.includes(key)) errors[key] = "This field can't be changed here.";
   }
-  for (const name of SCHOOL_PROFILE_EDITABLE) {
+  for (const name of editable) {
     if (!(name in input)) continue;
     const rule = fields[name];
     if (isBlank(input[name])) {
@@ -303,6 +311,9 @@ export const validateSchoolProfileUpdate = (data) => {
   }
   return { errors, values, cleared };
 };
+
+/** A school's profile edit (see validateProfileUpdate). */
+export const validateSchoolProfileUpdate = (data) => validateProfileUpdate("school", data);
 
 // ─── Uploads ─────────────────────────────────────────────────────────────────
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // matches "max 5MB" in the existing UI

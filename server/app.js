@@ -13,12 +13,15 @@ import createApprovedProjectRouter from "./routes/approvedProjectRoutes.js";
 import createAuthRouter from "./routes/authRoutes.js";
 import createChatbotRouter from "./routes/chatbotRoutes.js";
 import createDonationRouter from "./routes/donationRoutes.js";
+import eventRoutes from "./routes/eventRoutes.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import ngoRoutes from "./routes/ngoRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import createPublicProjectRouter from "./routes/publicProjectRoutes.js";
 import schoolAlumniRoutes from "./routes/schoolAlumniRoutes.js";
 import schoolCommitmentRoutes from "./routes/schoolCommitmentRoutes.js";
+import schoolDonationRoutes from "./routes/schoolDonationRoutes.js";
+import schoolEventRoutes from "./routes/schoolEventRoutes.js";
 import schoolPaymentRoutes from "./routes/schoolPaymentRoutes.js";
 import schoolPhotoRoutes from "./routes/schoolPhotoRoutes.js";
 import schoolProjectRoutes from "./routes/schoolProjectRoutes.js";
@@ -138,6 +141,9 @@ export const createApp = ({ corsOrigin: configuredOrigin = "http://localhost:517
     app.use("/api/school/commitments", schoolCommitmentRoutes);
     app.use("/api/school/payments", schoolPaymentRoutes);
     app.use("/api/school/alumni", schoolAlumniRoutes);
+    app.use("/api/school/events", schoolEventRoutes);
+    app.use("/api/school/donations", schoolDonationRoutes);
+    app.use("/api/events", eventRoutes);
     app.use("/api/projects", createApprovedProjectRouter({
         // Counted per signed-in NGO (the router checks who it is before this runs).
         onlineOrderLimiter: makeLimiter(limits.ngoOnlineOrders, "Too many payment attempts. Please wait a few minutes and try again.", {

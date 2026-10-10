@@ -1,6 +1,6 @@
 import User from "../models/User.js";
 import UploadedFile from "../models/UploadedFile.js";
-import { SCHOOL_FACILITY_FIELDS, UPLOAD_RULES, validateSchoolProfileUpdate } from "../../shared/registrationRules.js";
+import { SCHOOL_FACILITY_FIELDS, UPLOAD_RULES, validateProfileUpdate, validateSchoolProfileUpdate } from "../../shared/registrationRules.js";
 import { logActivity } from "../services/activityLog.js";
 import { PROFILE_MODELS } from "../services/profileModels.js";
 import { mapLocationToClient } from "./mapLocationController.js";
@@ -76,6 +76,33 @@ export const updateSchoolProfile = async (req, res, next) => {
         return next(error);
     }
 };
+
+// PATCH /api/profile/ngo and /api/profile/donor — the account's own profile. Changes only the editable
+// fields sent (NGO_PROFILE_EDITABLE / DONOR_PROFILE_EDITABLE); the verified identity fields are refused.
+const updateOwnProfile = (role, label) => async (req, res, next) => {
+    const body = req.body;
+    if (!body || typeof body !== "object" || Array.isArray(body)) return res.status(400).json({ message: "Request body must be a JSON object." });
+    const { errors, values, cleared } = validateProfileUpdate(role, body);
+    if (Object.keys(errors).length) return res.status(400).json({ message: Object.values(errors)[0], errors });
+    if (!Object.keys(values).length && !cleared.length) return res.status(400).json({ message: "Nothing to update." });
+
+    const update = {};
+    if (Object.keys(values).length) update.$set = values;
+    if (cleared.length) update.$unset = Object.fromEntries(cleared.map((name) => [name, ""]));
+    try {
+        const profile = await PROFILE_MODELS[role].findOneAndUpdate({ userId: req.user._id }, update, { returnDocument: "after" }).lean();
+        if (!profile) return res.status(404).json({ message: "Profile not found." });
+        // An NGO's contact person is also the account name shown when signed in.
+        if (role === "ngo" && values.contactName) await User.updateOne({ _id: req.user._id }, { $set: { name: values.contactName } });
+        // Which fields changed, never their values.
+        logActivity(req, { action: "profile.updated", target: { type: "profile", id: req.user._id, label }, details: { fields: [...Object.keys(values), ...cleared] } });
+        return res.json({ message: "Profile updated.", profile: await profileToClient(req.user, profile) });
+    } catch (error) {
+        return next(error);
+    }
+};
+export const updateNgoProfile = updateOwnProfile("ngo", "NGO profile");
+export const updateDonorProfile = updateOwnProfile("donor", "Donor profile");
 
 // PUT /api/profile/photo  (multipart, field "schoolPhoto") — school only.
 export const replacePhoto = async (req, res, next) => {

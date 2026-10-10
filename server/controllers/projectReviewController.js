@@ -17,7 +17,7 @@ const filterFor = (reviewStatus) => (reviewStatus === "PENDING_REVIEW" ? PENDING
 const notFound = (res) => res.status(404).json({ message: "Project not found." });
 
 /** The school behind each project: display name, place (and its map location, if set), and whether its account is still active. */
-const schoolSummaries = async (schoolIds) => {
+export const schoolSummaries = async (schoolIds) => {
     const [profiles, users] = await Promise.all([
         SchoolProfile.find({ userId: { $in: schoolIds } }).select("userId schoolName udise district state mapLocation").lean(),
         User.find({ _id: { $in: schoolIds } }).select("name email accountStatus").lean(),

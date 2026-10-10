@@ -85,6 +85,31 @@ const openForDonors = async (project) => {
 };
 
 // POST /api/donations  { projectId, amount, currency? } — start a donation: create its Razorpay order.
+// GET /api/school/donations — confirmed donor donations to the signed-in school's projects, newest first.
+// Amounts and dates only: a school never sees who its donors are.
+export const listSchoolDonations = async (req, res, next) => {
+    try {
+        const donations = await Donation.find({ school: req.user._id, status: "PAID" })
+            .sort({ verifiedAt: -1, _id: -1 })
+            .limit(MY_DONATIONS_LIMIT)
+            .select("project amount mode verifiedAt createdAt")
+            .lean();
+        const projects = await Project.find({ _id: { $in: [...new Set(donations.map((d) => d.project.toString()))] }, school: req.user._id }).select("title").lean();
+        const titleById = new Map(projects.map((p) => [p._id.toString(), p.title]));
+        return res.json({
+            donations: donations.map((d) => ({
+                id: d._id.toString(),
+                project: { id: d.project.toString(), title: titleById.get(d.project.toString()) || "School need" },
+                amount: d.amount,
+                mode: d.mode,
+                verifiedAt: d.verifiedAt || d.createdAt,
+            })),
+        });
+    } catch (error) {
+        return next(error);
+    }
+};
+
 /** How a donation appears in the activity log. */
 const donationTarget = (donation, projectTitle) => ({ type: "donation", id: donation._id, label: `${formatINR(donation.amount)}${projectTitle ? ` · ${projectTitle}` : ""}` });
 

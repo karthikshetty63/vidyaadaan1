@@ -20,7 +20,8 @@ export const ACTIVITY_CATEGORIES = {
     payment: "NGO payments",
     donation: "Donations",
     qr: "Payment QRs",
-    school: "School records",
+    event: "School events",
+    school: "Profiles and school records",
     system: "System",
 };
 
@@ -62,7 +63,18 @@ export const ACTIVITY_ACTIONS = {
     "qr.approved": { category: "qr", label: "Payment QR approved" },
     "qr.rejected": { category: "qr", label: "Payment QR rejected" },
 
-    "profile.updated": { category: "school", label: "School profile edited" },
+    "event.submitted": { category: "event", label: "Event submitted" },
+    "event.updated": { category: "event", label: "Event edited" },
+    "event.resubmitted": { category: "event", label: "Event resubmitted" },
+    "event.status_changed": { category: "event", label: "Event status changed" },
+    "event.approved": { category: "event", label: "Event approved" },
+    "event.rejected": { category: "event", label: "Event rejected" },
+    "event.offer_made": { category: "event", label: "Offered help for an event" },
+    "event.offer_withdrawn": { category: "event", label: "Withdrew an offer of help" },
+    "event.offer_accepted": { category: "event", label: "Offer of help accepted" },
+    "event.offer_declined": { category: "event", label: "Offer of help declined" },
+
+    "profile.updated": { category: "school", label: "Profile edited" },
     "map_location.saved": { category: "school", label: "Map location saved" },
     "map_location.removed": { category: "school", label: "Map location removed" },
     "alumni.added": { category: "school", label: "Alumni added" },
