@@ -10,7 +10,7 @@ const ApprovedNeedCard = ({ need, onView, onFund }) => {
   const free = freeParts(need);
   const mine = myParts(need);
   return (
-    <article className="flex flex-col rounded-2xl border border-surface-line bg-surface p-5 shadow-card transition-[border-color,box-shadow] duration-200 hover:border-primary-200 hover:shadow-card-hover">
+    <article className="ui-box flex flex-col rounded-2xl border border-surface-line bg-surface p-5 shadow-card">
       <div className="flex flex-wrap items-center gap-1.5">
         <Badge>{need.category}</Badge>
         <StatusBadge status={need.priority} />

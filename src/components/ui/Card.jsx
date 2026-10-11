@@ -1,12 +1,13 @@
 // Standard surface: solid fill (white, or sky blue in the donor, NGO and school portals — see the
 // surface tokens in index.css), hairline border, very light shadow, 16px radius. Dense data
-// (lists, tables, forms) always sits on this. Elevation is not used for decoration — only
-// `interactive` cards lift slightly on hover.
+// (lists, tables, forms) always sits on this. Inside a dashboard every card answers the pointer and
+// rises in as it appears (`ui-box`, see "Dashboard hover and motion" in index.css); only an
+// `interactive` card (the whole card is clickable) also lifts.
 const Card = ({ as: Tag = "div", className = "", interactive = false, padded = false, children, ...props }) => (
   <Tag
     className={[
-      "bg-surface border border-surface-line rounded-2xl shadow-card",
-      interactive ? "transition-[border-color,box-shadow] duration-200 hover:border-slate-300/80 hover:shadow-card-hover" : "",
+      "ui-box bg-surface border border-surface-line rounded-2xl shadow-card",
+      interactive ? "ui-box-link" : "",
       padded ? "p-5" : "",
       className,
     ].join(" ")}

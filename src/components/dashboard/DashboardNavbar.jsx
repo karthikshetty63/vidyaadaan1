@@ -8,7 +8,8 @@ const NOTIFICATION_PAGES = { school: "/dashboard/school/notifications", ngo: "/d
 const DashboardNavbar = ({ role = "school", title = "Dashboard", subtitle = "", onMenuClick, menuOpen = false }) => {
   const notificationsHref = NOTIFICATION_PAGES[role];
   // `unread`: new since the account last opened Notifications. `waiting`: things that still need its action.
-  const { unread, waiting } = useNotificationCount(Boolean(notificationsHref));
+  // `ring`: the number has just gone up, so the bell rings once and the number pops in.
+  const { unread, waiting, ring, rung } = useNotificationCount(Boolean(notificationsHref));
   let bellLabel = "Notifications";
   if (unread) bellLabel = `Notifications, ${unread} new`;
   else if (waiting) bellLabel = `Notifications, ${waiting} ${waiting === 1 ? "thing needs" : "things need"} your action`;
@@ -36,11 +37,15 @@ const DashboardNavbar = ({ role = "school", title = "Dashboard", subtitle = "", 
           to={notificationsHref}
           aria-label={bellLabel}
           title={bellLabel}
-          className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-500 shadow-xs transition-colors duration-150 hover:text-slate-900 hover:border-slate-300"
+          className="group relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-500 shadow-xs transition-[color,border-color,box-shadow,scale] duration-150 hover:border-primary-200 hover:text-primary-600 hover:shadow-card-hover active:scale-95"
         >
-          <LuBell className="w-[18px] h-[18px]" aria-hidden="true" />
+          <LuBell
+            className={`w-[18px] h-[18px] origin-top ${ring && unread > 0 ? "motion-safe:animate-bell-ring" : ""}`}
+            onAnimationEnd={rung}
+            aria-hidden="true"
+          />
           {unread > 0 ? (
-            <span data-bell-count className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-bold leading-none text-white ring-2 ring-white" aria-hidden="true">
+            <span data-bell-count className={`absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-bold leading-none text-white ring-2 ring-white ${ring ? "motion-safe:animate-badge-pop" : ""}`} aria-hidden="true">
               {unread > 9 ? "9+" : unread}
             </span>
           ) : (

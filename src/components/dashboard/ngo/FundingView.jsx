@@ -70,7 +70,7 @@ const FundingView = ({ projects, payments, loading, error, notice, onRecordPayme
         <>
           <section aria-label="Funding totals">
             {/* Phones: the totals two by two in one compact card. */}
-            <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-surface-line bg-surface-divider shadow-card sm:hidden">
+            <dl className="ui-box grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-surface-line bg-surface-divider shadow-card sm:hidden">
               {figures.map((f) => (
                 <div key={f.label} className="flex flex-col justify-between bg-surface px-4 py-3">
                   <dt className="text-xs text-slate-500">{f.label}</dt>

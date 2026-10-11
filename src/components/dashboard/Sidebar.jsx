@@ -115,11 +115,11 @@ const Sidebar = ({ role = "school", userName = "Admin", userSub = "", mobileOpen
                   aria-current={active ? "page" : undefined}
                   title={compact ? label : undefined}
                   className={`group flex items-center ${compact ? "justify-center px-0" : "gap-3 px-3"} h-10 rounded-xl text-sm font-medium transition-colors duration-150 ${
-                    active ? activeLink : "text-slate-600 hover:bg-slate-900/[0.04] hover:text-slate-900"
+                    active ? activeLink : "text-slate-600 hover:bg-primary-50/70 hover:text-slate-900"
                   }`}
                 >
                   <Icon
-                    className={`w-[18px] h-[18px] shrink-0 transition-colors duration-150 ${active ? activeIcon : "text-slate-400 group-hover:text-slate-600"}`}
+                    className={`w-[18px] h-[18px] shrink-0 transition-[color,translate,scale] duration-200 ${active ? activeIcon : "text-slate-400 group-hover:translate-x-0.5 group-hover:scale-110 group-hover:text-primary-600 motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:scale-100"}`}
                     aria-hidden="true"
                   />
                   {compact ? <span className="sr-only">{label}</span> : <span className="truncate">{label}</span>}

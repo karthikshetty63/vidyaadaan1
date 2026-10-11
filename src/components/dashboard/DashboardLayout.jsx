@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import DashboardNavbar from "./DashboardNavbar";
 import Alert from "../ui/Alert";
+import useDashboardMotion from "../../hooks/useDashboardMotion";
 
 // Shell for every dashboard page: sidebar (drawer below 1024px) + top bar + scrolling content.
 // `dashboard-theme` (index.css) gives every portal the indigo brand colour, its font and the soft
 // background wash — dialogs opened from a page are inside it too. The school, NGO and donor portals
 // then add `dashboard-blue` (the sign-in pages' brand blue, white boxes on a calm page). The admin
-// portal keeps the indigo colours.
+// portal keeps the indigo colours. Every box inside answers the pointer and rises in as it appears
+// (useDashboardMotion and "Dashboard hover and motion" in index.css).
 const PORTAL_THEMES = { school: "dashboard-blue", ngo: "dashboard-blue", donor: "dashboard-blue" };
 
 const DashboardLayout = ({
@@ -20,6 +22,8 @@ const DashboardLayout = ({
     children,
 }) => {
     const [navOpen, setNavOpen] = useState(false);
+    const contentRef = useRef(null);
+    useDashboardMotion(contentRef);
     const location = useLocation();
     const navigate = useNavigate();
     // Set by the sign-in page the first time an existing account is linked to Google.
@@ -33,7 +37,7 @@ const DashboardLayout = ({
         <div className={`dashboard-theme ${PORTAL_THEMES[role] || ""} relative flex h-dvh overflow-hidden`}>
             <Sidebar role={role} userName={userName} userSub={userSub} mobileOpen={navOpen} onClose={() => setNavOpen(false)} />
 
-            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            <div ref={contentRef} className="flex-1 min-w-0 flex flex-col overflow-hidden">
                 <DashboardNavbar
                     role={role}
                     title={title}

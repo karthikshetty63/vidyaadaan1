@@ -34,13 +34,14 @@ const useKeepFresh = (load, enabled = true) => {
 /**
  * The numbers for the bell: `unread` (new since the account last opened Notifications) and `waiting`
  * (things that need its action). Asked again on every page or view change. A failed request keeps the
- * last numbers: the bell never shows an error.
+ * last numbers: the bell never shows an error. `ring` is true when the number has just gone up (and on
+ * the first count after signing in), until `rung()` is called when the bell has finished ringing.
  */
 export const useNotificationCount = (enabled = true) => {
   const { user } = useAuth();
   const account = user?.email || "";
   const { pathname, hash } = useLocation();
-  const [result, setResult] = useState(() => ({ account, counts: lastCounts.get(account) || NO_COUNTS }));
+  const [result, setResult] = useState(() => ({ account, counts: lastCounts.get(account) || NO_COUNTS, ring: false }));
   const latest = useRef(0);
 
   const load = useCallback(() => {
@@ -49,8 +50,10 @@ export const useNotificationCount = (enabled = true) => {
       (data) => {
         if (id !== latest.current) return;
         const counts = { unread: data.unread || 0, waiting: data.waiting || 0 };
+        const before = lastCounts.get(account);
+        const louder = counts.unread > (before?.unread || 0);
         lastCounts.set(account, counts);
-        setResult({ account, counts });
+        setResult((r) => ({ account, counts, ring: louder || (r.account === account && r.ring) }));
       },
       () => {}
     );
@@ -66,7 +69,9 @@ export const useNotificationCount = (enabled = true) => {
     return () => window.removeEventListener(CHANGED, load);
   }, [enabled, load]);
 
-  return result.account === account ? result.counts : NO_COUNTS;
+  const rung = useCallback(() => setResult((r) => (r.ring ? { ...r, ring: false } : r)), []);
+  const mine = result.account === account;
+  return { ...(mine ? result.counts : NO_COUNTS), ring: mine && result.ring, rung };
 };
 
 /**

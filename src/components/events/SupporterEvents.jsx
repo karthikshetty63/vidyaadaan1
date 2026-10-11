@@ -94,7 +94,7 @@ const EventCard = ({ event, onOffer, onWithdraw }) => {
   const offer = event.myOffer;
   const long = event.description.length > 220;
   return (
-    <article className="flex flex-col rounded-2xl border border-surface-line bg-surface shadow-card" aria-label={event.title}>
+    <article className="ui-box flex flex-col rounded-2xl border border-surface-line bg-surface shadow-card" aria-label={event.title}>
       <div className="flex flex-1 flex-col p-5">
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge>{event.type}</Badge>

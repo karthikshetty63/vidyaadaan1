@@ -17,7 +17,7 @@ const NeedCard = ({ need, onDonate, onDetails }) => {
   const funded = getFundingPercentage(need.budget, need.raised);
   const fullyFunded = need.raised >= need.budget;
   return (
-    <article className="flex flex-col rounded-2xl border border-surface-line bg-surface shadow-card transition-[border-color,box-shadow] duration-200 hover:border-primary-200 hover:shadow-card-hover">
+    <article className="ui-box flex flex-col rounded-2xl border border-surface-line bg-surface shadow-card">
       <div className="flex flex-1 flex-col p-5">
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge>{need.category}</Badge>

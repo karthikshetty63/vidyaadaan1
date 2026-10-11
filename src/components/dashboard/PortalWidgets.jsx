@@ -1,17 +1,18 @@
 import { Link } from "react-router-dom";
 import { LuArrowRight, LuChevronRight } from "react-icons/lu";
+import AnimatedNumber from "../ui/AnimatedNumber";
 
 // Building blocks shared by the school, NGO and donor home pages (the brand-blue design). They only show
 // the figures they are given, which each page counts from real records: nothing here invents a number.
 
-/** A grey placeholder while a figure loads (still for people who prefer less motion). */
+/** A grey placeholder while a figure loads, with a light sweeping across it (still for people who prefer less motion). */
 export const Skeleton = ({ className = "" }) => (
-  <span className={`block rounded-lg bg-slate-200/70 motion-safe:animate-pulse ${className}`} aria-hidden="true" />
+  <span className={`ui-skeleton block rounded-lg bg-slate-200/70 ${className}`} aria-hidden="true" />
 );
 
-// Clickable boxes lift a little on hover; boxes you can't click never move.
-export const LIFT =
-  "transition-[translate,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-card-hover motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+// Every box answers the pointer; only a box you can click lifts (see "Dashboard hover and motion" in index.css).
+export const BOX = "ui-box";
+export const LIFT = "ui-box ui-box-link";
 // List rows: a soft tint and an arrow that slides in.
 export const ROW = "group flex gap-4 px-5 py-4 transition-colors duration-150 hover:bg-surface-muted focus-visible:outline-offset-[-2px]";
 
@@ -55,10 +56,10 @@ export const HeroIconTile = ({ children }) => (
 export const PortalHero = ({ userName, title, fallbackTitle = "Welcome", loading, summary, tile, facts, actions }) => {
   const firstName = (userName || "").trim().split(/\s+/)[0];
   return (
-    <section className="relative isolate overflow-hidden rounded-2xl border border-primary-100 bg-linear-to-br from-primary-50 via-white to-white px-5 py-5 shadow-card sm:px-8 sm:py-7">
+    <section className="ui-enter relative isolate overflow-hidden rounded-2xl border border-primary-100 bg-linear-to-br from-primary-50 via-white to-white px-5 py-5 shadow-card sm:px-8 sm:py-7">
       {/* Two faint rings: the only decoration. */}
-      <span aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full border border-primary-100" />
-      <span aria-hidden="true" className="pointer-events-none absolute -right-4 -top-10 -z-10 h-40 w-40 rounded-full border border-primary-100" />
+      <span aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full border border-primary-100 motion-safe:animate-ring-drift" />
+      <span aria-hidden="true" className="pointer-events-none absolute -right-4 -top-10 -z-10 h-40 w-40 rounded-full border border-primary-100 motion-safe:animate-ring-drift motion-safe:[animation-delay:-7s]" />
 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-4">
@@ -105,7 +106,7 @@ export const HeroFact = ({ icon: Icon, to, children }) => {
   );
 };
 
-/** A ring that fills to `percent` (0–100), green once complete. */
+/** A ring that fills to `percent` (0–100) from empty when it appears, green once complete. */
 const Ring = ({ percent, size = 136, stroke = 12 }) => {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -122,7 +123,8 @@ const Ring = ({ percent, size = 136, stroke = 12 }) => {
         strokeDasharray={c}
         strokeDashoffset={c * (1 - percent / 100)}
         strokeLinecap={percent > 0 ? "round" : "butt"}
-        className={percent >= 100 ? "text-emerald-500" : "text-primary-600"}
+        style={{ "--ring-from": c }}
+        className={`ui-ring-fill ${percent >= 100 ? "text-emerald-500" : "text-primary-600"}`}
       />
     </svg>
   );
@@ -131,7 +133,7 @@ const Ring = ({ percent, size = 136, stroke = 12 }) => {
 const RingFact = ({ label, value, tone = "text-slate-900", loading }) => (
   <div>
     <dt className="text-xs font-medium text-slate-500">{label}</dt>
-    <dd className={`mt-0.5 text-base font-bold tabular-nums sm:text-lg ${tone}`}>{loading ? <Skeleton className="mt-1 h-5 w-20" /> : value}</dd>
+    <dd className={`mt-0.5 text-base font-bold tabular-nums sm:text-lg ${tone}`}>{loading ? <Skeleton className="mt-1 h-5 w-20" /> : <AnimatedNumber value={value} />}</dd>
   </div>
 );
 
@@ -154,10 +156,10 @@ export const WaitingLink = ({ to, children }) => (
 export const RingCard = ({ id, icon: Icon, title, subtitle, link, loading, loadingLabel = "Loading…", failed, failedText, value, goal, centerLabel, srText, facts, empty, footer, className = "" }) => {
   const percent = goal > 0 ? Math.min(100, Math.round((value / goal) * 100)) : 0;
   return (
-    <section aria-labelledby={`${id}-heading`} className={`flex flex-col rounded-2xl border border-surface-line bg-surface p-5 shadow-card sm:p-6 ${className}`}>
+    <section aria-labelledby={`${id}-heading`} className={`${BOX} flex flex-col rounded-2xl border border-surface-line bg-surface p-5 shadow-card sm:p-6 ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-100" aria-hidden="true">
+          <span data-box-icon className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-100" aria-hidden="true">
             <Icon className="h-5 w-5" />
           </span>
           <div>
@@ -189,7 +191,7 @@ export const RingCard = ({ id, icon: Icon, title, subtitle, link, loading, loadi
           <div className="relative shrink-0">
             <Ring percent={percent} />
             <p className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
-              <span className="text-3xl font-extrabold tabular-nums text-brand-navy">{percent}%</span>
+              <span className="text-3xl font-extrabold tabular-nums text-brand-navy"><AnimatedNumber value={`${percent}%`} /></span>
               <span className="text-xs font-medium text-slate-500">{centerLabel}</span>
             </p>
             <span className="sr-only">{srText(percent)}</span>
@@ -218,18 +220,18 @@ const TONES = {
   blue: "bg-primary-50 text-primary-600 ring-primary-100",
 };
 
-/** A secondary figure. With `to`, the whole box is a link (and lifts on hover). */
+/** A secondary figure, counting up to its value. With `to`, the whole box is a link (and lifts on hover). */
 export const MetricCard = ({ label, value, icon: Icon, tone = "blue", hint, loading, to }) => {
   const body = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <span className={`flex h-9 w-9 items-center justify-center rounded-xl ring-1 ring-inset ${TONES[tone]}`} aria-hidden="true">
+        <span data-box-icon className={`flex h-9 w-9 items-center justify-center rounded-xl ring-1 ring-inset ${TONES[tone]}`} aria-hidden="true">
           <Icon className="h-[18px] w-[18px]" />
         </span>
         {to && <LuArrowRight className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-primary-600 motion-reduce:group-hover:translate-x-0" aria-hidden="true" />}
       </div>
       <p className="mt-4 text-sm font-medium text-slate-600">{label}</p>
-      <p className="mt-0.5 text-2xl font-extrabold tabular-nums tracking-tight text-brand-navy">{loading ? <Skeleton className="mt-1 h-7 w-12" /> : value}</p>
+      <p className="mt-0.5 text-2xl font-extrabold tabular-nums tracking-tight text-brand-navy">{loading ? <Skeleton className="mt-1 h-7 w-12" /> : <AnimatedNumber value={value} />}</p>
       {hint && !loading && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
     </>
   );
@@ -237,7 +239,7 @@ export const MetricCard = ({ label, value, icon: Icon, tone = "blue", hint, load
   return to ? (
     <Link to={to} className={`group ${cls} ${LIFT}`}>{body}</Link>
   ) : (
-    <div className={cls}>{body}</div>
+    <div className={`${cls} ${BOX}`}>{body}</div>
   );
 };
 
@@ -245,7 +247,7 @@ export const MetricCard = ({ label, value, icon: Icon, tone = "blue", hint, load
 export const QuickActionTile = ({ icon: Icon, label, desc, to, onClick }) => {
   const body = (
     <>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 ring-1 ring-inset ring-primary-100 transition-colors group-hover:bg-primary-600 group-hover:text-white" aria-hidden="true">
+      <span data-box-icon className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 ring-1 ring-inset ring-primary-100 group-hover:bg-primary-600 group-hover:text-white" aria-hidden="true">
         <Icon className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">

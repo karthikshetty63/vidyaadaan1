@@ -112,7 +112,7 @@ const Gallery = () => {
               ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                   {displayed.map((photo) => (
-                    <li key={photo.id} className="bg-surface rounded-2xl border border-surface-line shadow-card overflow-hidden flex flex-col">
+                    <li key={photo.id} className="ui-box bg-surface rounded-2xl border border-surface-line shadow-card overflow-hidden flex flex-col">
                       <button type="button" onClick={() => setViewing(photo)} className="relative block w-full h-48 bg-slate-100" aria-label={`View photo: ${describe(photo)}`}>
                         <ProtectedImage fileId={photo.file?.id} alt="" className="w-full h-full object-cover" fallback={<PhotoFallback />} />
                         <span className="absolute top-3 left-3 bg-black/60 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full">{photo.stage}</span>

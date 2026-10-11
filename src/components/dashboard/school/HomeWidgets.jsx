@@ -51,7 +51,7 @@ export const PipelineBar = ({ stages, total }) => (
   <div>
     <div className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
       {stages.filter((s) => s.count > 0).map((s) => (
-        <span key={s.key} className={`h-full ${s.color}`} style={{ width: `${(s.count / total) * 100}%` }} />
+        <span key={s.key} className={`ui-bar-fill h-full ${s.color}`} style={{ width: `${(s.count / total) * 100}%` }} />
       ))}
     </div>
     {/* Two columns on phones; one flowing row on larger screens. */}

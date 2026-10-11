@@ -66,6 +66,8 @@
   /* Cards sit on a tinted background, so they need only a hairline of depth. */
   --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.03);
   --shadow-card-hover: 0 2px 4px -1px rgb(15 23 42 / 0.05), 0 12px 24px -10px rgb(79 70 229 / 0.18);
+  /* A box you can click, lifted under the pointer. */
+  --shadow-card-lift: 0 6px 12px -4px rgb(15 23 42 / 0.07), 0 22px 40px -16px rgb(79 70 229 / 0.3);
 
   /* A dashboard view (e.g. an NGO portal section) settles in when you switch to it. */
   --animate-view-enter: view-enter 180ms ease-out;
@@ -86,6 +88,28 @@
   @keyframes chat-open {
     from { opacity: 0; transform: translateY(12px) scale(0.97); }
     to { opacity: 1; transform: none; }
+  }
+
+  /* The bell rings once when something new arrives, and its number pops in. */
+  --animate-bell-ring: bell-ring 900ms ease-in-out;
+  @keyframes bell-ring {
+    0%, 100% { rotate: 0deg; }
+    15% { rotate: 16deg; }
+    30% { rotate: -14deg; }
+    45% { rotate: 10deg; }
+    60% { rotate: -7deg; }
+    75% { rotate: 3deg; }
+  }
+  --animate-badge-pop: badge-pop 450ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  @keyframes badge-pop {
+    from { opacity: 0; scale: 0.3; }
+  }
+
+  /* The welcome banner's two faint rings drift slowly. */
+  --animate-ring-drift: ring-drift 14s ease-in-out infinite;
+  @keyframes ring-drift {
+    0%, 100% { translate: 0 0; scale: 1; }
+    50% { translate: -12px 10px; scale: 1.06; }
   }
 }
 
@@ -189,6 +213,7 @@
   --radius-2xl: 1.25rem;
   --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.03);
   --shadow-card-hover: 0 4px 8px -2px rgb(15 23 42 / 0.06), 0 14px 28px -12px rgb(37 99 235 / 0.25);
+  --shadow-card-lift: 0 8px 14px -6px rgb(15 23 42 / 0.08), 0 24px 44px -16px rgb(37 99 235 / 0.34);
 
   background-color: #f4f8ff;
   background-image: none;
@@ -211,6 +236,140 @@
 .dashboard-sky .dialog-foot {
   background-color: var(--color-surface);
   border-top-color: var(--color-surface-line);
+}
+
+/*
+ * Dashboard hover and motion
+ * ──────────────────────────
+ * Every box in a dashboard (.ui-box: Card, StatCard and the portal widgets) answers the pointer, and
+ * boxes rise in as they appear. Honest by design — only a box you can click moves under the pointer:
+ *   any box       a soft brand-coloured light that follows the pointer (--mx/--my, set by
+ *                 useDashboardMotion), a tinted edge, a deeper shadow, and its icon tile tilts;
+ *   .ui-box-link  (the whole box is a link or a button) also lifts, and presses down when clicked.
+ * Entrance: useDashboardMotion gives boxes that appear together a growing --enter-delay, so they arrive
+ * one after another (also when they arrive later with their data), and marks boxes that start below
+ * the visible area with data-reveal: they wait, and rise in when scrolled to. Bars and rings fill up
+ * after their box arrives. Nothing moves for people whose device asks for less motion.
+ */
+@property --spot {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+@keyframes box-enter {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+}
+@keyframes bar-fill {
+  from { width: 0; }
+}
+@keyframes ring-fill {
+  from { stroke-dashoffset: var(--ring-from); }
+}
+@keyframes skeleton-sweep {
+  from { background-position: 160% 0; }
+  to { background-position: -60% 0; }
+}
+
+.dashboard-theme .ui-box {
+  --mx: 50%;
+  --my: 0%;
+  background-image: radial-gradient(520px circle at var(--mx) var(--my), color-mix(in oklab, var(--color-primary-400) var(--spot), transparent), transparent 70%);
+  animation: box-enter 560ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: var(--enter-delay, 0ms);
+  transition:
+    border-color 220ms ease,
+    box-shadow 280ms ease,
+    translate 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    scale 140ms ease,
+    --spot 320ms ease;
+}
+/* Waiting below the visible area: held at the start, with everything inside it. */
+.dashboard-theme .ui-box[data-reveal],
+.dashboard-theme .ui-box[data-reveal] * {
+  animation-play-state: paused;
+}
+/* The welcome banner arrives the same way (its gradient isn't replaced by the light). */
+.dashboard-theme .ui-enter {
+  animation: box-enter 560ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.dashboard-theme [data-box-icon] {
+  transition:
+    scale 320ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    rotate 320ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+@media (hover: hover) {
+  .dashboard-theme .ui-box:hover {
+    --spot: 9%;
+    /* The box's own hairline (border-surface-line) takes a brand tint; coloured borders keep theirs. */
+    --color-surface-line: color-mix(in oklab, var(--color-primary-300) 60%, white);
+    box-shadow: var(--shadow-card-hover);
+  }
+  .dashboard-theme .ui-box-link:hover {
+    --spot: 13%;
+    --color-surface-line: var(--color-primary-300);
+    translate: 0 -3px;
+    box-shadow: var(--shadow-card-lift);
+  }
+  .dashboard-theme .ui-box:hover [data-box-icon] {
+    scale: 1.1;
+    rotate: -6deg;
+  }
+  /* Table rows: a soft brand tint under the pointer. */
+  .dashboard-theme tbody tr:hover {
+    background-color: color-mix(in oklab, var(--color-primary-50) 75%, transparent);
+  }
+}
+.dashboard-theme tbody tr {
+  transition: background-color 150ms ease;
+}
+/* A press you can feel, on a phone too. */
+.dashboard-theme .ui-box-link:active {
+  translate: 0 0;
+  scale: 0.985;
+  transition-duration: 90ms;
+}
+
+/* Funding bars and rings fill up once their box has arrived; later changes glide. */
+.ui-bar-fill {
+  animation: bar-fill 1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--enter-delay, 0ms) + 180ms);
+  transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ui-ring-fill {
+  animation: ring-fill 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--enter-delay, 0ms) + 180ms);
+  transition: stroke-dashoffset 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* Loading placeholders: a light sweeps across instead of blinking. */
+.ui-skeleton {
+  background-image: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.65) 50%, transparent 80%);
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-sweep 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-theme .ui-box,
+  .dashboard-theme .ui-enter,
+  .ui-bar-fill,
+  .ui-ring-fill,
+  .ui-skeleton {
+    animation: none;
+  }
+  .dashboard-theme .ui-box {
+    transition: border-color 150ms ease, box-shadow 150ms ease, --spot 150ms ease;
+  }
+  .dashboard-theme .ui-box-link:hover,
+  .dashboard-theme .ui-box-link:active,
+  .dashboard-theme .ui-box:hover [data-box-icon] {
+    translate: none;
+    scale: none;
+    rotate: none;
+  }
 }
 
 /* The welcome banner on a portal's home page (DashboardHero): the lightest sky blue, with dark text on it. */
