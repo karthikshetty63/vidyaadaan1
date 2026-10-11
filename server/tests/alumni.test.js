@@ -293,7 +293,7 @@ describe("approved project → alumni emails", () => {
         const res = await approve(project.id);
         assert.equal(res.status, 200);
         assert.equal(res.body.project.reviewStatus, "OPEN");
-        assert.equal(res.body.message, "Project approved. It is now open. Emails to 2 alumni of the school have been queued.");
+        assert.ok(res.body.message.startsWith("Project approved. It is now open. Emails to 2 alumni of the school have been queued."), res.body.message);
         assert.deepEqual(res.body.alumniEmails, { status: "QUEUED", queued: 2 });
 
         await waitForAlumniEmails();
@@ -449,7 +449,7 @@ describe("approved project → alumni emails", () => {
 
         const res = await approve(project.id);
         assert.equal(res.status, 200);
-        assert.equal(res.body.message, "Project approved. It is now open. Alumni emails were not sent: email is not set up on the server.");
+        assert.ok(res.body.message.startsWith("Project approved. It is now open. Alumni emails were not sent: email is not set up on the server."), res.body.message);
         assert.deepEqual(res.body.alumniEmails, { status: "EMAIL_UNAVAILABLE", queued: 0 });
         await waitForAlumniEmails();
         assert.equal(attempts, 0);
@@ -479,7 +479,7 @@ describe("approved project → alumni emails", () => {
         const project = await createProject(c);
         const res = await approve(project.id);
         assert.equal(res.status, 200);
-        assert.equal(res.body.message, "Project approved. It is now open. The school has no active alumni to email.");
+        assert.ok(res.body.message.startsWith("Project approved. It is now open. The school has no active alumni to email."), res.body.message);
         assert.deepEqual(res.body.alumniEmails, { status: "NO_ALUMNI", queued: 0 });
     });
 

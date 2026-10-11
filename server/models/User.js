@@ -24,6 +24,9 @@ const userSchema = new mongoose.Schema(
         rejectionReason: { type: String, trim: true, maxlength: 500 },
         // When the account last opened its Notifications page: anything newer counts as unread on the bell.
         notificationsSeenAt: { type: Date },
+        // NGOs and donors: email me when a new school need is approved. Missing means yes (accounts from
+        // before this setting); false after "Stop these emails" or turning it off in Settings.
+        newNeedEmails: { type: Boolean },
         // Forgot-password: only the SHA-256 hash of the emailed token is stored, never the token itself.
         passwordResetToken: { type: String, select: false },
         passwordResetExpires: { type: Date, select: false },

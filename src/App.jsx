@@ -34,6 +34,7 @@ import DonorDashboard from "./pages/dashboard/donor/DonorDashboard";
 import AdminLogin from "./pages/auth/AdminLogin";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
+import StopEmails from "./pages/auth/StopEmails";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 import ControlTower from "./pages/dashboard/admin/ControlTower";
 
@@ -48,8 +49,10 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/contact" element={<Contact />} />
-          {/* An approved project's public page (the "View project" link in alumni emails). No sign-in needed. */}
+          {/* An approved project's public page (the link in alumni emails and in the new-need emails to NGOs and donors). No sign-in needed. */}
           <Route path="/projects/:projectId" element={<ProjectDetails />} />
+          {/* "Stop these emails" in the new-need emails: no sign-in needed (the link says whose emails). */}
+          <Route path="/emails/stop" element={<StopEmails />} />
 
           {/* Sign-in and registration: anyone already signed in goes straight to their dashboard */}
           <Route element={<GuestRoute />}>

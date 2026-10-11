@@ -93,22 +93,36 @@ const NGODashboard = () => {
 
   // Always the latest version of a need, so an open window reflects parts taken meanwhile.
   const findNeed = (id) => needs.find((n) => n.id === id) || funded.find((n) => n.id === id);
-  const viewing = viewingId && findNeed(viewingId);
+  // "Fund this need" on a project's public page (from a new-need email) opens /dashboard/ngo?need=<id>#needs:
+  // that need's details, once the lists have loaded. Closing them, or moving on to fund or pay, drops the link.
+  const linkedNeedId = new URLSearchParams(location.search).get("need");
+  const dropLinkedNeed = () => {
+    if (linkedNeedId) navigate(`${location.pathname}${location.hash}`, { replace: true });
+  };
+  const linkedNeed = linkedNeedId && !viewingId && !fundingId && !payingId ? findNeed(linkedNeedId) : null;
+  const linkGone = Boolean(linkedNeedId) && !linkedNeed && !needsList.loading && !commitments.loading && !needsList.error && !viewingId && !fundingId && !payingId;
+  const viewing = (viewingId && findNeed(viewingId)) || linkedNeed;
   const funding = fundingId && findNeed(fundingId);
   const paying = payingId && findNeed(payingId);
   // Payments are newest first: if the latest for this need was rejected, show the school's reason.
   const lastPayment = paying && payments.find((p) => p.project.id === paying.id);
 
   const openDetails = (need) => setViewingId(need.id);
+  const closeDetails = () => {
+    setViewingId(null);
+    dropLinkedNeed();
+  };
   const openFunding = (need) => {
     setNotice(null);
     setViewingId(null);
     setFundingId(need.id);
+    dropLinkedNeed();
   };
   const openPayment = (need) => {
     setNotice(null);
     setViewingId(null);
     setPayingId(need.id);
+    dropLinkedNeed();
   };
   const handleCommitted = (project, message) => {
     needsList.update(project);
@@ -181,7 +195,15 @@ const NGODashboard = () => {
         loading={needsList.loading}
         error={needsList.error}
         homeState={profile?.state}
-        notice={noticeHere}
+        notice={
+          linkGone ? (
+            <Alert tone="info" title="That school need isn't open for funding any more">
+              It may already be fully funded. These are the needs you can fund now.
+            </Alert>
+          ) : (
+            noticeHere
+          )
+        }
         onView={openDetails}
         onFund={openFunding}
       />
@@ -282,7 +304,7 @@ const NGODashboard = () => {
         </div>
       </main>
 
-      {viewing && <NeedDetailsModal need={viewing} onClose={() => setViewingId(null)} onFund={openFunding} onRecordPayment={openPayment} />}
+      {viewing && <NeedDetailsModal need={viewing} onClose={closeDetails} onFund={openFunding} onRecordPayment={openPayment} />}
       {funding && <FundNeedModal need={funding} onClose={() => setFundingId(null)} onCommitted={handleCommitted} onConflict={handleConflict} />}
       {paying && (
         <RecordPaymentModal

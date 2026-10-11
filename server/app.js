@@ -13,6 +13,7 @@ import createApprovedProjectRouter from "./routes/approvedProjectRoutes.js";
 import createAuthRouter from "./routes/authRoutes.js";
 import createChatbotRouter from "./routes/chatbotRoutes.js";
 import createDonationRouter from "./routes/donationRoutes.js";
+import createEmailPreferenceRouter from "./routes/emailPreferenceRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import ngoRoutes from "./routes/ngoRoutes.js";
@@ -154,6 +155,10 @@ export const createApp = ({ corsOrigin: configuredOrigin = "http://localhost:517
     }));
     // No sign-in: the public page of an approved project (the link in alumni emails).
     app.use("/api/public/projects", createPublicProjectRouter({
+        limiter: makeLimiter(limits.publicProjects, "Too many requests. Please wait a minute and try again."),
+    }));
+    // No sign-in: the "Stop these emails" link in the emails about new school needs.
+    app.use("/api/public/emails", createEmailPreferenceRouter({
         limiter: makeLimiter(limits.publicProjects, "Too many requests. Please wait a minute and try again."),
     }));
     // Signed in or not: the help assistant (its persona comes from the session, never from the browser).

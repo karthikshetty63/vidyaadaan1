@@ -64,7 +64,11 @@ const Privacy = () => (
         <li>To show a school&rsquo;s payment details to the NGOs that pay it.</li>
         <li>
           To send you emails about your own account: password reset links you ask for, and updates such as a decision on your registration,
-          project, event or payment, or a school&rsquo;s answer to your offer of help. We send no newsletters or advertising.
+          project, event or payment, or a school&rsquo;s answer to your offer of help.
+        </li>
+        <li>
+          NGOs and donors: to email you when a new school need is approved, with a link to it. Every such email has a link to
+          stop them, and you can turn them off or on again in Settings. We send no newsletters or advertising.
         </li>
         <li>To show you notifications, we record when you last opened your Notifications page.</li>
         <li>To keep VIDYADAAN secure and to meet legal requirements.</li>

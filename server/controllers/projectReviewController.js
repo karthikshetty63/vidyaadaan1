@@ -4,12 +4,14 @@ import SchoolProfile from "../models/SchoolProfile.js";
 import User from "../models/User.js";
 import { logActivity, projectTarget } from "../services/activityLog.js";
 import { queueProjectApprovalEmails } from "../services/alumniNotifications.js";
+import { queueNewNeedEmails } from "../services/newNeedEmails.js";
 import { emailProjectDecision } from "../services/notificationEmails.js";
 import { PROJECT_REJECTION_REASON_MAX, PROJECT_REJECTION_REASON_MIN, PROJECT_REVIEW_STATUSES } from "../../shared/projectRules.js";
 import { projectToClient } from "./projectController.js";
 
 // Admin review of school projects: the same Project records the schools create and edit.
-// Approve: PENDING_REVIEW → OPEN, then the school's active alumni are emailed (in the background).
+// Approve: PENDING_REVIEW → OPEN, then the school's active alumni, and every NGO and donor who hasn't
+// stopped these emails, are emailed (in the background).
 // Reject (with a reason): PENDING_REVIEW → REJECTED.
 // Nothing else is allowed; a rejected project returns to PENDING_REVIEW only when its school edits it.
 
@@ -109,15 +111,28 @@ export const approveProject = async (req, res, next) => {
         );
         if (!updated) return notWaiting(res, await Project.findById(project._id).lean());
 
-        // Only this request moved the project to OPEN, so only it tells the school's alumni.
+        // Only this request moved the project to OPEN, so only it tells the school's alumni, NGOs and donors.
         const alumniEmails = await notifyAlumni(updated, req.app.locals.frontendOrigin);
-        logActivity(req, { action: "project.approved", target: projectTarget(updated), details: { schoolId: updated.school, budget: updated.budget, alumniEmails: alumniEmails.status, alumniQueued: alumniEmails.queued || 0 } });
+        const newNeedEmails = await notifySupporters(updated, req.app.locals.frontendOrigin);
+        logActivity(req, {
+            action: "project.approved",
+            target: projectTarget(updated),
+            details: {
+                schoolId: updated.school,
+                budget: updated.budget,
+                alumniEmails: alumniEmails.status,
+                alumniQueued: alumniEmails.queued || 0,
+                newNeedNotice: newNeedEmails.status,
+                newNeedQueued: newNeedEmails.queued || 0,
+            },
+        });
         // The school is told too, in the background.
         emailProjectDecision(req.app.locals.frontendOrigin, updated, { approved: true, alumniQueued: alumniEmails.status === "QUEUED" ? alumniEmails.queued : 0 });
         return res.json({
-            message: `Project approved. It is now open. ${alumniEmails.message}`,
+            message: `Project approved. It is now open. ${alumniEmails.message} ${newNeedEmails.message}`,
             project: projectToClient(updated),
             alumniEmails: { status: alumniEmails.status, queued: alumniEmails.queued },
+            supporterEmails: { status: newNeedEmails.status, queued: newNeedEmails.queued },
         });
     } catch (error) {
         return next(error);
@@ -142,6 +157,26 @@ const notifyAlumni = async (project, frontendOrigin) => {
         result = { status: "ERROR", queued: 0 };
     }
     return { ...result, message: ALUMNI_EMAIL_MESSAGES[result.status](result) };
+};
+
+const SUPPORTER_EMAIL_MESSAGES = {
+    QUEUED: ({ queued }) => `Emails about it to ${queued === 1 ? "1 NGO or donor" : `${queued} NGOs and donors`} have been queued.`,
+    ALREADY_QUEUED: () => "Emails to NGOs and donors were already queued.",
+    NO_RECIPIENTS: () => "There are no NGO or donor accounts to email yet.",
+    EMAIL_UNAVAILABLE: () => "Emails to NGOs and donors were not sent: email is not set up on the server.",
+    ERROR: () => "Emails to NGOs and donors could not be queued; see the server log.",
+};
+
+/** Every active NGO and donor hears about the new need. Never throws, like notifyAlumni. */
+const notifySupporters = async (project, frontendOrigin) => {
+    let result;
+    try {
+        result = await queueNewNeedEmails(project, { frontendOrigin });
+    } catch (error) {
+        console.error(`Project ${project._id} was approved, but its emails to NGOs and donors could not be queued:`, error.message);
+        result = { status: "ERROR", queued: 0 };
+    }
+    return { ...result, message: SUPPORTER_EMAIL_MESSAGES[result.status](result) };
 };
 
 // PATCH /api/admin/projects/:id/reject  { reason }

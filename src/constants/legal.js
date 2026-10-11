@@ -5,7 +5,7 @@ export const OPERATOR = {
   description: "an individual",
 };
 
-export const LEGAL_UPDATED = "6 October 2026";
+export const LEGAL_UPDATED = "11 October 2026";
 export const REFUND_WINDOW_DAYS = 7;
 
 export const LEGAL_LINKS = [

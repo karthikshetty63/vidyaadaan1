@@ -20,7 +20,7 @@ import { formatINR } from "../../utils/format";
 import { getAmountRemaining, getFundingPercentage } from "../../utils/funding";
 
 const SITE = "VIDYADAAN";
-const SIGNED_IN_AS = { school: "a school account", ngo: "an NGO account", admin: "an admin account" };
+const SIGNED_IN_AS = { school: "a school account", admin: "an admin account" };
 const formatDay = (iso) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 const placeOf = (school) => [school.district, school.state].filter(Boolean).join(", ");
 
@@ -94,24 +94,49 @@ const Fact = ({ icon: Icon, label, className = "", children }) => (
 );
 
 /**
- * What a visitor can do: donors give through the existing Razorpay donation window; visitors who aren't
- * signed in are offered donor sign-in (they come back here afterwards); other accounts are told why not.
+ * What a visitor can do: donors give through the existing Razorpay donation window; NGOs open this need in
+ * their portal to fund its parts; visitors who aren't signed in are offered donor and NGO sign-in (they come
+ * back here afterwards), the one the link was meant for first (?for=ngo from an NGO's email, otherwise
+ * donor); schools and admins are told why not.
  */
-const SupportAction = ({ onSupport }) => {
+const SupportAction = ({ projectId, onSupport }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   if (loading) return <div className="h-11" aria-hidden="true" />;
   if (user?.role === "donor") {
     return <Button variant="brand" size="lg" icon={LuHeart} fullWidth onClick={onSupport}>Support this project</Button>;
   }
-  if (!user) {
+  if (user?.role === "ngo") {
     return (
       <>
-        <Link to="/login/donor" state={{ from: location }} className={buttonClasses({ variant: "brand", size: "lg", fullWidth: true })}>
-          <LuHeart className="h-4 w-4" aria-hidden="true" /> Sign in to donate
+        <Link to={`/dashboard/ngo?need=${encodeURIComponent(projectId)}#needs`} className={buttonClasses({ variant: "brand", size: "lg", fullWidth: true })}>
+          <LuHandCoins className="h-4 w-4" aria-hidden="true" /> Fund this need
+        </Link>
+        <p className="mt-3 text-center text-xs text-slate-500">
+          Opens this need in your NGO portal: choose the parts to fund, then pay online or directly to the school.
+        </p>
+      </>
+    );
+  }
+  if (!user) {
+    const forNgo = new URLSearchParams(location.search).get("for") === "ngo";
+    const options = [
+      { key: "donor", to: "/login/donor", icon: LuHeart, label: "Sign in to donate", join: "/join/donor", joinLabel: "Create a donor account" },
+      { key: "ngo", to: "/login/ngo", icon: LuHandCoins, label: "Sign in to fund as an NGO", join: "/join/ngo", joinLabel: "Register your NGO" },
+    ];
+    const [first, second] = forNgo ? [options[1], options[0]] : options;
+    return (
+      <>
+        <Link to={first.to} state={{ from: location }} className={buttonClasses({ variant: "brand", size: "lg", fullWidth: true })}>
+          <first.icon className="h-4 w-4" aria-hidden="true" /> {first.label}
+        </Link>
+        <Link to={second.to} state={{ from: location }} className={buttonClasses({ variant: "secondary", fullWidth: true, className: "mt-2.5" })}>
+          <second.icon className="h-4 w-4" aria-hidden="true" /> {second.label}
         </Link>
         <p className="mt-3 text-center text-sm text-slate-600">
-          New to {SITE}? <Link to="/join/donor" className="font-medium text-primary-700 hover:underline">Create a donor account</Link>
+          New to {SITE}? <Link to={first.join} className="font-medium text-primary-700 hover:underline">{first.joinLabel}</Link>
+          {" or "}
+          <Link to={second.join} className="font-medium text-primary-700 hover:underline">{second.joinLabel.charAt(0).toLowerCase() + second.joinLabel.slice(1)}</Link>
         </p>
         <p className="mt-1 text-center text-xs text-slate-500">Our team checks new accounts before their first sign-in.</p>
       </>
@@ -119,13 +144,7 @@ const SupportAction = ({ onSupport }) => {
   }
   return (
     <p className="rounded-xl bg-surface-muted px-4 py-3 text-sm text-slate-700">
-      Donations are made from a donor account. You&rsquo;re signed in with {SIGNED_IN_AS[user.role] || "another account"}.
-      {user.role === "ngo" && (
-        <>
-          {" "}
-          <Link to="/dashboard/ngo#needs" className="font-medium text-primary-700 underline underline-offset-2">Fund it from the NGO portal</Link>
-        </>
-      )}
+      Donors and NGOs support projects from their own accounts. You&rsquo;re signed in with {SIGNED_IN_AS[user.role] || "another account"}.
     </p>
   );
 };
@@ -157,14 +176,14 @@ const SupportCard = ({ project, onSupport }) => {
         <ProgressBar value={percent} size="md" label="Funding progress" className="mt-2.5" />
 
         <div className="mt-5">
-          {completed ? done("This project is complete") : fullyFunded ? done("Fully funded") : <SupportAction onSupport={onSupport} />}
+          {completed ? done("This project is complete") : fullyFunded ? done("Fully funded") : <SupportAction projectId={project.id} onSupport={onSupport} />}
         </div>
 
         {!completed && !fullyFunded && (
           <p className="mt-5 flex items-start gap-2 border-t border-surface-divider pt-4 text-xs leading-relaxed text-slate-500">
             <LuLock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span>
-              Donations are paid securely on Razorpay. {SITE} never sees your card, UPI or bank details.{" "}
+              Online payments are made securely on Razorpay. {SITE} never sees your card, UPI or bank details.{" "}
               <Link to="/refund-policy" className="font-medium text-slate-700 underline underline-offset-2">Refund policy</Link>
             </span>
           </p>
@@ -175,8 +194,9 @@ const SupportCard = ({ project, onSupport }) => {
 };
 
 /**
- * The public page of one approved project: what an alumni email's "View project" opens. Anyone can view
- * it without signing in; everything on it comes from GET /api/public/projects/:id (approved projects only).
+ * The public page of one approved project: what the links in alumni emails and in the new-need emails to
+ * NGOs and donors open. Anyone can view it without signing in; everything on it comes from
+ * GET /api/public/projects/:id (approved projects only).
  */
 const ProjectDetails = () => {
   const { projectId } = useParams();

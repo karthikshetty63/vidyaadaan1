@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { LuKeyRound, LuLogOut, LuPencil } from "react-icons/lu";
 import Alert from "../../ui/Alert";
@@ -7,13 +7,72 @@ import Card, { CardHeader } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
 import { buttonClasses } from "../../ui/classes";
 import { requestPasswordReset } from "../../../api/auth";
+import { getEmailPreferences, updateEmailPreferences } from "../../../api/notifications";
 import { useAuth } from "../../../context/AuthContext";
 import { PASSWORD_RESET_TTL_MINUTES } from "../../../../shared/registrationRules.js";
 
+/** On or off: whether to get an email when the VIDYADAAN team approves a new school need. */
+const NewNeedEmailsSetting = () => {
+  const [state, setState] = useState({ on: null, saving: false, error: "", saved: "" });
+
+  useEffect(() => {
+    let cancelled = false;
+    getEmailPreferences().then(
+      (data) => !cancelled && setState((s) => ({ ...s, on: data.newNeedEmails })),
+      (err) => !cancelled && setState((s) => ({ ...s, error: err.message || "Couldn't load this setting." }))
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggle = async () => {
+    const next = !state.on;
+    setState((s) => ({ ...s, saving: true, error: "", saved: "" }));
+    try {
+      const data = await updateEmailPreferences(next);
+      setState({ on: data.newNeedEmails, saving: false, error: "", saved: data.message });
+    } catch (err) {
+      setState((s) => ({ ...s, saving: false, error: err.message || "Couldn't save. Please try again." }));
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader title="Emails" />
+      <div className="space-y-4 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p id="new-need-emails-label" className="text-sm font-semibold text-slate-900">New school needs</p>
+            <p id="new-need-emails-hint" className="mt-0.5 text-sm text-slate-600">
+              An email when the VIDYADAAN team approves a new need, with a link to it. Emails about your own account, such as
+              password reset links, always arrive.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={Boolean(state.on)}
+            aria-labelledby="new-need-emails-label"
+            aria-describedby="new-need-emails-hint"
+            onClick={toggle}
+            disabled={state.on === null || state.saving}
+            className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50 ${state.on ? "bg-primary-600" : "bg-slate-300"}`}
+          >
+            <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 motion-reduce:transition-none ${state.on ? "translate-x-5.5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
+        {state.saved && <Alert tone="success">{state.saved}</Alert>}
+        {state.error && <Alert tone="danger">{state.error}</Alert>}
+      </div>
+    </Card>
+  );
+};
+
 /**
- * Account settings for the NGO and donor portals: who is signed in, and changing the password with
- * the same emailed-link flow as "Forgot password?" (so every other device is signed out).
- * `accountType` is shown as is ("NGO" or "Donor").
+ * Account settings for the NGO and donor portals: who is signed in, which emails they get, and
+ * changing the password with the same emailed-link flow as "Forgot password?" (so every other device
+ * is signed out). `accountType` is shown as is ("NGO" or "Donor").
  */
 const AccountSettingsView = ({ accountType, onSignOut, signingOut }) => {
   const { user } = useAuth();
@@ -31,7 +90,7 @@ const AccountSettingsView = ({ accountType, onSignOut, signingOut }) => {
 
   return (
     <>
-      <PageHeader title="Settings" description="Your sign-in details and password." />
+      <PageHeader title="Settings" description="Your sign-in details, emails and password." />
       <Card>
         <CardHeader title="Account" />
         <dl className="divide-y divide-surface-divider">
@@ -49,6 +108,8 @@ const AccountSettingsView = ({ accountType, onSignOut, signingOut }) => {
           </Link>
         </div>
       </Card>
+
+      <NewNeedEmailsSetting />
 
       <Card>
         <CardHeader title="Password" />

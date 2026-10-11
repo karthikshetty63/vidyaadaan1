@@ -7,6 +7,7 @@ import createApp from "./app.js";
 import connectDB from "./config/db.js";
 import { importActivityHistory } from "./services/activityHistory.js";
 import { resumeAlumniNotifications } from "./services/alumniNotifications.js";
+import { resumeNewNeedEmails } from "./services/newNeedEmails.js";
 import { emailProvider, isEmailConfigured, verifyEmailTransport } from "./services/emailService.js";
 import { isGoogleSignInConfigured } from "./services/googleAuth.js";
 import { isLiveKeyConfigured, isRazorpayConfigured } from "./services/razorpay.js";
@@ -43,7 +44,7 @@ const startServer = async () => {
         });
 
         // Email is optional for starting the server; without it, forgot-password answers 503 and
-        // alumni emails are recorded as FAILED.
+        // alumni and new-need emails are recorded as FAILED.
         if (!isEmailConfigured()) {
             console.warn("Email is not configured (EMAIL_FROM, plus BREVO_API_KEY or SMTP_HOST). Password reset and alumni emails are disabled.");
         } else {
@@ -66,6 +67,13 @@ const startServer = async () => {
                 if (interrupted) console.warn(`${interrupted} alumni email(s) were cut off by the last restart and marked FAILED.`);
             })
             .catch((error) => console.warn("Could not resume alumni emails:", error.message));
+        // The same for the emails to NGOs and donors about new school needs.
+        resumeNewNeedEmails({ frontendOrigin: app.locals.frontendOrigin })
+            .then(({ projects, interrupted }) => {
+                if (projects) console.log(`Resuming emails to NGOs and donors for ${projects} approved project(s).`);
+                if (interrupted) console.warn(`${interrupted} email(s) to NGOs and donors were cut off by the last restart and marked FAILED.`);
+            })
+            .catch((error) => console.warn("Could not resume emails to NGOs and donors:", error.message));
         console.log(
             isGoogleSignInConfigured()
                 ? "Google sign-in: enabled"

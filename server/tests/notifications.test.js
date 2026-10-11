@@ -107,6 +107,8 @@ before(async () => {
     process.env.EMAIL_FROM = EMAIL_FROM;
     setEmailTransport({
         sendMail: async (message) => {
+            // Emails to every NGO and donor about a new need are another feature (new-need-emails.test.js).
+            if (message.subject.startsWith("New school need:")) return { messageId: "new-need" };
             if (failSending) throw new Error("Email service unavailable (simulated)");
             outbox.push(message);
             return { messageId: `test-${outbox.length}` };

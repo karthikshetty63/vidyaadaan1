@@ -363,3 +363,122 @@ export const sendProjectApprovedEmail = ({ to, name, school, project, projectUrl
 
     return sendEmail({ to, subject, text, html });
 };
+
+const NEW_NEED_ROLES = {
+    ngo: {
+        account: "an NGO account",
+        how: "NGOs fund a need in 5 parts: take one part or all of them, then pay online or directly to the school.",
+        button: "Fund this need",
+    },
+    donor: {
+        account: "a donor account",
+        how: "You can donate any amount you choose, paid securely online with Razorpay.",
+        button: "Donate to this need",
+    },
+};
+
+/**
+ * Tells one NGO or donor that a new school need was approved and is open for support. Every detail
+ * comes from the stored project and school, word for word; never the school's contact or bank details.
+ * Sent to a single address: no one sees anyone else's. It ends with a link to stop these emails.
+ * @param {object} p
+ * @param {string} p.to
+ * @param {string} p.name the account's name
+ * @param {"ngo"|"donor"} p.role
+ * @param {{ name: string, district?: string, state?: string }} p.school
+ * @param {{ title: string, problem: string, budget: number, category: string, priority: string, studentsBenefited: number, expectedCompletion: Date, location?: string }} p.project
+ * @param {string} p.needUrl the project's public page, with what this role can do there
+ * @param {string} p.stopUrl the page that stops these emails for this account
+ */
+export const sendNewNeedEmail = ({ to, name, role, school, project, needUrl, stopUrl }) => {
+    const words = NEW_NEED_ROLES[role];
+    const location = [school.district, school.state].filter(Boolean).join(", ") || project.location || "";
+    const subject = `New school need: ${project.title}`;
+    const intro = `${school.name}${location ? ` (${location})` : ""} has a new need. The VIDYADAAN team has checked and approved it, and it is now open for support.`;
+    const why = [
+        `${Number(project.studentsBenefited).toLocaleString("en-IN")} students will benefit`,
+        `Category: ${project.category}`,
+        `Priority: ${project.priority}`,
+        `The school hopes to complete it by ${formatDay(project.expectedCompletion)}`,
+    ];
+    const facts = [["Target", formatRupees(project.budget)], ["School", school.name], ...(location ? [["Location", location]] : [])];
+    const receivingReason = `You're receiving this because you have ${words.account} on VIDYADAAN, which emails you when a new school need is approved.`;
+    const stopLine = "Don't want these emails? Stop them here (you can turn them back on in Settings):";
+
+    const text = [
+        `Hello ${name},`,
+        "",
+        intro,
+        "",
+        "PROJECT",
+        project.title,
+        "",
+        "PROBLEM STATEMENT",
+        project.problem,
+        "",
+        "WHY SUPPORT IS NEEDED",
+        ...why.map((line) => `- ${line}`),
+        "",
+        ...facts.map(([label, value]) => `${label.toUpperCase()}: ${value}`),
+        "",
+        words.how,
+        `${words.button}: ${needUrl}`,
+        "",
+        "VIDYADAAN",
+        "Transparent Education Development Platform",
+        "",
+        receivingReason,
+        `${stopLine} ${stopUrl}`,
+    ].join("\n");
+
+    const url = escapeHtml(needUrl);
+    const label = "margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;";
+    const body = "margin:0;font-size:14px;line-height:22px;color:#334155;";
+    const muted = "margin:0;font-size:12px;line-height:18px;color:#64748b;";
+    const html = `<!doctype html>
+<html lang="en">
+<body style="margin:0;padding:24px 12px;background:#f8fafc;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">
+      <tr><td style="padding:32px;">
+        <p style="margin:0 0 24px;font-size:15px;font-weight:700;letter-spacing:0.04em;color:#0b192c;">VIDYADAAN</p>
+        <p style="${body}margin-bottom:8px;">Hello ${escapeHtml(name)},</p>
+        <p style="${body}margin-bottom:24px;">${escapeHtml(intro)}</p>
+
+        <p style="${label}">Project</p>
+        <h1 style="margin:0 0 20px;font-size:20px;line-height:28px;font-weight:600;color:#0f172a;">${escapeHtml(project.title)}</h1>
+
+        <p style="${label}">Problem statement</p>
+        <p style="${body}margin-bottom:20px;white-space:pre-line;">${escapeHtml(project.problem)}</p>
+
+        <p style="${label}">Why support is needed</p>
+        <ul style="margin:0 0 20px;padding-left:20px;font-size:14px;line-height:22px;color:#334155;">
+          ${why.map((line) => `<li>${escapeHtml(line)}</li>`).join("\n          ")}
+        </ul>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border:1px solid #e2e8f0;border-radius:8px;">
+          ${facts
+              .map(
+                  ([factLabel, value], i) =>
+                      `<tr><td style="padding:10px 14px;font-size:13px;color:#64748b;width:110px;${i ? "border-top:1px solid #e2e8f0;" : ""}">${escapeHtml(factLabel)}</td><td style="padding:10px 14px;font-size:14px;font-weight:600;color:#0f172a;${i ? "border-top:1px solid #e2e8f0;" : ""}">${escapeHtml(value)}</td></tr>`
+              )
+              .join("\n          ")}
+        </table>
+
+        <p style="${body}margin-bottom:12px;">${escapeHtml(words.how)}</p>
+        <a href="${url}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 20px;border-radius:8px;">${escapeHtml(words.button)}</a>
+
+        <p style="${body}margin-top:24px;font-weight:600;color:#0f172a;">VIDYADAAN</p>
+        <p style="${muted}">Transparent Education Development Platform</p>
+
+        <p style="${muted}margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;">${escapeHtml(receivingReason)}</p>
+        <p style="${muted}margin-top:8px;">Don't want these emails? <a href="${escapeHtml(stopUrl)}" style="color:#1d4ed8;">Stop them here</a>. You can turn them back on in Settings.</p>
+        <p style="${muted}margin-top:8px;">If the button doesn't work, paste this link into your browser:<br><a href="${url}" style="color:#1d4ed8;word-break:break-all;">${url}</a></p>
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body>
+</html>`;
+
+    return sendEmail({ to, subject, text, html });
+};
