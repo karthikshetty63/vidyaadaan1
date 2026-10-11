@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
 import { after, before, describe, test } from "node:test";
-import { FILES, PASSWORD, createClient, donorData, login, ngoData, registrationForm, requiredFiles, schoolData, startTestServer } from "./helpers.js";
+import { FILES, PASSWORD, createClient, donorData, login, ngoData, register, registrationForm, requiredFiles, schoolData, startTestServer } from "./helpers.js";
 
 let server;
 let User;
 let UploadedFile;
 
 const newClient = () => createClient(server.baseUrl);
-const registerWithFiles = (data, files) => newClient().post("/api/auth/register", { form: registrationForm(data, files) });
+const registerWithFiles = (data, files) => register(newClient(), data, files);
 const storedFiles = () => server.storedFiles();
 
 /** Register + approve a school (with its required documents plus `files`) and return a logged-in client. */

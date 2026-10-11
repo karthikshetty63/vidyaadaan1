@@ -55,6 +55,9 @@ const schoolProfileSchema = new mongoose.Schema(
         },
         bankAccount: String,
         ifsc: String,
+        // From the IFSC lookup at registration (services/ifscLookup.js), for the admin's review.
+        bankName: String,
+        bankBranch: String,
         upi: String,
         paymentQr: paymentQrSchema,
         mapLocation: mapLocationSchema,

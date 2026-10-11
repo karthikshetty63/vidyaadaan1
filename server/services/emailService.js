@@ -482,3 +482,61 @@ export const sendNewNeedEmail = ({ to, name, role, school, project, needUrl, sto
 
     return sendEmail({ to, subject, text, html });
 };
+
+const ACCOUNT_KINDS = { school: "school", ngo: "NGO", donor: "donor" };
+
+/**
+ * The code that confirms an email address for a new account. Nothing else in it: the person may not
+ * have asked for it, and the email says so.
+ * @param {object} p
+ * @param {string} p.to
+ * @param {string} p.code 6 digits
+ * @param {"school"|"ngo"|"donor"} p.role the kind of account being created
+ * @param {number} p.expiresInMinutes
+ */
+export const sendEmailCode = ({ to, code, role, expiresInMinutes }) => {
+    const kind = ACCOUNT_KINDS[role] || "new";
+    const subject = `${code} is your VIDYADAAN code`;
+    const intro = `Enter this code on the registration form to confirm this email address for your new VIDYADAAN ${kind} account.`;
+    const expiry = `It works for ${expiresInMinutes} minutes.`;
+    const ignore = "If you didn't start creating an account, you can ignore this email: no account is created without this code. Never share it with anyone.";
+
+    const text = [
+        "Hello,",
+        "",
+        intro,
+        "",
+        `Your code: ${code}`,
+        expiry,
+        "",
+        ignore,
+        "",
+        "VIDYADAAN",
+        "Transparent Education Development Platform",
+    ].join("\n");
+
+    const body = "margin:0;font-size:14px;line-height:22px;color:#334155;";
+    const muted = "margin:0;font-size:12px;line-height:18px;color:#64748b;";
+    const html = `<!doctype html>
+<html lang="en">
+<body style="margin:0;padding:24px 12px;background:#f8fafc;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">
+      <tr><td style="padding:32px;">
+        <p style="margin:0 0 24px;font-size:15px;font-weight:700;letter-spacing:0.04em;color:#0b192c;">VIDYADAAN</p>
+        <p style="${body}margin-bottom:8px;">Hello,</p>
+        <p style="${body}margin-bottom:20px;">${escapeHtml(intro)}</p>
+        <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">Your code</p>
+        <p style="margin:0 0 8px;font-size:32px;line-height:40px;font-weight:700;letter-spacing:0.3em;color:#0f172a;font-family:'SFMono-Regular',Consolas,Menlo,monospace;">${escapeHtml(code)}</p>
+        <p style="${body}">${escapeHtml(expiry)}</p>
+        <p style="${muted}margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;">${escapeHtml(ignore)}</p>
+        <p style="${body}margin-top:16px;font-weight:600;color:#0f172a;">VIDYADAAN</p>
+        <p style="${muted}">Transparent Education Development Platform</p>
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body>
+</html>`;
+
+    return sendEmail({ to, subject, text, html });
+};

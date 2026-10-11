@@ -14,8 +14,8 @@ import {
 describe("password rule", () => {
     test("min 8 characters, max 72 bytes, confirm must match", () => {
         assert.match(getPasswordError("1234567"), /at least 8/);
-        assert.equal(getPasswordError("12345678"), "");
-        assert.equal(getPasswordError("a".repeat(72)), "");
+        assert.equal(getPasswordError("ri8vers!"), "");
+        assert.equal(getPasswordError("abcd".repeat(18)), "", "72 bytes is fine");
         assert.match(getPasswordError("a".repeat(73)), /too long/);
         assert.match(getPasswordError("€".repeat(25)), /too long/, "25 × 3-byte chars = 75 bytes");
         assert.equal(getPasswordError("Str0ng-pass", "Str0ng-pass"), "");

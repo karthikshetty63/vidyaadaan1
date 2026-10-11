@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
-import { FILES, PASSWORD, createAdmin, createClient, donorData, login, ngoData, register, registrationForm, schoolData, startTestServer } from "./helpers.js";
+import { FILES, PASSWORD, createAdmin, createClient, donorData, login, ngoData, register, schoolData, startTestServer } from "./helpers.js";
 
 let server;
 let admin;
@@ -74,7 +74,7 @@ describe("approval queue", () => {
 
     test("view details includes profile and document metadata, never storage keys or password", async () => {
         const school = schoolData();
-        await newClient().post("/api/auth/register", { form: registrationForm(school, { schoolCertificate: FILES.pdf(), principalIdProof: FILES.jpeg(), schoolPhoto: FILES.png() }) });
+        assert.equal((await register(newClient(), school, { schoolCertificate: FILES.pdf(), principalIdProof: FILES.jpeg(), schoolPhoto: FILES.png() })).status, 201);
         const res = await admin.get(`/api/admin/accounts/${await idOf(school.email)}`);
         assert.equal(res.status, 200);
         assert.equal(res.body.profile.udise, school.udise);

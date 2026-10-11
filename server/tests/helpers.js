@@ -2,7 +2,7 @@
 // Runs the real Express app against a throwaway in-memory MongoDB (uploaded files are stored in it
 // too, with GridFS). It never loads .env and never touches the real (Atlas) database.
 import { Buffer } from "node:buffer";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import process from "node:process";
 
 process.env.NODE_ENV = "test";
@@ -13,7 +13,17 @@ const { default: mongoose } = await import("mongoose");
 const { createApp } = await import("../app.js");
 const { listStoredFileKeys, storedFileExists } = await import("../utils/fileStorage.js");
 const { createOrResetAdmin } = await import("../services/adminAccount.js");
-const { UPLOAD_RULES } = await import("../../shared/registrationRules.js");
+const { UPLOAD_RULES, normalizeEmail } = await import("../../shared/registrationRules.js");
+const { default: EmailVerification } = await import("../models/EmailVerification.js");
+// Outside services are never called by the tests. Unless a test says otherwise: no password has
+// leaked, and every IFSC belongs to a branch.
+const { setPwnedPasswordsFetch } = await import("../services/pwnedPasswords.js");
+const { setIfscFetch } = await import("../services/ifscLookup.js");
+export const NOT_LEAKED = async () => new Response("", { status: 200 });
+export const ANY_BRANCH = async (url) =>
+    Response.json({ IFSC: url.split("/").pop(), BANK: "State Bank of India", BRANCH: "Honnali", CITY: "Honnali", DISTRICT: "Davangere", STATE: "Karnataka" });
+setPwnedPasswordsFetch(NOT_LEAKED);
+setIfscFetch(ANY_BRANCH);
 const models = await Promise.all(
     ["User", "SchoolProfile", "NGOProfile", "DonorProfile", "UploadedFile", "RevokedSession", "Project"].map((m) => import(`../models/${m}.js`))
 );
@@ -136,6 +146,8 @@ export const schoolData = (overrides = {}) => ({
     upi: "school@sbi",
     agree: true,
     ...overrides,
+    // Typed twice on the form: the same number unless a test says otherwise.
+    confirmBankAccount: "confirmBankAccount" in overrides ? overrides.confirmBankAccount : overrides.bankAccount ?? "123456789012",
 });
 
 export const ngoData = (overrides = {}) => ({
@@ -148,7 +160,8 @@ export const ngoData = (overrides = {}) => ({
     focus: ["Education", "WASH"],
     regNumber: `NGO/2010/REG/${digits(5)}`,
     regDate: "2010-06-15",
-    pan: `${panLetters()}${digits(4)}${panLetters().slice(0, 1)}`,
+    // A trust's PAN: T as its 4th letter.
+    pan: `${panLetters().slice(0, 3)}T${panLetters().slice(0, 1)}${digits(4)}${panLetters().slice(0, 1)}`,
     address: "2nd Floor, Jayanagar, Bengaluru 560041",
     district: "Bengaluru Urban",
     state: "Karnataka",
@@ -200,9 +213,26 @@ export const createAdmin = async (overrides = {}) => {
 export const requiredFiles = (role) =>
     Object.fromEntries(Object.entries(UPLOAD_RULES[role] || {}).filter(([, rule]) => rule.required).map(([field]) => [field, FILES.pdf()]));
 
-/** Register the way the React form does: the values as JSON plus the required documents. */
-export const register = (client, data, files = requiredFiles(data.role)) =>
-    client.post("/api/auth/register", { form: registrationForm(data, files) });
+/**
+ * A proof that `email` was confirmed with an emailed code, as the form gets it from /api/auth/verify-email
+ * (registration-checks.test.js tests that flow itself).
+ */
+export const emailProofFor = async (email) => {
+    const proof = randomBytes(32).toString("hex");
+    const now = Date.now();
+    await EmailVerification.updateOne(
+        { email: normalizeEmail(email) },
+        { $set: { proofHash: createHash("sha256").update(proof).digest("hex"), proofExpiresAt: new Date(now + 60 * 60 * 1000), expireAt: new Date(now + 24 * 60 * 60 * 1000) } },
+        { upsert: true }
+    );
+    return proof;
+};
+
+/** Register the way the React form does: the values as JSON (with the email confirmed) plus the required documents. */
+export const register = async (client, data, files = requiredFiles(data.role)) => {
+    const emailProof = "emailProof" in data || typeof data.email !== "string" ? data.emailProof : await emailProofFor(data.email);
+    return client.post("/api/auth/register", { form: registrationForm({ ...data, ...(emailProof !== undefined ? { emailProof } : {}) }, files) });
+};
 
 /** Register, then approve the account as an admin would (every new account starts pending). */
 export const registerActive = async (client, data, files) => {

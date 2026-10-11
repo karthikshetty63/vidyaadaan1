@@ -28,17 +28,61 @@ export const NGO_FOCUS_AREAS = ["Education", "Literacy", "Health", "Nutrition", 
 
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const UDISE_PATTERN = /^\d{11}$/;
+export const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+export const PAN_PATTERN = /^[A-Z]{5}\d{4}[A-Z]$/;
+
+// Confirming the email address at registration: a code is emailed, and typed back on the form.
+export const EMAIL_CODE_LENGTH = 6;
+export const EMAIL_CODE_TTL_MINUTES = 10;
+// How long before the same address can be sent another code.
+export const EMAIL_CODE_RESEND_SECONDS = 60;
+export const EMAIL_CODE_PATTERN = /^\d{6}$/;
+
+// The most used passwords (worldwide, and those people in India pick most often). One of these, in any
+// capitalisation, is refused: it is the first thing anyone guessing would try. Leaked passwords in
+// general are checked too, by the server and the form (services/pwnedPasswords.js, utils/pwnedPassword.js).
+const COMMON_PASSWORDS = new Set([
+  "password", "password1", "password12", "password123", "password@123", "password!", "passw0rd", "p@ssw0rd", "p@ssword",
+  "pass@123", "pass@1234", "pass1234", "mypassword", "changeme", "letmein1", "trustno1", "welcome1", "welcome123",
+  "welcome@123", "admin123", "admin@123", "administrator", "test1234", "test@123", "demo1234", "temp1234", "guest123",
+  "login123", "hello123", "hello@123", "12345678", "123456789", "1234567890", "87654321", "12341234", "11223344",
+  "12121212", "12344321", "qwerty12", "qwerty123", "qwerty@123", "qwertyuiop", "1q2w3e4r", "1qaz2wsx", "asdfghjk",
+  "asdf1234", "zxcvbnm1", "zxcvbnm123", "abcd1234", "abcd@1234", "abc12345", "abcdefgh", "iloveyou", "iloveyou1",
+  "sunshine", "princess", "football", "baseball", "cricket1", "cricket123", "sachin10", "india123", "india@123",
+  "india2024", "india2025", "india2026", "bharat123", "jaihind1", "jaishriram", "krishna123", "ganesh123", "sairam123",
+  "omsairam", "hanuman1", "mumbai123", "delhi123", "bangalore", "chennai123", "hyderabad", "kolkata1", "pune1234",
+  "monkey12", "dragon12", "master123", "superman", "batman123", "starwars", "whatever", "computer", "internet",
+  "samsung1", "google123", "facebook", "school123", "school@123", "student123", "teacher123", "education",
+  "vidyadaan", "vidyadaan1", "vidyadaan123", "vidyadaan@123", "donate123",
+]);
+
+/** Words from a person's own details (name, email, organisation): 4 letters or more. */
+const personalWords = (details) =>
+  details.flatMap((value) => (typeof value === "string" ? value.toLowerCase().split(/[^a-z0-9]+/) : [])).filter((word) => word.length >= 4);
 
 const utf8Length = (value) => new TextEncoder().encode(value).length;
 
 export const normalizeEmail = (value) => (typeof value === "string" ? value.trim().toLowerCase() : "");
 
-export const getPasswordError = (password = "", confirm) => {
+/**
+ * What is wrong with a new password, or "". Length is the only "shape" rule (no forced symbols): instead,
+ * the most used passwords, ones made of 3 or fewer different characters, and ones containing the person's
+ * own name, email or organisation (`personal`: those values) are refused.
+ */
+export const getPasswordError = (password = "", confirm, personal = []) => {
   if (typeof password !== "string" || password.length < PASSWORD_MIN_LENGTH) return `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`;
   if (utf8Length(password) > PASSWORD_MAX_BYTES) return "Password is too long (maximum 72 bytes).";
+  const lower = password.toLowerCase();
+  if (COMMON_PASSWORDS.has(lower) || new Set(lower).size < 4) {
+    return "This password is too easy to guess. Try three random words, like “mango river lamp 42”.";
+  }
+  if (personalWords(personal).some((word) => lower.includes(word))) return "Don't use your name, email or organisation's name in your password.";
   if (confirm !== undefined && password !== confirm) return "Passwords do not match.";
   return "";
 };
+
+/** The part of an email address before the @ (for the password check above). */
+export const emailName = (email) => (typeof email === "string" ? email.split("@")[0] : "");
 
 // ─── Field type helpers ──────────────────────────────────────────────────────
 // Each returns { value } on success or { error } on failure. `value` is the
@@ -86,6 +130,22 @@ const pattern = (regex, message, transform = (s) => s.trim()) => (v, label) => {
   const value = transform(v);
   if (!regex.test(value)) return { error: `${label} ${message}` };
   return { value };
+};
+
+// The 4th letter of a PAN says whose it is: P a person, H a Hindu undivided family; T a trust, C a
+// company, A an association of persons (many societies), F a firm, and so on.
+const PERSONAL_PAN_TYPES = ["P", "H"];
+// Organisation types whose PAN always has one particular 4th letter.
+export const PAN_TYPE_FOR_NGO_TYPE = { Trust: "T", "Section 8 Company": "C" };
+
+/** An organisation's PAN: the usual shape, and never a person's own PAN. */
+const organisationPan = () => (v, label) => {
+  const result = pattern(PAN_PATTERN, "must look like AAATS1234K.", (s) => s.trim().toUpperCase())(v, label);
+  if (result.error) return result;
+  if (PERSONAL_PAN_TYPES.includes(result.value[3])) {
+    return { error: "This is a personal PAN (its 4th letter is P or H). Enter your NGO's own PAN." };
+  }
+  return result;
 };
 
 const oneOf = (options) => (v, label) => {
@@ -184,7 +244,9 @@ export const REGISTRATION_SCHEMAS = {
       hasComputers: { label: "Computer lab", required: false, step: 2, check: boolean() },
       hasDrinkingWater: { label: "Drinking water", required: false, step: 2, check: boolean() },
       bankAccount: { label: "Bank account number", required: true, step: 4, check: pattern(/^\d{9,18}$/, "must be 9 to 18 digits.", (s) => s.replace(/\s/g, "")) },
-      ifsc: { label: "IFSC code", required: true, step: 4, check: pattern(/^[A-Z]{4}0[A-Z0-9]{6}$/, "must look like SBIN0001234.", (s) => s.trim().toUpperCase()) },
+      // Typed twice: a mistake here would send an NGO's money to someone else's account.
+      confirmBankAccount: { label: "Confirm bank account number", required: true, step: 4, profile: false, check: pattern(/^\d{9,18}$/, "must be 9 to 18 digits.", (s) => s.replace(/\s/g, "")) },
+      ifsc: { label: "IFSC code", required: true, step: 4, check: pattern(IFSC_PATTERN, "must look like SBIN0001234.", (s) => s.trim().toUpperCase()) },
       upi: { label: "UPI ID", required: false, step: 4, check: pattern(/^[\w.-]{2,256}@[a-zA-Z]{2,64}$/, "must look like name@bank.") },
       agree: { label: "Declaration", required: true, step: 5, profile: false, check: mustBeTrue("You must accept the declaration, Terms of Service and Privacy Policy.") },
     },
@@ -200,7 +262,7 @@ export const REGISTRATION_SCHEMAS = {
       focus: { label: "Focus areas", required: false, step: 1, check: manyOf(NGO_FOCUS_AREAS) },
       regNumber: { label: "Registration number", required: true, step: 2, check: pattern(/^[A-Za-z0-9/\- ]{3,50}$/, "may only contain letters, numbers, / and -.") },
       regDate: { label: "Registration date", required: true, step: 2, check: pastDate() },
-      pan: { label: "PAN number", required: true, step: 2, check: pattern(/^[A-Z]{5}\d{4}[A-Z]$/, "must look like ABCDE1234F.", (s) => s.trim().toUpperCase()) },
+      pan: { label: "PAN number", required: true, step: 2, check: organisationPan() },
       address: { label: "Registered address", required: true, step: 3, check: multiline({ min: 5, max: 300 }) },
       district: { label: "District", required: true, step: 3, check: text({ min: 2, max: 80 }) },
       state: { label: "State", required: true, step: 3, check: oneOf(NGO_STATES) },
@@ -212,8 +274,12 @@ export const REGISTRATION_SCHEMAS = {
   },
 };
 
-// Keys the frontend sends that are validated elsewhere and never stored.
-export const CLIENT_ONLY_FIELDS = ["confirm", "role"];
+// Keys the frontend sends that are validated elsewhere and never stored. `emailProof` shows the email
+// address was confirmed with the emailed code (checked by the server).
+export const CLIENT_ONLY_FIELDS = ["confirm", "role", "emailProof"];
+
+// The person's own details that a password must not contain.
+const PERSONAL_FIELDS = { donor: ["name"], school: ["principalName", "schoolName"], ngo: ["contactName", "ngoName"] };
 
 /**
  * Validate registration data.
@@ -241,10 +307,31 @@ export const validateRegistration = (role, data, { steps } = {}) => {
     else values[name] = result.value;
   }
 
-  // Confirm password lives on the same step as the password.
+  // Confirm password lives on the same step as the password, and the password mustn't contain the
+  // person's own details (from any step).
   const passwordStep = schema.fields.password.step;
-  if ((!steps || steps.includes(passwordStep)) && !errors.password && input.confirm !== input.password) {
+  const onStep = (field) => !steps || steps.includes(schema.fields[field].step);
+  if (onStep("password") && !errors.password && typeof input.password === "string") {
+    const personal = [emailName(input.email), ...PERSONAL_FIELDS[role].map((field) => input[field])];
+    const passwordError = getPasswordError(input.password, undefined, personal);
+    if (passwordError) {
+      delete values.password;
+      errors.password = passwordError;
+    }
+  }
+  if (onStep("password") && !errors.password && input.confirm !== input.password) {
     errors.confirm = "Passwords do not match.";
+  }
+  // Both bank account numbers must be the same.
+  if (role === "school" && onStep("confirmBankAccount") && values.bankAccount && values.confirmBankAccount && values.bankAccount !== values.confirmBankAccount) {
+    delete values.confirmBankAccount;
+    errors.confirmBankAccount = "The two account numbers don't match. Check both against your passbook.";
+  }
+  // A trust's PAN has T as its 4th letter, a company's C (the organisation type is on another step).
+  const panLetter = PAN_TYPE_FOR_NGO_TYPE[input.type];
+  if (role === "ngo" && onStep("pan") && values.pan && panLetter && values.pan[3] !== panLetter) {
+    delete values.pan;
+    errors.pan = `A ${input.type === "Trust" ? "trust" : "company"}'s PAN has ${panLetter} as its 4th letter. Check the PAN, or the organisation type on the first step.`;
   }
 
   const errorSteps = Object.keys(errors).map((k) => (k === "confirm" ? passwordStep : schema.fields[k]?.step ?? 0));

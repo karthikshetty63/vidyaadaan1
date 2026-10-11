@@ -12,7 +12,7 @@ export {
 
 /** Error thrown for any failed API call. Carries the server's structured details. */
 export class ApiError extends Error {
-    constructor(message, { status = 0, code, errors, step, reason, role } = {}) {
+    constructor(message, { status = 0, code, errors, step, reason, role, retryAfterSeconds } = {}) {
         super(message);
         this.name = "ApiError";
         this.status = status;
@@ -21,6 +21,7 @@ export class ApiError extends Error {
         this.step = step; // registration step to jump back to
         this.reason = reason; // rejection reason
         this.role = role; // actual role on WRONG_PORTAL
+        this.retryAfterSeconds = retryAfterSeconds; // how long to wait (e.g. before another email code)
     }
 }
 
@@ -57,6 +58,7 @@ export const apiRequest = async (path, { method = "GET", body, headers = {} } = 
             step: data.step,
             reason: data.reason,
             role: data.role,
+            retryAfterSeconds: data.retryAfterSeconds,
         });
     }
     return data;
@@ -87,6 +89,16 @@ export const logoutAccount = () => apiRequest("/api/auth/logout", { method: "POS
 
 /** Resolves with the same generic message whether or not an account exists for the email. */
 export const requestPasswordReset = (email) => apiRequest("/api/auth/forgot-password", { method: "POST", body: { email } });
+
+// ─── Checks made while registering (the registration repeats the ones that matter) ───────────────
+/** Emails a 6-digit code to the address. → { message, expiresInMinutes, resendAfterSeconds } */
+export const requestEmailCode = (email, role) => apiRequest("/api/auth/email-code", { method: "POST", body: { email, role } });
+
+/** The code typed back. → { emailProof }, sent with the registration. */
+export const confirmEmailCode = (email, code) => apiRequest("/api/auth/verify-email", { method: "POST", body: { email, code } });
+
+/** The bank branch of an IFSC code. → { ifsc, bank, branch, city, district, state }; 404 if there is none. */
+export const lookupIfscBranch = (code) => apiRequest(`/api/public/ifsc/${encodeURIComponent(code)}`);
 
 /** `token` comes from the emailed link (/reset-password/:token). */
 export const resetPassword = (token, password, confirmPassword) =>

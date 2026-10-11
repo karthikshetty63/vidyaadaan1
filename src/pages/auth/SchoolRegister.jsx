@@ -3,7 +3,9 @@ import FileUploadField from "../../components/auth/FileUploadField";
 import Alert from "../../components/ui/Alert";
 import FormField, { Input, Select, Textarea } from "../../components/ui/FormField";
 import PasswordInput from "../../components/ui/PasswordInput";
+import EmailCodeBox from "../../components/auth/EmailCodeBox";
 import useRegistrationForm from "../../hooks/useRegistrationForm";
+import { LuCircleCheck, LuLoaderCircle } from "react-icons/lu";
 import { SCHOOL_STATES } from "../../../shared/registrationRules.js";
 
 const STEPS = ["School details", "Principal & account", "Facilities", "Documents", "Bank details", "Review"];
@@ -12,7 +14,7 @@ const INITIAL_FORM = {
   schoolName: "", udise: "", address: "", district: "", state: "",
   principalName: "", email: "", phone: "", password: "", confirm: "", students: "", teachers: "",
   hasToilets: false, hasLibrary: false, hasComputers: false, hasDrinkingWater: false,
-  bankAccount: "", ifsc: "", upi: "",
+  bankAccount: "", confirmBankAccount: "", ifsc: "", upi: "",
   agree: false,
 };
 
@@ -23,8 +25,30 @@ const FACILITIES = [
   { key: "hasDrinkingWater", label: "Drinking water" },
 ];
 
+/** Under the IFSC field: the bank branch it belongs to, looked up as the code is typed. */
+const IfscBranch = ({ ifsc }) => {
+  if (ifsc.status === "checking") {
+    return (
+      <p className="flex items-center gap-2 text-sm text-slate-500" aria-live="polite">
+        <LuLoaderCircle className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> Looking up the branch…
+      </p>
+    );
+  }
+  if (ifsc.status === "found") {
+    const place = [ifsc.branch.branch, ifsc.branch.district || ifsc.branch.city, ifsc.branch.state].filter(Boolean).join(", ");
+    return (
+      <p className="flex items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800 ring-1 ring-inset ring-emerald-200" aria-live="polite">
+        <LuCircleCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <span><span className="font-semibold">{ifsc.branch.bank}</span>{place && ` · ${place}`}. Check that this is your school's branch.</span>
+      </p>
+    );
+  }
+  if (ifsc.status === "missing") return <p className="text-sm font-medium text-red-700" aria-live="polite">No bank branch has this IFSC code. Check it on your passbook or cheque book.</p>;
+  return null;
+};
+
 const SchoolRegister = () => {
-  const { form, set, files, setFile, step, errors, messages, loading, handleContinue, handleSubmit, prev, goTo, uploadRules } = useRegistrationForm("school", INITIAL_FORM);
+  const { form, set, files, setFile, step, errors, messages, loading, working, continueLabel, handleContinue, handleSubmit, prev, goTo, uploadRules, emailCode, ifsc } = useRegistrationForm("school", INITIAL_FORM);
   const isLastStep = step === STEPS.length - 1;
 
   if (step === STEPS.length) {
@@ -76,8 +100,9 @@ const SchoolRegister = () => {
           {(f) => <Input {...f} type="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+91 98765 43210" />}
         </FormField>
       </div>
+      <EmailCodeBox {...emailCode} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <FormField label="Password" required error={errors.password} hint="At least 8 characters.">
+        <FormField label="Password" required error={errors.password} hint="At least 8 characters. Not your name or a common password.">
           {(f) => <PasswordInput {...f} showStrength autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min 8 characters" />}
         </FormField>
         <FormField label="Confirm password" required error={errors.confirm}>
@@ -122,17 +147,23 @@ const SchoolRegister = () => {
     </div>,
 
     <div key="bank" className="space-y-5">
-      <FormField label="Bank account number" required error={errors.bankAccount}>
-        {(f) => <Input {...f} inputMode="numeric" autoComplete="off" value={form.bankAccount} onChange={(e) => set("bankAccount", e.target.value)} placeholder="1234567890123" />}
-      </FormField>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <FormField label="IFSC code" required error={errors.ifsc}>
-          {(f) => <Input {...f} autoComplete="off" className="uppercase" value={form.ifsc} onChange={(e) => set("ifsc", e.target.value)} placeholder="SBIN0001234" />}
+        <FormField label="Bank account number" required error={errors.bankAccount}>
+          {(f) => <Input {...f} inputMode="numeric" autoComplete="off" value={form.bankAccount} onChange={(e) => set("bankAccount", e.target.value)} placeholder="1234567890123" />}
+        </FormField>
+        <FormField label="Confirm bank account number" required error={errors.confirmBankAccount} hint="Type it again, to catch mistakes.">
+          {(f) => <Input {...f} inputMode="numeric" autoComplete="off" value={form.confirmBankAccount} onChange={(e) => set("confirmBankAccount", e.target.value)} placeholder="1234567890123" />}
+        </FormField>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <FormField label="IFSC code" required error={errors.ifsc} hint="On your passbook or cheque book.">
+          {(f) => <Input {...f} autoComplete="off" maxLength={11} className="uppercase" value={form.ifsc} onChange={(e) => set("ifsc", e.target.value)} placeholder="SBIN0001234" />}
         </FormField>
         <FormField label="UPI ID" error={errors.upi} hint="Optional">
           {(f) => <Input {...f} autoComplete="off" value={form.upi} onChange={(e) => set("upi", e.target.value)} placeholder="school@upi" />}
         </FormField>
       </div>
+      <IfscBranch ifsc={ifsc} />
       <Alert tone="info">Your bank details are shown only to NGOs that commit to one of your approved projects, so they can pay your school directly. Donors never see them.</Alert>
     </div>,
 
@@ -158,9 +189,9 @@ const SchoolRegister = () => {
       step={step}
       isLastStep={isLastStep}
       messages={messages}
-      loading={loading}
+      loading={working}
       nextDisabled={isLastStep && !form.agree}
-      nextLabel={isLastStep ? (loading ? "Submitting…" : "Submit registration") : "Continue"}
+      nextLabel={isLastStep ? (loading ? "Submitting…" : "Submit registration") : continueLabel}
       onPrev={prev}
       onGoTo={goTo}
       onNext={isLastStep ? handleSubmit : handleContinue}

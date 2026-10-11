@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
-import { FILES, createClient, donorData, ngoData, register, registrationForm, schoolData, startTestServer } from "./helpers.js";
+import { FILES, createClient, donorData, emailProofFor, ngoData, register, registrationForm, schoolData, startTestServer } from "./helpers.js";
 
 let server;
 let client;
@@ -249,7 +249,7 @@ describe("rollback", () => {
         const filesBefore = await models.UploadedFile.countDocuments();
         const storedBefore = await server.storedFiles();
         try {
-            const res = await client.post("/api/auth/register", { form: registrationForm(data, { schoolPhoto: FILES.png(), schoolCertificate: FILES.pdf(), principalIdProof: FILES.jpeg() }) });
+            const res = await client.post("/api/auth/register", { form: registrationForm({ ...data, emailProof: await emailProofFor(data.email) }, { schoolPhoto: FILES.png(), schoolCertificate: FILES.pdf(), principalIdProof: FILES.jpeg() }) });
             assert.equal(res.status, 500);
             assert.equal(res.body.message, "Something went wrong. Please try again.", "internal error text must not leak");
         } finally {

@@ -14,6 +14,7 @@ import createAuthRouter from "./routes/authRoutes.js";
 import createChatbotRouter from "./routes/chatbotRoutes.js";
 import createDonationRouter from "./routes/donationRoutes.js";
 import createEmailPreferenceRouter from "./routes/emailPreferenceRoutes.js";
+import createIfscRouter from "./routes/ifscRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import ngoRoutes from "./routes/ngoRoutes.js";
@@ -34,6 +35,12 @@ const DEFAULT_RATE_LIMITS = {
     register: { windowMs: 60 * 60 * 1000, limit: 20 },
     // Each request can send an email, so this is kept tight: 5 per 15 minutes per IP.
     forgotPassword: { windowMs: 15 * 60 * 1000, limit: 5 },
+    // Registration email codes: each one is an email too. 10 per 15 minutes per IP (and one a minute per address).
+    emailCode: { windowMs: 15 * 60 * 1000, limit: 10 },
+    // Typing the code: each code also allows only 5 wrong tries.
+    verifyEmail: { windowMs: 15 * 60 * 1000, limit: 30 },
+    // Bank branch look-ups on the school registration form.
+    ifscLookup: { windowMs: 15 * 60 * 1000, limit: 60 },
     resetPassword: { windowMs: 15 * 60 * 1000, limit: 10 },
     // Each new donation is a request to Razorpay: 20 per 15 minutes per donor.
     donationOrders: { windowMs: 15 * 60 * 1000, limit: 20 },
@@ -47,14 +54,16 @@ const DEFAULT_RATE_LIMITS = {
 };
 
 // What the website may load. Everything is VIDYADAAN's own except Google Fonts, Unsplash photos (sign-in
-// pages), Razorpay Checkout, Sign in with Google and the Google Maps preview of a school's location.
+// pages), Razorpay Checkout, Sign in with Google, the Google Maps preview of a school's location and Have
+// I Been Pwned's password check.
 const CONTENT_SECURITY_POLICY = {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'", "https://*.razorpay.com", "https://accounts.google.com/gsi/client"],
     styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://accounts.google.com/gsi/style"],
     fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
     imgSrc: ["'self'", "data:", "blob:", "https://images.unsplash.com", "https://*.razorpay.com", "https://*.gstatic.com", "https://*.googleusercontent.com", "https://*.google.com"],
-    connectSrc: ["'self'", "https://*.razorpay.com", "https://accounts.google.com/gsi/"],
+    // Have I Been Pwned: the registration form checks a new password (only 5 characters of its hash are sent).
+    connectSrc: ["'self'", "https://*.razorpay.com", "https://accounts.google.com/gsi/", "https://api.pwnedpasswords.com"],
     frameSrc: ["https://*.razorpay.com", "https://accounts.google.com/gsi/", "https://maps.google.com", "https://www.google.com"],
     // The host serves HTTPS and redirects plain HTTP itself; on a computer the site is plain http://localhost.
     upgradeInsecureRequests: null,
@@ -96,7 +105,7 @@ export const normalizeOrigin = (value) => {
 /**
  * @param {object} [options]
  * @param {string} [options.corsOrigin] the React app's origin (cookies are only accepted from it)
- * @param {false|{login?:object, register?:object, forgotPassword?:object, resetPassword?:object, donationOrders?:object, ngoOnlineOrders?:object, publicProjects?:object, chatbot?:object}} [options.rateLimits] false disables limits (tests)
+ * @param {false|{login?:object, register?:object, forgotPassword?:object, emailCode?:object, verifyEmail?:object, ifscLookup?:object, resetPassword?:object, donationOrders?:object, ngoOnlineOrders?:object, publicProjects?:object, chatbot?:object}} [options.rateLimits] false disables limits (tests)
  * @param {string|number|boolean} [options.trustProxy] set when running behind a reverse proxy
  * @param {string} [options.clientDir] the built website (dist/), to serve it from this same address (production)
  */
@@ -132,6 +141,8 @@ export const createApp = ({ corsOrigin: configuredOrigin = "http://localhost:517
         registerLimiter: makeLimiter(limits.register, "Too many registration attempts. Please try again later."),
         forgotPasswordLimiter: makeLimiter(limits.forgotPassword, "Too many password reset requests. Please wait 15 minutes and try again."),
         resetPasswordLimiter: makeLimiter(limits.resetPassword, "Too many password reset attempts. Please wait 15 minutes and try again."),
+        emailCodeLimiter: makeLimiter(limits.emailCode, "Too many codes asked for. Please wait 15 minutes and try again."),
+        verifyEmailLimiter: makeLimiter(limits.verifyEmail, "Too many tries. Please wait 15 minutes and try again."),
     }));
     // The admin Control Tower (read-only, admin-only; its router checks the session and role itself).
     app.use("/api/admin/monitor", adminMonitorRoutes);
@@ -156,6 +167,10 @@ export const createApp = ({ corsOrigin: configuredOrigin = "http://localhost:517
     // No sign-in: the public page of an approved project (the link in alumni emails).
     app.use("/api/public/projects", createPublicProjectRouter({
         limiter: makeLimiter(limits.publicProjects, "Too many requests. Please wait a minute and try again."),
+    }));
+    // No sign-in: the school registration form's bank branch look-up.
+    app.use("/api/public/ifsc", createIfscRouter({
+        limiter: makeLimiter(limits.ifscLookup, "Too many look-ups. Please wait a few minutes and try again."),
     }));
     // No sign-in: the "Stop these emails" link in the emails about new school needs.
     app.use("/api/public/emails", createEmailPreferenceRouter({

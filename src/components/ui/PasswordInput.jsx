@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { LuEye, LuEyeOff } from "react-icons/lu";
 import { Input } from "./FormField";
-import { PASSWORD_MIN_LENGTH } from "../../../shared/registrationRules.js";
+import { PASSWORD_MIN_LENGTH, getPasswordError } from "../../../shared/registrationRules.js";
 
-/** How strong a new password looks: the only rule is the minimum length; the rest is advice. */
+/**
+ * How strong a new password looks. The rules are the shared ones (length, and not a common password);
+ * the rest is advice. The person's own details and data breaches are checked when they continue.
+ */
 const strengthOf = (password) => {
   if (!password) return null;
   if (password.length < PASSWORD_MIN_LENGTH) return { score: 1, label: `Too short: use at least ${PASSWORD_MIN_LENGTH} characters`, tone: "bg-red-500", text: "text-red-700" };
+  if (getPasswordError(password)) return { score: 1, label: "Too easy to guess: try three random words", tone: "bg-red-500", text: "text-red-700" };
   const variety = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((re) => re.test(password)).length;
   const points = variety + (password.length >= 12 ? 1 : 0);
   if (points >= 4) return { score: 4, label: "Strong password", tone: "bg-emerald-500", text: "text-emerald-700" };

@@ -11,9 +11,11 @@ import {
     PASSWORD_RESET_TOKEN_PATTERN,
     PASSWORD_RESET_TTL_MINUTES,
     PUBLIC_ROLES,
+    REGISTRATION_SCHEMAS,
     ROLES,
     UDISE_PATTERN,
     UPLOAD_RULES,
+    emailName,
     getAccountName,
     getMissingUploads,
     getPasswordError,
@@ -23,7 +25,10 @@ import {
     validateRegistration,
 } from "../../shared/registrationRules.js";
 import { accountTarget, actorOf, logActivity, recordActivity } from "../services/activityLog.js";
+import { consumeEmailProof, hasEmailProof } from "../services/emailVerification.js";
 import { isEmailConfigured, sendPasswordResetEmail } from "../services/emailService.js";
+import { branchLabel, lookupIfsc } from "../services/ifscLookup.js";
+import { LEAKED_PASSWORD_MESSAGE, pwnedPasswordCount } from "../services/pwnedPasswords.js";
 import { GoogleTokenError, isGoogleSignInConfigured, verifyGoogleIdToken } from "../services/googleAuth.js";
 import { PROFILE_MODELS, duplicateKeyError, toProfileDocument } from "../services/profileModels.js";
 import { deleteUploadedFiles, storeUploads, validateUploads } from "../services/uploadService.js";
@@ -84,9 +89,25 @@ export const register = async (req, res, next) => {
     }
 
     const email = values.email;
+    const fields = REGISTRATION_SCHEMAS[role].fields;
     let user;
     let storedFiles = {};
+    let bankBranch = null;
     try {
+        // Only someone who received the code emailed to this address can register with it.
+        if (!(await hasEmailProof(email, body.emailProof))) {
+            const message = "Confirm your email address with the code we email you.";
+            return badRequest(res, message, { email: message }, { step: fields.email.step, code: "EMAIL_NOT_VERIFIED" });
+        }
+        // Checked with outside services, at the same time; if one can't be reached, its check is skipped.
+        const [leaks, branch] = await Promise.all([pwnedPasswordCount(values.password), role === "school" ? lookupIfsc(values.ifsc) : null]);
+        if (leaks > 0) return badRequest(res, LEAKED_PASSWORD_MESSAGE, { password: LEAKED_PASSWORD_MESSAGE }, { step: fields.password.step, code: "LEAKED_PASSWORD" });
+        if (branch && !branch.found) {
+            const message = "No bank branch has this IFSC code. Check it on your passbook or cheque book.";
+            return badRequest(res, message, { ifsc: message }, { step: fields.ifsc.step });
+        }
+        if (branch?.found) bankBranch = branch;
+
         // Friendly duplicate checks first; unique indexes below still catch races.
         if (await User.exists({ email })) {
             return res.status(409).json({ message: "An account with this email already exists.", errors: { email: "An account with this email already exists." } });
@@ -111,12 +132,15 @@ export const register = async (req, res, next) => {
 
         const profile = { ...toProfileDocument(role, pickProfileValues(role, values)), userId: user._id };
         if (role !== "donor") profile.email = email; // School/NGO profiles keep their official email.
+        // The branch the IFSC belongs to, for the admin's review.
+        if (bankBranch) Object.assign(profile, { bankName: bankBranch.bank, bankBranch: branchLabel(bankBranch) });
         for (const [field, doc] of Object.entries(storedFiles)) {
             const [first, second] = uploadRules[field].profilePath.split(".");
             if (second) profile[first] = { ...(profile[first] || {}), [second]: doc._id };
             else profile[first] = doc._id;
         }
         await PROFILE_MODELS[role].create(profile);
+        await consumeEmailProof(email);
 
         logActivity(req, { actor: actorOf(user), action: "account.registered", target: accountTarget(user), details: { role } });
         return res.status(201).json({
@@ -420,11 +444,17 @@ export const resetPassword = async (req, res, next) => {
     if (!PASSWORD_RESET_TOKEN_PATTERN.test(token)) return res.status(400).json(INVALID_RESET_LINK);
 
     try {
+        const valid = { passwordResetToken: hashResetToken(token), passwordResetExpires: { $gt: new Date() } };
+        // The same checks as at registration: not the person's own name or email, and not a leaked password.
+        // Made before the link is used up, so the person can simply choose another password.
+        const holder = await User.findOne(valid).select("name email").lean();
+        if (!holder) return res.status(400).json(INVALID_RESET_LINK);
+        const personalError = getPasswordError(password, undefined, [holder.name, emailName(holder.email)]);
+        if (personalError) return badRequest(res, personalError, { password: personalError });
+        if ((await pwnedPasswordCount(password)) > 0) return badRequest(res, LEAKED_PASSWORD_MESSAGE, { password: LEAKED_PASSWORD_MESSAGE }, { code: "LEAKED_PASSWORD" });
+
         // Claim the token atomically: if the link is submitted twice at once, only one request succeeds.
-        const user = await User.findOneAndUpdate(
-            { passwordResetToken: hashResetToken(token), passwordResetExpires: { $gt: new Date() } },
-            { $unset: { passwordResetToken: 1, passwordResetExpires: 1 } }
-        );
+        const user = await User.findOneAndUpdate(valid, { $unset: { passwordResetToken: 1, passwordResetExpires: 1 } });
         if (!user) return res.status(400).json(INVALID_RESET_LINK);
 
         // Plain text here: the pre-save hook hashes it exactly once, the same way registration does.

@@ -14,7 +14,7 @@ const Privacy = () => (
     }
   >
     <LegalSection title="1. What we collect">
-      <p><span className="font-medium text-zinc-950">Every account:</span> name, email address, phone number and password. Your password is stored only as a one-way hash (bcrypt), so no one can read it. If you sign in with Google, we receive your name and email address from Google.</p>
+      <p><span className="font-medium text-zinc-950">Every account:</span> name, email address, phone number and password. Your password is stored only as a one-way hash (bcrypt), so no one can read it. If you sign in with Google, we receive your name and email address from Google. While you register, we keep the code we email to confirm your address (only in a scrambled form) for up to a day.</p>
       <p><span className="font-medium text-zinc-950">Donors:</span> address, city, state and PIN code; date of birth if you give it; your donation preferences; and a copy of your PAN card for verification.</p>
       <p>
         <span className="font-medium text-zinc-950">Schools:</span> the school&rsquo;s name, UDISE code, address, district and state; the principal&rsquo;s
@@ -92,7 +92,11 @@ const Privacy = () => (
     <LegalSection title="4. Services we use">
       <p>These companies process information for us, only to provide their service:</p>
       <ul>
-        <li>Razorpay, for online payments;</li>
+        <li>Razorpay, for online payments, and its IFSC service, which shows a school&rsquo;s bank branch from its IFSC code when it registers (only the code is sent);</li>
+        <li>
+          Have I Been Pwned, to check that a new password hasn&rsquo;t appeared in a data leak. Your password is never sent: only the first 5
+          characters of a scrambled (SHA-1) version of it;
+        </li>
         <li>Google, if you choose to sign in with Google;</li>
         <li>MongoDB Atlas, where our database is hosted;</li>
         <li>Anthropic, for the help assistant&rsquo;s AI answers (when they are switched on);</li>

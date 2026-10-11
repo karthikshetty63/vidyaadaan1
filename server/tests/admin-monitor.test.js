@@ -109,7 +109,7 @@ before(async () => {
 
     // A registration still waiting for an admin, and two failed sign-ins (one unknown account).
     s.waiting = schoolData({ schoolName: "Govt. School, Hebri (waiting)" });
-    assert.equal((await newClient().post("/api/auth/register", { form: (await import("./helpers.js")).registrationForm(s.waiting, (await import("./helpers.js")).requiredFiles("school")) })).status, 201);
+    assert.equal((await (await import("./helpers.js")).register(newClient(), s.waiting)).status, 201);
     assert.equal((await login(newClient(), s.school.data.email, "Wrong-pass-123", "school")).status, 401);
     s.unknownEmail = `nobody.${randomBytes(4).toString("hex")}@example.com`;
     assert.equal((await login(newClient(), s.unknownEmail, "Wrong-pass-123", "school")).status, 401);

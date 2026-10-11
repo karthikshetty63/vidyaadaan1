@@ -32,7 +32,9 @@ const FIELD_LABELS = {
   school: [
     ["schoolName", "School name"], ["udise", "UDISE code"], ["address", "Address"], ["district", "District"], ["state", "State"], ["mapLocation", "Location on map"],
     ["principalName", "Principal"], ["email", "Official email"], ["phone", "Phone"], ["students", "Students"], ["teachers", "Teachers"],
-    ["infrastructure", "Facilities"], ["bankAccount", "Bank account"], ["ifsc", "IFSC"], ["upi", "UPI ID"],
+    ["infrastructure", "Facilities"], ["bankAccount", "Bank account"], ["ifsc", "IFSC"],
+    // Looked up from the IFSC at registration, so the reviewer can see the branch matches the school.
+    ["bankName", "Bank (from IFSC)"], ["bankBranch", "Branch (from IFSC)"], ["upi", "UPI ID"],
   ],
   ngo: [
     ["ngoName", "NGO name"], ["type", "Organisation type"], ["established", "Year established"], ["website", "Website"],
