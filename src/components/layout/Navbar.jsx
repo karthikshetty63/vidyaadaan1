@@ -5,7 +5,7 @@ import VidyadaanLogo from "../ui/VidyadaanLogo";
 import { useAuth } from "../../context/AuthContext";
 
 // The brand blue, as on the sign-in pages.
-const PRIMARY = "inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 text-[0.9375rem] font-semibold text-white shadow-md shadow-blue-600/20 transition hover:from-blue-700 hover:to-blue-600";
+const PRIMARY = "btn-shine inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 text-[0.9375rem] font-semibold text-white shadow-md shadow-blue-600/20 transition hover:from-blue-700 hover:to-blue-600";
 const QUIET = "inline-flex h-10 items-center justify-center rounded-full px-4 text-[0.9375rem] font-semibold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700";
 
 // Sections of the home page. From any other page these links go to the home page and scroll there.
@@ -58,6 +58,8 @@ const Navbar = () => {
           scrolled || menuOpen ? "border-blue-100 shadow-sm shadow-blue-900/5" : "border-transparent"
         }`}
       >
+        {/* How far down the page you are (browsers with scroll timelines; index.css). */}
+        <span className="scroll-progress absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-600 to-sky-400" aria-hidden="true" />
         <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-8 px-5 sm:px-8 lg:px-10">
           <Link to="/" onClick={closeMenu} aria-label="VIDYADAAN home" className="shrink-0 rounded-lg">
             <VidyadaanLogo showTagline={false} />

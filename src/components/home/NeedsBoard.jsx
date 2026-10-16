@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { LuCircleAlert, LuClipboardList, LuSearch } from "react-icons/lu";
 import { listPublicNeeds } from "../../api/public";
+import { CountUp, Reveal } from "./motion";
 import PublicNeedCard from "./PublicNeedCard";
 
 const PAGE_SIZE = 9;
@@ -62,15 +63,22 @@ const NeedsBoard = () => {
     <section id="needs" aria-labelledby="needs-heading" className="scroll-mt-20 px-5 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-[1200px]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+          <Reveal>
             <p className="text-xs font-bold uppercase tracking-wider text-blue-700">Live from VIDYADAAN</p>
             <h2 id="needs-heading" className="mt-1 font-heading text-3xl font-extrabold tracking-tight text-brand-navy sm:text-4xl">Open school needs</h2>
             <p className="mt-2 max-w-2xl text-slate-600">
-              Real requests from government schools, each checked and approved by our team. {!loading && !result.error && `${result.total} open right now.`}
+              Real requests from government schools, each checked and approved by our team.{" "}
+              {!loading && !result.error && (
+                <span className="font-semibold text-slate-800">
+                  <CountUp value={result.total} duration={900} /> open right now.
+                </span>
+              )}
             </p>
-          </div>
+          </Reveal>
           {options && (options.categories.length > 0 || filtered) && (
-            <form
+            <Reveal
+              as="form"
+              delay={150}
               className="flex flex-col gap-2 sm:flex-row sm:items-center"
               aria-label="Filter school needs"
               onSubmit={(e) => {
@@ -107,7 +115,7 @@ const NeedsBoard = () => {
                   {options.states.map((st) => <option key={st.value} value={st.value}>{st.value} ({st.count})</option>)}
                 </select>
               </label>
-            </form>
+            </Reveal>
           )}
         </div>
 
@@ -150,8 +158,11 @@ const NeedsBoard = () => {
           {!loading && result.items.length > 0 && (
             <>
               <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {result.items.map((need) => (
-                  <li key={need.id}><PublicNeedCard need={need} /></li>
+                {/* Cards rise in a gentle wave, row by row. */}
+                {result.items.map((need, i) => (
+                  <Reveal as="li" key={need.id} delay={(i % 3) * 110}>
+                    <PublicNeedCard need={need} />
+                  </Reveal>
                 ))}
               </ul>
               <div className="mt-8 flex flex-col items-center gap-2">

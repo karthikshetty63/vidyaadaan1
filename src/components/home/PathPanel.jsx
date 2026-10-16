@@ -27,8 +27,9 @@ const PathPanel = ({ path }) => {
                 </div>
               </div>
               <ol className="mt-7 space-y-4">
+                {/* Each step rises in after the one before it (whenever the path changes). */}
                 {p.steps.map((step, i) => (
-                  <li key={step} className="flex gap-4">
+                  <li key={step} className="flex gap-4 motion-safe:animate-rise" style={{ animationDelay: `${150 + i * 120}ms` }}>
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">{i + 1}</span>
                     <p className="pt-1 text-[15px] leading-relaxed text-slate-700">{step}</p>
                   </li>
@@ -36,7 +37,7 @@ const PathPanel = ({ path }) => {
               </ol>
             </div>
 
-            <div className="flex flex-col justify-between gap-6 rounded-2xl bg-slate-50 p-6">
+            <div className="flex flex-col justify-between gap-6 rounded-2xl bg-slate-50 p-6 motion-safe:animate-rise [animation-delay:250ms]">
               {p.haveReady.length > 0 ? (
                 <div>
                   <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -61,11 +62,11 @@ const PathPanel = ({ path }) => {
               )}
               <div className="flex flex-col gap-2.5">
                 {p.primary.to.startsWith("/#") ? (
-                  <a href={p.primary.to.slice(1)} className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-6 text-[15px] font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:from-blue-700 hover:to-blue-600">
+                  <a href={p.primary.to.slice(1)} className="btn-shine group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-6 text-[15px] font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:from-blue-700 hover:to-blue-600">
                     {p.primary.label} <LuArrowRight className="h-5 w-5 transition group-hover:translate-x-0.5 motion-reduce:group-hover:translate-x-0" aria-hidden="true" />
                   </a>
                 ) : (
-                  <Link to={p.primary.to} className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-6 text-[15px] font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:from-blue-700 hover:to-blue-600">
+                  <Link to={p.primary.to} className="btn-shine group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-6 text-[15px] font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:from-blue-700 hover:to-blue-600">
                     {p.primary.label} <LuArrowRight className="h-5 w-5 transition group-hover:translate-x-0.5 motion-reduce:group-hover:translate-x-0" aria-hidden="true" />
                   </Link>
                 )}

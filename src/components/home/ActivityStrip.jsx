@@ -52,7 +52,7 @@ const ActivityStrip = () => {
 
   if (!items.length) return null;
   return (
-    <section aria-labelledby="activity-heading" className="border-y border-blue-100 bg-blue-50/60 py-4">
+    <section aria-labelledby="activity-heading" className="border-y border-blue-100 bg-blue-50/60 py-4 motion-safe:animate-rise [animation-delay:700ms]">
       <div className="mx-auto flex max-w-[1200px] items-center gap-4 px-5 sm:px-8 lg:px-10">
         <h2 id="activity-heading" className="flex shrink-0 items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-800">
           <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
