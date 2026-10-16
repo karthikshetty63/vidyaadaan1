@@ -20,6 +20,7 @@ import fileRoutes from "./routes/fileRoutes.js";
 import ngoRoutes from "./routes/ngoRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
+import createPublicActivityRouter from "./routes/publicActivityRoutes.js";
 import createPublicProjectRouter from "./routes/publicProjectRoutes.js";
 import schoolAlumniRoutes from "./routes/schoolAlumniRoutes.js";
 import schoolCommitmentRoutes from "./routes/schoolCommitmentRoutes.js";
@@ -169,6 +170,10 @@ export const createApp = ({ corsOrigin: configuredOrigin = "http://localhost:517
         limiter: makeLimiter(limits.publicProjects, "Too many requests. Please wait a minute and try again."),
     }));
     // No sign-in: the school registration form's bank branch look-up.
+    // No sign-in: the home page's recent-activity strip (safe, anonymous events only).
+    app.use("/api/public/activity", createPublicActivityRouter({
+        limiter: makeLimiter(limits.publicProjects, "Too many requests. Please wait a minute and try again."),
+    }));
     app.use("/api/public/ifsc", createIfscRouter({
         limiter: makeLimiter(limits.ifscLookup, "Too many look-ups. Please wait a few minutes and try again."),
     }));

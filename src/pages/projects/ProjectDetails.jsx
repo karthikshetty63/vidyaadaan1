@@ -12,6 +12,7 @@ import CategoryIcon from "../../components/ui/CategoryIcon";
 import ProgressBar from "../../components/ui/ProgressBar";
 import StatCard from "../../components/ui/StatCard";
 import { LogoEmblem } from "../../components/ui/VidyadaanLogo";
+import WhatsAppShare from "../../components/ui/WhatsAppShare";
 import { buttonClasses } from "../../components/ui/classes";
 import { getPublicProject } from "../../api/projects";
 import { LEGAL_LINKS } from "../../constants/legal";
@@ -177,6 +178,12 @@ const SupportCard = ({ project, onSupport }) => {
 
         <div className="mt-5">
           {completed ? done("This project is complete") : fullyFunded ? done("Fully funded") : <SupportAction projectId={project.id} onSupport={onSupport} />}
+        </div>
+
+        {/* Alumni groups and communities pass needs on through WhatsApp. */}
+        <div className="mt-4 border-t border-surface-divider pt-4">
+          <p className="mb-2 text-center text-xs text-slate-500">Know someone who could help? Share this need.</p>
+          <WhatsAppShare project={project} className="w-full" />
         </div>
 
         {!completed && !fullyFunded && (

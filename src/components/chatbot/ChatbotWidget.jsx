@@ -188,6 +188,13 @@ const ChatbotWidget = () => {
     if (open) inputRef.current?.focus();
   }, [open]);
 
+  // Other parts of the site (the home page's "Ask our help assistant") open the window with this event.
+  useEffect(() => {
+    const openFromPage = () => setOpen(true);
+    window.addEventListener("vidyadaan:open-assistant", openFromPage);
+    return () => window.removeEventListener("vidyadaan:open-assistant", openFromPage);
+  }, []);
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [messages.length, pending, failed]);
