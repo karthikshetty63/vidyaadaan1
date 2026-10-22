@@ -53,13 +53,6 @@ export const deleteUploadedFiles = async (docs = []) => {
     }
 };
 
-export const deleteUploadedFilesByIds = async (ids = []) => {
-    const validIds = ids.filter(Boolean);
-    if (!validIds.length) return;
-    const docs = await UploadedFile.find({ _id: { $in: validIds } });
-    await deleteUploadedFiles(docs);
-};
-
 /**
  * Write accepted files to storage and record them. All-or-nothing:
  * if anything fails, files already written by this call are removed.

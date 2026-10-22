@@ -415,57 +415,11 @@
   font-family: 'Caveat', cursive;
 }
 
-/* Dashed border pill */
-.pill-dashed {
-  border: 1.5px dashed #3B82F6;
-}
-
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--color-slate-100); }
 ::-webkit-scrollbar-thumb { background: var(--color-slate-300); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-slate-400); }
-
-/* Section label */
-.section-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #1A56DB;
-}
-
-/* Card hover lift */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.card-hover:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px -15px rgba(26, 86, 219, 0.12);
-}
-
-/* Floating badge animation */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-.animate-float { animation: float 3.5s ease-in-out infinite; }
-
-/* Soft watercolor cloud wash */
-.cloud-glow-bg {
-  background: radial-gradient(circle at 65% 35%, rgba(219, 234, 254, 0.6) 0%, rgba(236, 253, 245, 0.4) 40%, rgba(255, 255, 255, 0) 70%);
-}
-
-.cloud-glow-why {
-  background: radial-gradient(circle at 50% 50%, rgba(219, 234, 254, 0.5) 0%, rgba(240, 253, 244, 0.4) 50%, rgba(255, 255, 255, 0) 75%);
-}
-
-/* Artistic Brush Edges Mask for Why Section */
-.brush-edge-container {
-  border-radius: 36px;
-  overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-}
 
 /* Hero line height constraint */
 .hero-heading {
