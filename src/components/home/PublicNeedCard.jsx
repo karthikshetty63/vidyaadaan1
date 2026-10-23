@@ -25,7 +25,7 @@ const PublicNeedCard = ({ need, titleAs: Title = "h3" }) => {
   const priority = PRIORITY_TAG[need.priority];
   const status = STATUS_TAG[need.status];
   return (
-    <article className="flex h-full flex-col rounded-lg border border-slate-200 bg-white transition-colors hover:border-slate-400">
+    <article className="flex h-full flex-col rounded-lg border border-slate-200 bg-white transition-[border-color,box-shadow,translate] duration-300 hover:border-slate-400 hover:shadow-lg hover:shadow-slate-900/5 motion-safe:hover:-translate-y-1">
       <p className="flex items-center gap-2.5 border-b border-slate-100 px-5 py-3 text-sm font-medium text-slate-700">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-700" aria-hidden="true">
           <CategoryIcon category={need.category} className="h-4 w-4" />
@@ -82,7 +82,8 @@ const PublicNeedCard = ({ need, titleAs: Title = "h3" }) => {
             aria-label={`${need.title}: ${percent}% funded`}
             className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"
           >
-            <div className="h-full rounded-full bg-emerald-600" style={{ width: `${percent}%` }} />
+            {/* Fills up once the card has arrived (ui-bar-fill; still for people who ask for less motion). */}
+            <div className="ui-bar-fill h-full rounded-full bg-emerald-600" style={{ width: `${percent}%` }} />
           </div>
           <p className="mt-3 flex items-center gap-1.5 text-sm text-slate-600">
             <LuGraduationCap className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
@@ -108,7 +109,7 @@ const PublicNeedCard = ({ need, titleAs: Title = "h3" }) => {
 export const NeedCardSkeleton = () => (
   <div className="rounded-lg border border-slate-200 bg-white p-5" aria-hidden="true">
     {["h-8 w-40", "mt-5 h-6 w-3/4", "mt-3 h-4 w-1/2", "mt-4 h-10 w-full", "mt-8 h-7 w-1/3", "mt-3 h-2 w-full", "mt-6 h-10 w-full"].map((c) => (
-      <span key={c} className={`block rounded bg-slate-200/70 ${c}`} />
+      <span key={c} className={`ui-skeleton block rounded bg-slate-200/70 ${c}`} />
     ))}
   </div>
 );

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { LuCircleAlert, LuSchool, LuSearch, LuSearchX, LuX } from "react-icons/lu";
+import { LuCircleAlert, LuLoaderCircle, LuSchool, LuSearch, LuSearchX, LuX } from "react-icons/lu";
 import { listPublicNeeds } from "../../api/public";
 import CategoryIcon from "../ui/CategoryIcon";
 import PublicNeedCard, { NeedCardSkeleton } from "./PublicNeedCard";
@@ -13,14 +13,46 @@ const SEARCH_DELAY = 350; // ms after the last key press
 const FIELD =
   "h-11 w-full rounded-md border border-slate-300 bg-white text-[15px] text-slate-800 placeholder:text-slate-400 focus:border-brand-navy focus:outline-none focus:ring-2 focus:ring-slate-900/10";
 const chip = (on) =>
-  `inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors ${
+  `inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-[background-color,border-color,color,scale] duration-200 active:scale-95 motion-safe:animate-pop ${
     on ? "border-brand-navy bg-brand-navy text-white" : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-900"
   }`;
-const chipCount = (on) => `rounded-full px-1.5 text-xs font-semibold tabular-nums ${on ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600"}`;
+const chipCount = (on) => `rounded-full px-1.5 text-xs font-semibold tabular-nums transition-colors duration-200 ${on ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600"}`;
+
+// One after another: an element's start delay in the page's entrance (ms).
+const delay = (ms) => ({ animationDelay: `${ms}ms` });
+const reducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+/** A number that counts up to its value when it appears (at once when the device asks for less motion). */
+const CountUp = ({ value, duration = 900 }) => {
+  const [shown, setShown] = useState(() => (reducedMotion() ? value : 0));
+  const shownRef = useRef(shown);
+  useEffect(() => {
+    const from = shownRef.current;
+    if (from === value) return undefined;
+    const ms = reducedMotion() ? 0 : duration;
+    const start = performance.now();
+    let frame;
+    const tick = (now) => {
+      const t = ms ? Math.min(1, (now - start) / ms) : 1;
+      const next = Math.round(from + (value - from) * (1 - (1 - t) ** 3));
+      shownRef.current = next;
+      setShown(next);
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value, duration]);
+  return (
+    <>
+      <span aria-hidden="true">{shown.toLocaleString("en-IN")}</span>
+      <span className="sr-only">{value.toLocaleString("en-IN")}</span>
+    </>
+  );
+};
 
 /** A friendly box for "nothing here", with one next step. */
 const EmptyState = ({ icon: Icon, title, text, children }) => (
-  <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+  <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center motion-safe:animate-rise">
     <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500" aria-hidden="true">
       <Icon className="h-6 w-6" />
     </span>
@@ -146,9 +178,11 @@ const NeedsBoard = () => {
         <div className={`${CONTAINER} pb-8 pt-10 lg:pt-14`}>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <p className={EYEBROW}>School needs</p>
-              <h1 id="needs-heading" className={`mt-2 ${PAGE_TITLE}`}>Open school needs</h1>
-              <p className="mt-3 text-base leading-7 text-slate-600">Every request here was reviewed by the VIDYADAAN team and still needs support.</p>
+              <p className={`${EYEBROW} motion-safe:animate-rise`}>School needs</p>
+              <h1 id="needs-heading" className={`mt-2 ${PAGE_TITLE} motion-safe:animate-rise`} style={delay(70)}>Open school needs</h1>
+              <p className="mt-3 text-base leading-7 text-slate-600 motion-safe:animate-rise" style={delay(140)}>
+                Every request here was reviewed by the VIDYADAAN team and still needs support.
+              </p>
             </div>
             {openTotal > 0 && (
               <dl className="flex gap-8 lg:gap-10">
@@ -156,10 +190,12 @@ const NeedsBoard = () => {
                   ["Open needs", openTotal],
                   [options.states.length === 1 ? "State" : "States", options.states.length],
                   [options.categories.length === 1 ? "Category" : "Categories", options.categories.length],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex flex-col-reverse gap-1">
+                ].map(([label, value], i) => (
+                  <div key={label} className="flex flex-col-reverse gap-1 motion-safe:animate-rise" style={delay(i * 90)}>
                     <dt className="text-sm text-slate-500">{label}</dt>
-                    <dd className="font-heading text-[1.75rem] font-bold leading-none tabular-nums text-brand-navy">{value.toLocaleString("en-IN")}</dd>
+                    <dd className="font-heading text-[1.75rem] font-bold leading-none tabular-nums text-brand-navy">
+                      <CountUp value={value} />
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -168,7 +204,7 @@ const NeedsBoard = () => {
 
           {openTotal > 0 && (
             <div className="mt-8 space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-col gap-3 motion-safe:animate-rise sm:flex-row" style={delay(120)}>
                 <form
                   role="search"
                   className="relative flex-1"
@@ -178,7 +214,12 @@ const NeedsBoard = () => {
                   }}
                 >
                   <label htmlFor="needs-search" className="sr-only">Search school needs</label>
-                  <LuSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                  {/* While results load, the magnifier turns into a small spinner. */}
+                  {loading && !firstLoad ? (
+                    <LuLoaderCircle className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-navy motion-reduce:animate-none" aria-hidden="true" />
+                  ) : (
+                    <LuSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                  )}
                   <input
                     id="needs-search"
                     type="search"
@@ -186,7 +227,7 @@ const NeedsBoard = () => {
                     maxLength={SEARCH_MAX}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search by need, school or district"
-                    className={`${FIELD} pl-10 pr-3`}
+                    className={`${FIELD} pl-10 pr-3 transition-[border-color,box-shadow] duration-200`}
                   />
                 </form>
                 <label className="sm:w-60">
@@ -208,16 +249,17 @@ const NeedsBoard = () => {
                 aria-label="Category"
                 className="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
               >
-                <button type="button" aria-pressed={!category} onClick={() => setFilter("category", "")} className={chip(!category)}>
+                <button type="button" aria-pressed={!category} onClick={() => setFilter("category", "")} className={chip(!category)} style={delay(200)}>
                   All categories <span className={chipCount(!category)}>{openTotal}</span>
                 </button>
-                {options.categories.map(({ value, count: n }) => (
+                {options.categories.map(({ value, count: n }, i) => (
                   <button
                     key={value}
                     type="button"
                     aria-pressed={category === value}
                     onClick={() => setFilter("category", category === value ? "" : value)}
                     className={chip(category === value)}
+                    style={delay(Math.min(240 + i * 40, 720))}
                   >
                     <CategoryIcon category={value} className="h-4 w-4" />
                     {value} <span className={chipCount(category === value)}>{n}</span>
@@ -234,14 +276,16 @@ const NeedsBoard = () => {
         <div className={`${CONTAINER} pb-16 pt-8 lg:pb-20`}>
           {!firstLoad && (filtered || count > 0) && (
             <div className="mb-5 flex min-h-8 flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="text-sm font-medium text-slate-700" aria-live="polite">{summary}</p>
+              <p className="text-sm font-medium text-slate-700" aria-live="polite">
+                <span key={summary} className="inline-block motion-safe:animate-fade">{summary}</span>
+              </p>
               {active.map((f) => (
                 <button
-                  key={f.name}
+                  key={`${f.name}:${f.label}`}
                   type="button"
                   onClick={() => remove(f.name)}
                   aria-label={`Remove filter: ${f.label}`}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-300 bg-white pl-3 pr-2 text-sm text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-300 bg-white pl-3 pr-2 text-sm text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900 motion-safe:animate-pop"
                 >
                   {f.label} <LuX className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
                 </button>
@@ -287,11 +331,16 @@ const NeedsBoard = () => {
                 </EmptyState>
               ))}
 
-            {/* While new filters load, the current cards stay (dimmed) instead of jumping to placeholders. */}
+            {/* While new filters load, the current cards stay (dimmed) instead of jumping to placeholders. New
+                results rise in one after another (their funding bars fill after them); "Show more" cards too. */}
             {!firstLoad && result.items.length > 0 && (
-              <ul className={`grid gap-5 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${loading ? "opacity-50" : ""}`}>
-                {result.items.map((need) => (
-                  <li key={need.id}>
+              <ul className={`grid gap-5 transition-opacity duration-300 sm:grid-cols-2 lg:grid-cols-3 ${loading ? "opacity-50" : ""}`}>
+                {result.items.map((need, i) => (
+                  <li
+                    key={`${result.key}:${need.id}`}
+                    className="motion-safe:animate-rise"
+                    style={{ ...delay(Math.min((i % PAGE_SIZE) * 60, 480)), "--enter-delay": `${Math.min((i % PAGE_SIZE) * 60, 480)}ms` }}
+                  >
                     <PublicNeedCard need={need} titleAs="h2" />
                   </li>
                 ))}
