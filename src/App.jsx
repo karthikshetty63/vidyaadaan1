@@ -4,6 +4,11 @@ import GuestRoute from "./components/auth/GuestRoute";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ChatbotWidget from "./components/chatbot/ChatbotWidget";
 import Home from "./pages/Home";
+import FaqPage from "./pages/site/FaqPage";
+import HowItWorksPage from "./pages/site/HowItWorksPage";
+import NeedsPage from "./pages/site/NeedsPage";
+import TakePartPage from "./pages/site/TakePartPage";
+import TransparencyPage from "./pages/site/TransparencyPage";
 import Contact from "./pages/legal/Contact";
 import Privacy from "./pages/legal/Privacy";
 import RefundPolicy from "./pages/legal/RefundPolicy";
@@ -45,6 +50,11 @@ function App() {
         <Routes>
           {/* Public landing page and policies (open to everyone, signed in or not) */}
           <Route path="/" element={<Home />} />
+          <Route path="/needs" element={<NeedsPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/take-part" element={<TakePartPage />} />
+          <Route path="/transparency" element={<TransparencyPage />} />
+          <Route path="/faq" element={<FaqPage />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />

@@ -18,7 +18,7 @@ const LegalPage = ({ title, intro, children }) => {
   }, [pathname]);
 
   return (
-    <div className="font-landing text-zinc-950 antialiased">
+    <div className="site-theme font-landing text-zinc-950 antialiased">
       <Navbar />
       <main className="pt-16">
         <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">

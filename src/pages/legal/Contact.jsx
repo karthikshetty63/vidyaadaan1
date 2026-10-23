@@ -1,7 +1,6 @@
 import { LuMail, LuMapPin, LuPhone } from "react-icons/lu";
 import LegalPage, { LegalSection } from "../../components/legal/LegalPage";
 import { CONTACT } from "../../constants/contact";
-import { OPERATOR } from "../../constants/legal";
 
 const DETAILS = [
   { icon: LuMail, label: "Email", value: CONTACT.email, href: `mailto:${CONTACT.email}` },
@@ -12,7 +11,7 @@ const DETAILS = [
 const Contact = () => (
   <LegalPage
     title="Contact Us"
-    intro={<p>VIDYADAAN is run by {OPERATOR.name}, {OPERATOR.description}. Reach us by email or phone.</p>}
+    intro={<p>Reach us by email or phone.</p>}
   >
     <dl className="mt-8 grid gap-4 sm:grid-cols-3">
       {DETAILS.map(({ icon: Icon, label, value, href }) => (
